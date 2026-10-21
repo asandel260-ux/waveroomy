@@ -40,6 +40,9 @@ import app.waveroom.AppCore
 import app.waveroom.core.parseJsonOrNull
 import app.waveroom.media.FX_PRESETS
 import app.waveroom.ui.Nav
+import app.waveroom.ui.components.ACCENT_PRESETS
+import app.waveroom.ui.components.BG_PRESETS
+import app.waveroom.ui.components.ColorPickerCard
 import app.waveroom.ui.components.BtnKind
 import app.waveroom.ui.components.ConfirmDialog
 import app.waveroom.ui.components.Muted
@@ -120,6 +123,17 @@ fun SettingsScreen(nav: Nav) {
     Column(Modifier.fillMaxSize().background(WR.bg).imePadding()) {
         ScreenHeader("Settings", { nav.pop() })
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
+            SectionTitle("Appearance")
+            Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                ColorPickerCard(
+                    "Buttons & accents", "Buttons, highlights, switches and sliders.",
+                    s.accentColor, androidx.compose.ui.graphics.Color(0xFF6E56CF), ACCENT_PRESETS
+                ) { c -> AppCore.settings.update { st -> st.copy(accentColor = c) } }
+                ColorPickerCard(
+                    "Background", "The dark base of the app. Panels and borders follow it automatically.",
+                    s.bgColor, androidx.compose.ui.graphics.Color(0xFF0A0A0B), BG_PRESETS
+                ) { c -> AppCore.settings.update { st -> st.copy(bgColor = c) } }
+            }
             SectionTitle("Voice")
             Column(Modifier.padding(horizontal = 20.dp)) {
                 SwitchRow("Push to talk", "Hold the mic button to speak instead of toggling it.", s.ptt, { AppCore.settings.update { st -> st.copy(ptt = it) } })

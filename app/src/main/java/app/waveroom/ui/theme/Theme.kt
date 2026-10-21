@@ -6,7 +6,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
@@ -18,18 +25,31 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 
 /** Waveroom palette: ink on near-black, hairlines, one violet accent (ported from the web theme). */
 object WR {
-    val bg = Color(0xFF0A0A0B)
-    val surface = Color(0xFF101012)
-    val surface2 = Color(0xFF16161A)
-    val surface3 = Color(0xFF1D1D22)
-    val border = Color(0xFF232328)
-    val borderStrong = Color(0xFF37373F)
-    val text = Color(0xFFEDEDEF)
-    val muted = Color(0xFF9A9AA3)
-    val faint = Color(0xFF616169)
-    val accent = Color(0xFF6E56CF)
-    val accentBright = Color(0xFF9B84EE)
-    val accentSoft = Color(0x336E56CF)
+    /** 0 = default. Set from settings; reading these in composition makes the whole UI follow. */
+    private var accentArgb by mutableIntStateOf(0)
+    private var bgArgb by mutableIntStateOf(0)
+
+    fun setCustom(accent: Int, bgc: Int) {
+        if (accentArgb != accent) accentArgb = accent
+        if (bgArgb != bgc) bgArgb = bgc
+    }
+
+    private val baseBg: Color get() = if (bgArgb == 0) Color(0xFF0A0A0B) else Color(bgArgb or (0xFF shl 24))
+    val isLight: Boolean get() = baseBg.luminance() > 0.5f
+    private fun tint(f: Float): Color = lerp(baseBg, if (isLight) Color.Black else Color.White, f)
+
+    val bg: Color get() = baseBg
+    val surface: Color get() = if (bgArgb == 0) Color(0xFF101012) else tint(0.03f)
+    val surface2: Color get() = if (bgArgb == 0) Color(0xFF16161A) else tint(0.06f)
+    val surface3: Color get() = if (bgArgb == 0) Color(0xFF1D1D22) else tint(0.10f)
+    val border: Color get() = if (bgArgb == 0) Color(0xFF232328) else tint(0.14f)
+    val borderStrong: Color get() = if (bgArgb == 0) Color(0xFF37373F) else tint(0.24f)
+    val text: Color get() = if (isLight) Color(0xFF111114) else Color(0xFFEDEDEF)
+    val muted: Color get() = if (isLight) Color(0xFF55555E) else Color(0xFF9A9AA3)
+    val faint: Color get() = if (isLight) Color(0xFF8A8A93) else Color(0xFF616169)
+    val accent: Color get() = if (accentArgb == 0) Color(0xFF6E56CF) else Color(accentArgb or (0xFF shl 24))
+    val accentBright: Color get() = if (accentArgb == 0) Color(0xFF9B84EE) else (if (isLight) lerp(accent, Color.Black, 0.25f) else lerp(accent, Color.White, 0.3f))
+    val accentSoft: Color get() = accent.copy(alpha = 0.2f)
     val ok = Color(0xFF3DD68C)
     val warn = Color(0xFFF5B544)
     val danger = Color(0xFFE5484D)
@@ -55,7 +75,7 @@ object WR {
     }
 }
 
-private val scheme: ColorScheme = darkColorScheme(
+private fun scheme(): ColorScheme = (if (WR.isLight) lightColorScheme() else darkColorScheme()).copy(
     primary = WR.accent,
     onPrimary = Color.White,
     primaryContainer = WR.accentSoft,
@@ -106,5 +126,19 @@ private val shapes = Shapes(
 
 @Composable
 fun WaveroomTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = scheme, typography = typo, shapes = shapes, content = content)
+    val st by app.waveroom.AppCore.settings.state.collectAsState()
+    WR.setCustom(st.accentColor, st.bgColor)
+    val view = androidx.compose.ui.platform.LocalView.current
+    val light = WR.isLight
+    if (!view.isInEditMode) {
+        androidx.compose.runtime.SideEffect {
+            val w = (view.context as? android.app.Activity)?.window
+            if (w != null) {
+                val c = androidx.core.view.WindowCompat.getInsetsController(w, view)
+                c.isAppearanceLightStatusBars = light
+                c.isAppearanceLightNavigationBars = light
+            }
+        }
+    }
+    MaterialTheme(colorScheme = scheme(), typography = typo, shapes = shapes, content = content)
 }

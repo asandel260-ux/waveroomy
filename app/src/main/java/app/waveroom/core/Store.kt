@@ -293,7 +293,9 @@ data class Settings(
     val shareFps: Int = 30,
     val micDeviceId: Int = -1,
     val outputDeviceId: Int = -1,
-    val chatSlidesOpen: Boolean = false
+    val chatSlidesOpen: Boolean = false,
+    val accentColor: Int = 0,                // ARGB, 0 = default
+    val bgColor: Int = 0                     // ARGB, 0 = default
 ) {
     fun toJson(): JSONObject = JSONObject()
         .put("ptt", ptt).put("sounds", sounds).put("dmPolicy", dmPolicy).put("showOnline", showOnline)
@@ -303,6 +305,7 @@ data class Settings(
         .put("shareRes", shareRes).put("shareFps", shareFps)
         .put("micDeviceId", micDeviceId).put("outputDeviceId", outputDeviceId)
         .put("chatSlidesOpen", chatSlidesOpen)
+        .put("accentColor", accentColor).put("bgColor", bgColor)
 
     companion object {
         fun from(j: JSONObject): Settings {
@@ -316,7 +319,8 @@ data class Settings(
                 fxPreset = j.str("fxPreset", d.fxPreset), fxIntensity = j.flt("fxIntensity", d.fxIntensity),
                 shareRes = j.int("shareRes", d.shareRes), shareFps = j.int("shareFps", d.shareFps),
                 micDeviceId = j.int("micDeviceId", -1), outputDeviceId = j.int("outputDeviceId", -1),
-                chatSlidesOpen = j.bool("chatSlidesOpen", d.chatSlidesOpen)
+                chatSlidesOpen = j.bool("chatSlidesOpen", d.chatSlidesOpen),
+                accentColor = j.int("accentColor", 0), bgColor = j.int("bgColor", 0)
             )
         }
     }

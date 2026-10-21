@@ -95,7 +95,7 @@ private const val PLAYER_HTML = """<!doctype html><html><head><meta name="viewpo
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
 var player=null,ready=false,pend=null;
-function onYouTubeIframeAPIReady(){player=new YT.Player('p',{playerVars:{controls:0,disablekb:1,rel:0,iv_load_policy:3,playsinline:1,fs:0,modestbranding:1},
+function onYouTubeIframeAPIReady(){player=new YT.Player('p',{playerVars:{controls:0,disablekb:1,rel:0,iv_load_policy:3,playsinline:1,fs:0,modestbranding:1,origin:'https://www.youtube.com',host:'https://www.youtube.com'},
 events:{onReady:function(){ready=true;WR.ready();if(pend){load(pend.id,pend.t,pend.play);pend=null}},
 onStateChange:function(e){WR.state(e.data)},onError:function(e){WR.error(e.data)}}});}
 function load(id,t,play){if(!ready){pend={id:id,t:t,play:play};return}
@@ -104,6 +104,21 @@ function play(){if(ready)player.playVideo()} function pause(){if(ready)player.pa
 function seek(t){if(ready)player.seekTo(t,true)} function rate(r){if(ready)player.setPlaybackRate(r)} function vol(v){if(ready)player.setVolume(v)}
 setInterval(function(){if(ready&&player.getCurrentTime){WR.tick(player.getCurrentTime(),player.getDuration()||0,player.getPlayerState(),player.getPlaybackRate())}},500);
 </script></body></html>"""
+
+/** Fallback: play the watch page itself and drive its <video> element (works for videos whose owner blocked embedding). */
+private const val PAGE_JS = """(function(){if(window.__wr)return;window.__wr=1;
+var st=document.createElement('style');st.textContent='html,body{overflow:hidden!important;background:#000!important}video{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:2147483647!important;object-fit:contain!important;background:#000!important;pointer-events:none!important}';document.documentElement.appendChild(st);
+function V(){return document.querySelector('video')}
+window.load=function(){};
+window.play=function(){var v=V();if(v){var p=v.play();if(p&&p.catch)p.catch(function(){})}};
+window.pause=function(){var v=V();if(v)v.pause()};
+window.seek=function(t){var v=V();if(v)v.currentTime=t};
+window.rate=function(r){var v=V();if(v)v.playbackRate=r};
+window.vol=function(x){var v=V();if(v){v.muted=(x==0);v.volume=x/100}};
+WR.ready();
+setInterval(function(){var v=V();if(!v)return;var s=v.ended?0:(v.paused?2:(v.readyState<3?3:1));
+WR.tick(v.currentTime||0,isFinite(v.duration)?v.duration:0,s,v.playbackRate)},500);
+})();"""
 
 private class YtBridge(
     val onReady: () -> Unit,
@@ -141,6 +156,7 @@ fun WatchPanel(modifier: Modifier = Modifier) {
     var speedMenu by remember { mutableStateOf(false) }
     var muted by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
+    var fallback by remember { mutableStateOf(false) }
 
     fun js(code: String) {
         web?.evaluateJavascript(code, null)
@@ -171,14 +187,30 @@ fun WatchPanel(modifier: Modifier = Modifier) {
                 if (abs(r - cw.rate) > 0.01) js2(web, "rate(${cw.rate})")
             },
             onError = { code ->
-                errorMsg = "This video can't be played here (error $code). The uploader may have disabled embedding."
+                if (!fallback) {
+                    // embedding refused (101/150/153 ...): switch to playing the watch page directly
+                    fallback = true
+                    loadedId = null
+                    ready = false
+                    errorMsg = null
+                } else errorMsg = "This video can't be played (error $code)."
             }
         )
     }
 
     // load whichever video the room is on
-    LaunchedEffect(w.video?.id, ready) {
+    LaunchedEffect(w.video?.id, ready, fallback) {
         val v = w.video
+        if (fallback) {
+            if (v != null && v.id != loadedId) {
+                loadedId = v.id
+                ready = false
+                errorMsg = null
+                web?.loadUrl("https://m.youtube.com/watch?v=${v.id}")
+            }
+            if (v == null) loadedId = null
+            return@LaunchedEffect
+        }
         if (ready && v != null && v.id != loadedId) {
             loadedId = v.id
             errorMsg = null
@@ -230,6 +262,12 @@ fun WatchPanel(modifier: Modifier = Modifier) {
                         settings.domStorageEnabled = true
                         settings.mediaPlaybackRequiresUserGesture = false
                         webChromeClient = WebChromeClient()
+                        settings.userAgentString = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36"
+                        webViewClient = object : android.webkit.WebViewClient() {
+                            override fun onPageFinished(view: WebView?, url: String?) {
+                                if (url != null && url.contains("youtube.com/watch")) view?.evaluateJavascript(PAGE_JS, null)
+                            }
+                        }
                         addJavascriptInterface(bridge, "WR")
                         loadDataWithBaseURL("https://www.youtube.com/", PLAYER_HTML, "text/html", "utf-8", null)
                         web = this

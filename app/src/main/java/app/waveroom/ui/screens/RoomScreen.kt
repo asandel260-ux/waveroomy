@@ -1,6 +1,7 @@
 package app.waveroom.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
@@ -110,7 +111,7 @@ fun RoomScreen(nav: Nav) {
             if (floats.size > 12) floats.removeAt(0)
         }
     }
-    BackHandler { leaveConfirm = true }
+    BackHandler { if (mode != "stage") mode = "stage" else leaveConfirm = true }
 
     if (s == null || phase == "idle") {
         Box(Modifier.fillMaxSize().background(WR.bg))
@@ -141,7 +142,6 @@ fun RoomScreen(nav: Nav) {
     // tabs fall back to the stage when their activity ends
     LaunchedEffect(sharer?.sid, watching, browsing) {
         if (mode == "screen" && sharer == null) mode = "stage"
-        if (mode == "watch" && !watching && s.watch.video == null) { /* allow starting a new one */ }
     }
     DisposableEffect(mode) {
         if (mode == "browse") session.browsePresence(true)
@@ -180,12 +180,24 @@ fun RoomScreen(nav: Nav) {
                 }
             }
             /* ---------------- activity tabs ---------------- */
-            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Tab("Stage", "users", mode == "stage", false) { mode = "stage" }
                 if (sharer != null) Tab("Screen", "monitor", mode == "screen", true) { mode = "screen" }
                 Tab("Watch", "youtube", mode == "watch", watching) { mode = "watch" }
                 Tab("Board", "board", mode == "board", s.board.objects.isNotEmpty()) { mode = "board" }
                 Tab("Browser", "globe", mode == "browse", browsing) { mode = "browse" }
+            }
+            if (mode != "stage") {
+                val iShare = sharer?.sid == session.mySid
+                Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                    WrButton("Exit to stage", { mode = "stage" }, kind = BtnKind.Ghost, small = true, icon = "arrow-left")
+                    Spacer(Modifier.weight(1f))
+                    when (mode) {
+                        "screen" -> if (iShare) WrButton("Stop sharing", { AppCore.screen.stop(true); mode = "stage" }, kind = BtnKind.Danger, small = true)
+                        "watch" -> if (watching && session.canWatchControl()) WrButton("End Watch", { session.watchEnd(); mode = "stage" }, kind = BtnKind.Danger, small = true)
+                        "browse" -> if (browsing && session.canBrowseControl()) WrButton("Close browser", { session.browseEnd(); mode = "stage" }, kind = BtnKind.Danger, small = true)
+                    }
+                }
             }
             Hairline()
             /* ---------------- main area ---------------- */
