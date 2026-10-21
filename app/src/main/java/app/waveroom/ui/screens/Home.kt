@@ -1,0 +1,327 @@
+package app.waveroom.ui.screens
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import app.waveroom.AppCore
+import app.waveroom.CodeResult
+import app.waveroom.core.NearbyRoom
+import app.waveroom.core.SavedRoom
+import app.waveroom.core.jsonOf
+import app.waveroom.core.timeAgo
+import app.waveroom.ui.Nav
+import app.waveroom.ui.Route
+import app.waveroom.ui.components.AvatarView
+import app.waveroom.ui.components.BtnKind
+import app.waveroom.ui.components.ConfirmDialog
+import app.waveroom.ui.components.EmptyState
+import app.waveroom.ui.components.MenuEntry
+import app.waveroom.ui.components.Muted
+import app.waveroom.ui.components.Row2
+import app.waveroom.ui.components.SectionTitle
+import app.waveroom.ui.components.Tiny
+import app.waveroom.ui.components.WrButton
+import app.waveroom.ui.components.WrChip
+import app.waveroom.ui.components.WrIcon
+import app.waveroom.ui.components.WrIconButton
+import app.waveroom.ui.components.WrMenu
+import app.waveroom.ui.components.WrSheet
+import app.waveroom.ui.components.Hairline
+import app.waveroom.ui.theme.WR
+
+@Composable
+fun HomeScreen(nav: Nav) {
+    var tab by remember { mutableStateOf(nav.homeTab) }
+    val convs by AppCore.dms.convs.collectAsState()
+    val unread = convs.values.sumOf { it.unread }
+    Column(Modifier.fillMaxSize().background(WR.bg)) {
+        Box(Modifier.weight(1f)) {
+            when (tab) {
+                0 -> RoomsTab(nav)
+                1 -> MessagesTab(nav)
+                else -> YouTab(nav)
+            }
+        }
+        Hairline()
+        Row(Modifier.fillMaxWidth().background(WR.surface).navigationBarsPadding().padding(vertical = 6.dp)) {
+            TabItem("Rooms", "waveform", tab == 0, 0, Modifier.weight(1f)) { tab = 0; nav.homeTab = 0 }
+            TabItem("Messages", "message", tab == 1, unread, Modifier.weight(1f)) { tab = 1; nav.homeTab = 1 }
+            TabItem("You", "user", tab == 2, 0, Modifier.weight(1f)) { tab = 2; nav.homeTab = 2 }
+        }
+    }
+}
+
+@Composable
+private fun TabItem(label: String, icon: String, on: Boolean, badge: Int, modifier: Modifier, onClick: () -> Unit) {
+    Column(modifier.clickable(onClick = onClick).padding(vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box {
+            WrIcon(icon, 22.dp, if (on) WR.accentBright else WR.faint)
+            if (badge > 0) {
+                Box(Modifier.align(Alignment.TopEnd).padding(start = 14.dp).size(8.dp).clip(CircleShape).background(WR.accent))
+            }
+        }
+        Spacer(Modifier.height(3.dp))
+        Text(label, color = if (on) WR.text else WR.faint, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+    }
+}
+
+/* ============================== Rooms ============================== */
+
+@Composable
+private fun RoomsTab(nav: Nav) {
+    val saved by AppCore.rooms.rooms.collectAsState()
+    val nearby by AppCore.lan.nearby.collectAsState()
+    val settings by AppCore.settings.state.collectAsState()
+    var joining by remember { mutableStateOf<String?>(null) }
+    var restart by remember { mutableStateOf<SavedRoom?>(null) }
+    var menuFor by remember { mutableStateOf<String?>(null) }
+    var deleteRoom by remember { mutableStateOf<SavedRoom?>(null) }
+
+    DisposableEffect(settings.nearby) {
+        if (settings.nearby) AppCore.lan.startListening()
+        onDispose { AppCore.lan.stopListening() }
+    }
+
+    fun joinNearby(r: NearbyRoom) {
+        val p = AppCore.profile.profile.value ?: return
+        joining = r.roomId + r.ip
+        AppCore.platform?.requestMic { }
+        AppCore.lan.join(
+            r, jsonOf("uid" to AppCore.profile.uid, "name" to p.displayName),
+            accept = { code, cb -> AppCore.handleCode(code) { res -> cb((res as? CodeResult.Answer)?.code) } },
+            done = { err ->
+                joining = null
+                if (err != null) AppCore.toast(err)
+            }
+        )
+    }
+
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)) {
+        item {
+            Column(Modifier.statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = 20.dp)) {
+                Text("Rooms", color = WR.text, fontSize = 32.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1).sp)
+                Spacer(Modifier.height(4.dp))
+                Muted("Start a room, or connect to one with a QR code or on the same Wi-Fi.")
+                Spacer(Modifier.height(18.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    WrButton("New room", { nav.push(Route.Create) }, Modifier.weight(1f), icon = "plus")
+                    WrButton("Join", { nav.push(Route.Join("")) }, Modifier.weight(1f), kind = BtnKind.Secondary, icon = "scan")
+                }
+            }
+        }
+        if (settings.nearby) {
+            item { SectionTitle("Nearby · same network") }
+            if (nearby.isEmpty()) {
+                item {
+                    Row(Modifier.padding(horizontal = 20.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        WrIcon("wifi", 18.dp, WR.faint)
+                        Spacer(Modifier.width(10.dp))
+                        Muted("Listening for rooms on this Wi-Fi… none yet.", size = 13)
+                    }
+                }
+            } else {
+                items(nearby, key = { it.roomId + it.ip }) { r ->
+                    NearbyRow(r, joining == r.roomId + r.ip) { joinNearby(r) }
+                }
+            }
+        }
+        item { SectionTitle("Your rooms") }
+        if (saved.isEmpty()) {
+            item {
+                EmptyState("waveform", "No rooms yet", "Rooms you start are remembered here, with their chat and blackboard, so you can open them again.")
+            }
+        } else {
+            items(saved, key = { it.meta.id }) { r ->
+                Box {
+                    SavedRow(r, onClick = { restart = r }, onMore = { menuFor = r.meta.id })
+                    WrMenu(menuFor == r.meta.id, { menuFor = null }, listOf(
+                        MenuEntry("Open again", "play") { restart = r },
+                        MenuEntry("Forget this room", "trash", danger = true) { deleteRoom = r }
+                    ))
+                }
+            }
+        }
+    }
+
+    val r = restart
+    if (r != null) {
+        ConfirmDialog("Open “${r.meta.title}”?", "You'll be the host. People can join with a QR code or from the Nearby list.", "Open room", {
+            AppCore.platform?.requestMic { }
+            AppCore.session.createRoom(
+                r.meta.title, r.meta.topic, r.meta.tags, r.meta.unlisted, r.meta.maxSpeakers,
+                restore = AppCore.rooms.loadData(r.meta.id), id = r.meta.id
+            )
+        }, { restart = null })
+    }
+    val d = deleteRoom
+    if (d != null) {
+        ConfirmDialog("Forget this room?", "Its saved chat and blackboard will be deleted from this phone.", "Forget", {
+            AppCore.rooms.delete(d.meta.id)
+        }, { deleteRoom = null }, danger = true)
+    }
+}
+
+@Composable
+private fun NearbyRow(r: NearbyRoom, busy: Boolean, onJoin: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(enabled = !busy, onClick = onJoin).padding(horizontal = 20.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(Modifier.size(44.dp).clip(CircleShape).background(WR.accentSoft), contentAlignment = Alignment.Center) {
+            WrIcon("wifi", 20.dp, WR.accentBright)
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(r.title, color = WR.text, fontSize = 16.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                if (r.locked) {
+                    Spacer(Modifier.width(6.dp))
+                    WrIcon("lock", 13.dp, WR.faint)
+                }
+            }
+            Muted("${r.hostName} · ${r.count} here" + (if (r.topic.isNotEmpty()) " · ${r.topic}" else ""), size = 12, maxLines = 1)
+        }
+        WrChip(if (busy) "Connecting…" else "Join", selected = !busy)
+    }
+}
+
+@Composable
+private fun SavedRow(r: SavedRoom, onClick: () -> Unit, onMore: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = 20.dp, end = 8.dp, top = 12.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(44.dp).clip(CircleShape).background(WR.surface2), contentAlignment = Alignment.Center) {
+            WrIcon(if (r.meta.unlisted) "lock" else "waveform", 20.dp, WR.muted)
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(r.meta.title, color = WR.text, fontSize = 16.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Muted("${r.totalJoins} joins · peak ${r.peak} · ${timeAgo(r.lastActiveAt)}", size = 12, maxLines = 1)
+        }
+        WrIconButton("more-v", onMore, tint = WR.muted)
+    }
+}
+
+/* ============================== Messages ============================== */
+
+@Composable
+private fun MessagesTab(nav: Nav) {
+    val convs by AppCore.dms.convs.collectAsState()
+    val contacts by AppCore.social.contacts.collectAsState()
+    val connected by AppCore.connected.collectAsState()
+    var sheet by remember { mutableStateOf(false) }
+    val list = convs.values.filter { it.messages.isNotEmpty() }.sortedByDescending { it.lastAt }
+
+    Column(Modifier.fillMaxSize()) {
+        Row(Modifier.statusBarsPadding().padding(start = 20.dp, end = 8.dp, top = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Messages", color = WR.text, fontSize = 32.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1).sp, modifier = Modifier.weight(1f))
+            WrIconButton("users", { nav.push(Route.People) }, tint = WR.muted)
+            WrIconButton("user-plus", { sheet = true }, tint = WR.muted)
+        }
+        Muted("Direct messages are delivered when you and the other person are connected — in a room together, or after swapping codes.", size = 12, modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp))
+        if (list.isEmpty()) {
+            EmptyState("message", "No conversations", "Join a room and message anyone in it, or add a friend with a QR code.") {
+                WrButton("Add a friend", { sheet = true }, small = true, icon = "user-plus")
+            }
+        } else {
+            LazyColumn(Modifier.fillMaxSize()) {
+                items(list, key = { it.uid }) { c ->
+                    val ct = contacts[c.uid]
+                    val last = c.messages.lastOrNull()
+                    Row(Modifier.fillMaxWidth().clickable { nav.push(Route.Chat(c.uid)) }.padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box {
+                            AvatarView(ct?.avatar ?: app.waveroom.core.Avatar(), 48.dp, uid = c.uid)
+                            if (connected.contains(c.uid)) Box(Modifier.align(Alignment.BottomEnd).size(12.dp).clip(CircleShape).background(WR.bg).padding(2.dp).clip(CircleShape).background(WR.ok))
+                        }
+                        Spacer(Modifier.width(14.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(ct?.displayName ?: "Unknown", color = WR.text, fontSize = 16.sp, fontWeight = if (c.unread > 0) FontWeight.SemiBold else FontWeight.Medium, maxLines = 1)
+                            Muted(((if (last?.from == AppCore.profile.uid) "You: " else "")) + (last?.text ?: ""), size = 13, maxLines = 1)
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Tiny(timeAgo(c.lastAt))
+                            if (c.unread > 0) {
+                                Spacer(Modifier.height(4.dp))
+                                Box(Modifier.clip(CircleShape).background(WR.accent).padding(horizontal = 7.dp, vertical = 2.dp)) {
+                                    Text(c.unread.toString(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (sheet) AddFriendSheet(nav) { sheet = false }
+}
+
+@Composable
+fun AddFriendSheet(nav: Nav, onDismiss: () -> Unit) {
+    WrSheet(onDismiss, "Connect with someone") {
+        Muted("Two phones exchange a code once (QR or text). After that you can message while you're connected, and meet again in rooms.", modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
+        Spacer(Modifier.height(8.dp))
+        Row2("Show my code", "They scan it with Waveroom", "qr", onClick = { onDismiss(); nav.push(Route.Invite("dm")) })
+        Row2("Scan or paste their code", null, "scan", onClick = { onDismiss(); nav.push(Route.Join("")) })
+    }
+}
+
+/* ============================== You ============================== */
+
+@Composable
+private fun YouTab(nav: Nav) {
+    val p by AppCore.profile.profile.collectAsState()
+    val reports by AppCore.mod.reports.collectAsState()
+    val open = reports.count { it.status == "open" && !it.outgoing }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        val me = p
+        Row(Modifier.statusBarsPadding().padding(20.dp).clickable { nav.push(Route.EditProfile) }, verticalAlignment = Alignment.CenterVertically) {
+            if (me != null) AvatarView(me.avatar, 64.dp, mine = true)
+            Spacer(Modifier.width(16.dp))
+            Column(Modifier.weight(1f)) {
+                Text(me?.displayName ?: "", color = WR.text, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+                Muted("@${me?.username ?: ""}")
+            }
+            WrIcon("chevron-right", 20.dp, WR.faint)
+        }
+        Hairline()
+        Row2("Edit profile", null, "pencil", onClick = { nav.push(Route.EditProfile) })
+        Row2("People", "Following, followers, blocked", "users", onClick = { nav.push(Route.People) })
+        Row2("Moderation desk", if (open > 0) "$open open report(s)" else "Reports and audit trail for your rooms", "shield-alert", onClick = { nav.push(Route.Moderation) })
+        Row2("Settings", "Voice effects, devices, network, privacy", "settings", onClick = { nav.push(Route.Settings) })
+        Hairline()
+        Row2("Help", "How connecting works, tips", "book", onClick = { nav.push(Route.Help) })
+        Row2("Privacy & terms", null, "shield", onClick = { nav.push(Route.Legal) })
+        Row2("About Waveroom", null, "info", onClick = { nav.push(Route.About) })
+    }
+}
