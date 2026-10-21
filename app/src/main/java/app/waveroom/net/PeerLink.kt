@@ -265,6 +265,7 @@ class PeerLink(
         p.setRemoteDescription(object : SdpObs() {
             override fun onSetSuccess() {
                 onMain {
+                    if (closed) return@onMain
                     remoteSet = true
                     for (tx in p.transceivers) {
                         try {
@@ -349,6 +350,7 @@ class PeerLink(
     fun localSdp(): String? = pc?.localDescription?.description
 
     fun restartIce(done: (Boolean) -> Unit) {
+        if (!trickle) { done(false); return }
         if (!offerer) return done(false)
         createOffer(true, done)
     }

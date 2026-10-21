@@ -159,7 +159,7 @@ class Mesh(
                             "d" to Sdp.filterCandidates(sdp)
                         )
                         cb(Sdp.pack(j), remote)
-                        armWatchdog(l)
+                        armWatchdog(l, 11 * 60_000L)
                     }
                 }
             }
@@ -297,8 +297,8 @@ class Mesh(
         }
     }
 
-    private fun armWatchdog(link: PeerLink) {
-        later(25_000) {
+    private fun armWatchdog(link: PeerLink, ms: Long = 25_000) {
+        later(ms) {
             if (links[link.remoteSid] === link && link.state != "connected") dropLink(link, "no path")
         }
     }

@@ -185,13 +185,14 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
         core.lan.stopHosting()
         for (r in timeouts.values) cancelLater(r)
         timeouts.clear(); waiting.clear()
-        for (l in core.mesh.authedLinks()) if (l.purpose != "dm") core.mesh.closeLink(l.remoteSid, "left room")
+        val toClose = core.mesh.authedLinks().filter { it.purpose != "dm" }.map { it.remoteSid }
         st = null; engine = null
         phase.value = "idle"
         speaking.value = emptySet()
         cursors.value = emptyMap()
         unreadChat.value = 0
         joinTarget = ""; expectJoin = ""
+        for (sid in toClose) core.mesh.closeLink(sid, "left room")
         reconnect.clear()
         core.mesh.hintProvider = null
         core.stopService()
@@ -204,6 +205,7 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
      * ==================================================================== */
 
     fun onLinkAuthed(link: PeerLink) {
+        reconnect.remove(link.remoteSid)
         if (link.remoteSid == expectJoin && link.purpose == "room") {
             beginJoin(link)
             return
@@ -218,6 +220,7 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
     fun onLinkGone(link: PeerLink, reason: String) {
         val s = st ?: return
         val sid = link.remoteSid
+        if (!link.authed && !(phase.value == "joining" && sid == joinTarget)) return
         if (phase.value == "joining" && sid == joinTarget) {
             failJoin("The connection to the room was lost.")
             return

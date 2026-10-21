@@ -47,6 +47,7 @@ class AudioController(private val ctx: Context, private val core: AppCore) {
     }
 
     fun stop() {
+        if (!running) return
         running = false
         cancelLater(poll); poll = null
         core.rtc.releaseMic()
@@ -155,7 +156,7 @@ class AudioController(private val ctx: Context, private val core: AppCore) {
         if (wants) {
             val t = core.rtc.ensureMic()
             t.setEnabled(micLive())
-            for (l in core.mesh.authedLinks()) l.setSendAudio(t)
+            for (l in core.mesh.authedLinks()) l.setSendAudio(if (inRoom(l)) t else null)
         } else {
             for (l in core.mesh.authedLinks()) l.setSendAudio(null)
             core.rtc.releaseMic()
@@ -166,9 +167,11 @@ class AudioController(private val ctx: Context, private val core: AppCore) {
 
     fun attach(link: PeerLink) {
         if (!running || !link.authed) return
-        if (wantsMic()) link.setSendAudio(core.rtc.ensureMic()) else link.setSendAudio(null)
+        if (wantsMic() && inRoom(link)) link.setSendAudio(core.rtc.ensureMic()) else link.setSendAudio(null)
         applyRemote(link)
     }
+
+    private fun inRoom(l: PeerLink): Boolean = core.session.room?.participants?.containsKey(l.remoteSid) == true
 
     private fun applyRemote(link: PeerLink) {
         val s = core.session.room ?: return

@@ -106,7 +106,7 @@ fun CreateRoomScreen(nav: Nav) {
             WrButton("Start room", {
                 val t = title.trim()
                 if (t.length < 3) { error = "Give the room a title (3+ characters)."; return@WrButton }
-                AppCore.platform?.requestMic { }
+                AppCore.platform?.requestMic { if (it) AppCore.startService() }
                 val tg = tags.split(',').map { it.trim().lowercase().take(20) }.filter { it.isNotEmpty() }.distinct().take(6)
                 if (!AppCore.session.createRoom(t, topic, tg, unlisted, seats.toInt())) error = "Could not start the room."
             }, Modifier.fillMaxWidth(), icon = "mic")
