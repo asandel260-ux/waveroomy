@@ -14,7 +14,18 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: 8.9 }
       - name: Build debug APK
-        run: gradle assembleDebug --stacktrace
+        run: |
+          set +e
+          gradle assembleDebug --stacktrace --console=plain > build.log 2>&1
+          echo $? > status.txt
+          if [ "$(cat status.txt)" != "0" ]; then
+            grep -E "^e: |What went wrong|error:" build.log | head -80 > errors.txt
+            gh release delete buildlog -y --cleanup-tag || true
+            gh release create buildlog --title "build errors" --notes-file errors.txt
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
       - uses: actions/upload-artifact@v4
         with:
           name: waveroom-debug-apk
