@@ -4,6 +4,8 @@ import android.graphics.Paint
 import android.graphics.Path
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -245,22 +247,25 @@ fun BoardPanel(modifier: Modifier = Modifier) {
             }
         }
 
-        // top-right controls
-        Row(
-            Modifier.align(Alignment.TopEnd).padding(8.dp).clip(RoundedCornerShape(14.dp)).background(Color(0xCC101012)).border(1.dp, WR.border, RoundedCornerShape(14.dp)),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            WrIconButton("undo", { ctrl.undo() }, enabled = ctrl.canUndo, size = 40.dp, iconSize = 18.dp)
-            WrIconButton("redo", { ctrl.redo() }, enabled = ctrl.canRedo, size = 40.dp, iconSize = 18.dp)
-            WrIconButton("fit", { ctrl.fitAll() }, size = 40.dp, iconSize = 18.dp)
-            Text("${Math.round(ctrl.zoom * 100)}%", color = WR.muted, fontSize = 11.sp, modifier = Modifier.clickable { ctrl.resetZoom() }.padding(horizontal = 6.dp))
-            WrIconButton("download", { exportOpen = true }, size = 40.dp, iconSize = 18.dp)
+        // top-right: round floating actions
+        Column(Modifier.align(Alignment.TopEnd).padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.End) {
+            FloatBtn("download", true) { exportOpen = true }
+            FloatBtn("undo", ctrl.canUndo) { ctrl.undo() }
+            FloatBtn("redo", ctrl.canRedo) { ctrl.redo() }
+            FloatBtn("fit", true) { ctrl.fitAll() }
         }
-
-        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        // top-left: zoom readout
+        Text(
+            "${Math.round(ctrl.zoom * 100)}%", color = WR.muted, fontSize = 11.sp,
+            modifier = Modifier.align(Alignment.TopStart).padding(10.dp).clip(RoundedCornerShape(50)).background(WR.surface.copy(alpha = 0.85f))
+                .clickable { ctrl.resetZoom() }.padding(horizontal = 10.dp, vertical = 6.dp)
+        )
+        // left: vertical tool rail
+        Box(Modifier.align(Alignment.CenterStart).padding(start = 8.dp)) { ToolPalette(ctrl) }
+        // bottom: contextual bars only
+        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             if (ctrl.selection.isNotEmpty()) SelectionBar(ctrl)
             if (ctrl.tool in DRAW_TOOLS || ctrl.tool == "text" || ctrl.selection.isNotEmpty()) StyleBar(ctrl)
-            ToolPalette(ctrl)
         }
     }
 
@@ -330,18 +335,18 @@ private fun drawOverlay(c: android.graphics.Canvas, ctrl: BoardController, sel: 
 
 @Composable
 private fun ToolPalette(ctrl: BoardController) {
-    Row(
-        Modifier.padding(horizontal = 8.dp, vertical = 8.dp).clip(RoundedCornerShape(18.dp)).background(Color(0xEE101012))
-            .border(1.dp, WR.border, RoundedCornerShape(18.dp)).horizontalScroll(rememberScrollState()).padding(4.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Column(
+        Modifier.heightIn(max = 380.dp).clip(RoundedCornerShape(24.dp)).background(WR.surface.copy(alpha = 0.92f))
+            .border(1.dp, WR.border, RoundedCornerShape(24.dp)).verticalScroll(rememberScrollState()).padding(4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         for ((id, icon) in TOOLS) {
             if (id == "|") {
-                Box(Modifier.padding(horizontal = 4.dp).width(1.dp).height(24.dp).background(WR.border))
+                Box(Modifier.padding(vertical = 4.dp).height(1.dp).width(24.dp).background(WR.border))
             } else {
                 val on = ctrl.tool == id
                 Box(
-                    Modifier.size(42.dp).clip(RoundedCornerShape(12.dp)).background(if (on) WR.accent else Color.Transparent)
+                    Modifier.size(42.dp).clip(CircleShape).background(if (on) WR.accent else Color.Transparent)
                         .clickable { ctrl.tool = id; if (id != "select") ctrl.selection = emptySet() },
                     contentAlignment = Alignment.Center
                 ) { WrIcon(icon, 20.dp, if (on) Color.White else WR.muted) }
@@ -351,12 +356,21 @@ private fun ToolPalette(ctrl: BoardController) {
 }
 
 @Composable
+private fun FloatBtn(icon: String, enabled: Boolean, onClick: () -> Unit) {
+    Box(
+        Modifier.size(40.dp).clip(CircleShape).background(WR.surface.copy(alpha = 0.92f)).border(1.dp, WR.border, CircleShape)
+            .clickable(enabled = enabled, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) { WrIcon(icon, 18.dp, if (enabled) WR.text else WR.faint) }
+}
+
+@Composable
 private fun SelectionBar(ctrl: BoardController) {
     val sel = ctrl.selected()
     val allLocked = sel.isNotEmpty() && sel.all { it.locked }
     val grouped = sel.any { it.group != null }
     Row(
-        Modifier.padding(horizontal = 8.dp).clip(RoundedCornerShape(14.dp)).background(Color(0xEE101012)).border(1.dp, WR.border, RoundedCornerShape(14.dp)).horizontalScroll(rememberScrollState()),
+        Modifier.padding(horizontal = 8.dp).clip(RoundedCornerShape(14.dp)).background(WR.surface.copy(alpha = 0.94f)).border(1.dp, WR.border, RoundedCornerShape(14.dp)).horizontalScroll(rememberScrollState()),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Muted("${sel.size} selected", size = 12, modifier = Modifier.padding(start = 12.dp, end = 4.dp))
@@ -377,7 +391,7 @@ private fun StyleBar(ctrl: BoardController) {
     val textMode = ctrl.tool == "text" || (sel.isNotEmpty() && sel.all { it.type == "text" })
     val curColor = if (sel.isNotEmpty()) sel[0].color else ctrl.color
     Row(
-        Modifier.padding(horizontal = 8.dp).clip(RoundedCornerShape(14.dp)).background(Color(0xEE101012)).border(1.dp, WR.border, RoundedCornerShape(14.dp))
+        Modifier.padding(horizontal = 8.dp).clip(RoundedCornerShape(14.dp)).background(WR.surface.copy(alpha = 0.94f)).border(1.dp, WR.border, RoundedCornerShape(14.dp))
             .horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {

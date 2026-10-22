@@ -100,7 +100,7 @@ fun QrDisplay(code: String, modifier: Modifier = Modifier, size: Dp = 280.dp) {
     }
 }
 
-/** Camera preview that reports the first complete Waveroom code it sees. */
+/** Camera preview that reports the first complete HoMit code it sees. */
 @OptIn(ExperimentalGetImage::class)
 @Composable
 fun QrScanner(onResult: (String) -> Unit, modifier: Modifier = Modifier, onProgress: ((Int, Int) -> Unit)? = null) {

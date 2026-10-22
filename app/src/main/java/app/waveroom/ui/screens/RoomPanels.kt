@@ -186,7 +186,7 @@ fun PersonSheet(p: Participant, nav: Nav, onDismiss: () -> Unit) {
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f)) {
                     Text(p.displayName + if (mine) " (you)" else "", color = WR.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                    Muted("@${p.username} · " + when (p.role) { "host" -> "host"; "speaker" -> "speaker"; else -> "listener" } + if (!mine && !connected.contains(p.uid)) " · connecting…" else "")
+                    Muted("@${p.username} · " + if (p.role == "host") "host" else "member" + if (!mine && !connected.contains(p.uid)) " · connecting…" else "")
                 }
             }
             Spacer(Modifier.height(8.dp))
@@ -206,11 +206,7 @@ fun PersonSheet(p: Participant, nav: Nav, onDismiss: () -> Unit) {
             Row2(if (following.contains(p.uid)) "Unfollow" else "Follow", null, "heart", onClick = { AppCore.follow(p.uid, !following.contains(p.uid)); onDismiss() })
         }
         if (host && !mine) {
-            if (p.role == "listener") Row2("Invite to speak", null, "mic", onClick = { session.promote(p.sid); onDismiss() })
-            if (p.role == "speaker") {
-                Row2("Move to audience", null, "arrow-down", onClick = { session.demote(p.sid); onDismiss() })
-                if (!p.muted) Row2("Mute microphone", null, "mic-off", onClick = { session.muteUser(p.sid); onDismiss() })
-            }
+            if (!p.muted) Row2("Mute microphone", null, "mic-off", onClick = { session.muteUser(p.sid); onDismiss() })
             Row2("Remove from room", null, "log-out", danger = true, onClick = { kickConfirm = true })
             Row2("Ban…", null, "ban", danger = true, onClick = { banDialog = true })
         }

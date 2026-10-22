@@ -70,7 +70,7 @@ fun Onboarding() {
                 WrIcon("waveform", 20.dp, androidx.compose.ui.graphics.Color.White)
             }
             Spacer(Modifier.size(10.dp))
-            Text("Waveroom", color = WR.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+            Text("HoMit", color = WR.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
         }
         Spacer(Modifier.height(36.dp))
         Text("Voice rooms\nwith no server.", color = WR.text, fontSize = 38.sp, lineHeight = 40.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1.4).sp)
@@ -130,7 +130,7 @@ fun Onboarding() {
                 try {
                     val text = AppCore.app.contentResolver.openInputStream(uri)?.use { String(it.readBytes(), Charsets.UTF_8) } ?: ""
                     val j = parseJsonOrNull(text)
-                    if (j == null || !AppCore.profile.importBackup(j)) error = "That file is not a Waveroom identity backup."
+                    if (j == null || !AppCore.profile.importBackup(j)) error = "That file is not a HoMit identity backup."
                 } catch (e: Exception) {
                     error = "Could not read that file."
                 }

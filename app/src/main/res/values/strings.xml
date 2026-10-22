@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Waveroom</string>
+    <string name="app_name">HoMit</string>
     <string name="notif_channel_room">Active room</string>
     <string name="notif_channel_msg">Messages</string>
 </resources>

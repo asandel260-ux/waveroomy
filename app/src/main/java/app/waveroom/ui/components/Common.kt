@@ -82,7 +82,7 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun Tiny(text: String, modifier: Modifier = Modifier, color: Color = WR.faint) {
-    Text(text.uppercase(), modifier = modifier, color = color, fontFamily = WR.mono, fontSize = 10.sp, letterSpacing = 1.sp)
+    Text(text, modifier = modifier, color = if (color == WR.faint) WR.muted else color, fontFamily = WR.label, fontWeight = FontWeight.Bold, fontSize = 15.sp)
 }
 
 @Composable

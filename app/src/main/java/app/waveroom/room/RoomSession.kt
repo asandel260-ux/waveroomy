@@ -91,7 +91,7 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
         val p = core.profile.profile.value ?: return false
         val meta = RoomMeta(
             id = id ?: Ids.id("r_"), title = title.trim().take(60), topic = topic.trim().take(140), tags = tags,
-            ownerUid = myUid, ownerName = p.displayName, unlisted = unlisted, maxSpeakers = maxSpeakers.coerceIn(2, 12)
+            ownerUid = myUid, ownerName = p.displayName, unlisted = unlisted, maxSpeakers = maxSpeakers.coerceIn(2, 24)
         )
         val s = RoomState(meta)
         if (restore != null) {
@@ -179,6 +179,7 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
     private fun resetLocal(reason: String? = null) {
         cancelLater(joinTimeout)
         val s = st
+        core.dmHub.onRoomClosed(s?.meta?.id)
         if (s != null && s.meta.ownerUid == myUid && phase.value == "live") core.rooms.saveData(s)
         core.screen.stop(false)
         core.audio.stop()

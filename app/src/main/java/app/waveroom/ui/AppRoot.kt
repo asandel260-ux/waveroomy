@@ -4,6 +4,21 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import app.waveroom.ui.screens.NewGroupScreen
+import app.waveroom.ui.screens.GroupInfoScreen
+import app.waveroom.ui.screens.WelcomeScreen
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -35,7 +50,13 @@ import app.waveroom.ui.theme.WR
 fun AppRoot() {
     val profile by AppCore.profile.profile.collectAsState()
     Box(Modifier.fillMaxSize().background(WR.bg)) {
-        if (profile == null) Onboarding() else MainShell()
+        var welcomed by rememberSaveable { mutableStateOf(false) }
+        if (profile == null) {
+            AnimatedContent(welcomed, transitionSpec = { fadeIn(tween(WR.ms(300))) togetherWith fadeOut(tween(WR.ms(200))) }, label = "welcome") { w ->
+                if (!w) WelcomeScreen { welcomed = true } else Onboarding()
+            }
+        } else MainShell()
+        IncomingCallOverlay()
         ToastHost(Modifier.align(Alignment.TopCenter))
     }
 }
@@ -68,21 +89,35 @@ private fun MainShell() {
     val top = nav.top
     BackHandler(enabled = nav.stack.size > 1 && top != Route.Room) { nav.pop() }
 
-    when (top) {
-        Route.Home -> HomeScreen(nav)
-        Route.Room -> RoomScreen(nav)
-        Route.Create -> CreateRoomScreen(nav)
-        is Route.Join -> JoinScreen(nav, top.code)
-        is Route.Invite -> InviteScreen(nav, top.purpose)
-        is Route.Chat -> ChatScreen(nav, top.uid)
-        is Route.Profile -> ProfileScreen(nav, top.uid)
-        Route.People -> PeopleScreen(nav)
-        Route.EditProfile -> EditProfileScreen(nav)
-        Route.Settings -> SettingsScreen(nav)
-        Route.Moderation -> ModerationScreen(nav)
-        Route.Help -> HelpScreen(nav)
-        Route.Legal -> LegalScreen(nav)
-        Route.About -> AboutScreen(nav)
+    AnimatedContent(
+        targetState = top,
+        transitionSpec = {
+            val d = nav.stack.size - nav.prevSize
+            nav.prevSize = nav.stack.size
+            if (!WR.animations) EnterTransition.None togetherWith ExitTransition.None
+            else if (d >= 0) (slideInHorizontally(tween(260)) { it / 4 } + fadeIn(tween(260))) togetherWith (slideOutHorizontally(tween(260)) { -it / 6 } + fadeOut(tween(160)))
+            else (slideInHorizontally(tween(260)) { -it / 6 } + fadeIn(tween(260))) togetherWith (slideOutHorizontally(tween(260)) { it / 4 } + fadeOut(tween(160)))
+        },
+        label = "nav"
+    ) { r ->
+        when (r) {
+            Route.Home -> HomeScreen(nav)
+            Route.Room -> RoomScreen(nav)
+            Route.Create -> CreateRoomScreen(nav)
+            is Route.Join -> JoinScreen(nav, r.code)
+            is Route.Invite -> InviteScreen(nav, r.purpose)
+            is Route.Chat -> ChatScreen(nav, r.uid)
+            is Route.Profile -> ProfileScreen(nav, r.uid)
+            Route.People -> PeopleScreen(nav)
+            Route.EditProfile -> EditProfileScreen(nav)
+            Route.Settings -> SettingsScreen(nav)
+            Route.Moderation -> ModerationScreen(nav)
+            Route.Help -> HelpScreen(nav)
+            Route.Legal -> LegalScreen(nav)
+            Route.About -> AboutScreen(nav)
+            Route.NewGroup -> NewGroupScreen(nav)
+            is Route.GroupInfo -> GroupInfoScreen(nav, r.gid)
+        }
     }
 
     if (ended != null) {
@@ -91,4 +126,19 @@ private fun MainShell() {
     if (joinError != null) {
         ConfirmDialog("Couldn't join", joinError ?: "", "OK", { session.joinError.value = null }, { session.joinError.value = null }, cancel = "Dismiss")
     }
+}
+
+@Composable
+private fun IncomingCallOverlay() {
+    val call by AppCore.dmHub.incomingCall.collectAsState()
+    val c = call ?: return
+    val name = AppCore.contactName(c.uid)
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = {},
+        containerColor = WR.surface2,
+        title = { androidx.compose.material3.Text(if (c.group) c.title else "$name is calling", color = WR.text, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold) },
+        text = { androidx.compose.material3.Text(if (c.group) "$name started a group voice call." else "Voice call over a direct connection.", color = WR.muted) },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = { AppCore.dmHub.acceptCall() }) { androidx.compose.material3.Text("Answer", color = WR.ok, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold) } },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = { AppCore.dmHub.declineCall() }) { androidx.compose.material3.Text("Decline", color = WR.danger) } }
+    )
 }

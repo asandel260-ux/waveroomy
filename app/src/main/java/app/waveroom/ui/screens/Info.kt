@@ -45,7 +45,7 @@ private fun P(t: String) {
 @Composable
 fun HelpScreen(nav: Nav) = Page("Help", nav) {
     H("How does it work without a server?")
-    P("Waveroom connects phones directly to each other (peer to peer). There is no account system and no server relaying your voice, chat or screen. A room is simply the group of phones that are connected to each other.")
+    P("HoMit connects phones directly to each other (peer to peer). There is no account system and no server relaying your voice, chat or screen. A room is simply the group of phones that are connected to each other.")
     H("Starting and joining")
     P("Start a room, then tap the + button to show a QR code. A friend scans it, and then shows you their reply QR, which you scan back. The two phones link up directly. After that, anyone already in the room can invite more people — new people connect to everyone through the people already there.")
     P("On the same Wi-Fi or hotspot, rooms appear under “Nearby” and you can join with a single tap — no codes.")
@@ -68,18 +68,18 @@ fun HelpScreen(nav: Nav) = Page("Help", nav) {
 @Composable
 fun LegalScreen(nav: Nav) = Page("Privacy & terms", nav) {
     H("Privacy")
-    P("Waveroom has no servers and collects nothing. Your profile, contacts, messages and room history are stored only on your phone. When you connect to someone, they receive your display name, username, avatar, bio and photo — that is how they see you.")
+    P("HoMit has no servers and collects nothing. Your profile, contacts, messages and room history are stored only on your phone. When you connect to someone, they receive your display name, username, avatar, bio and photo — that is how they see you.")
     P("Voice, chat, screen and board content flows directly between participants and is encrypted in transit by WebRTC. People in a room you join can record or screenshot what they receive; only share what you are comfortable sharing with them.")
     P("If STUN is enabled, your phone contacts public STUN servers (Google and Cloudflare by default) to discover its public network address. They learn that address and nothing else. Disable it in Settings → Network to stay on the local network only.")
     P("The shared browser and Watch Together load websites and YouTube directly on your phone, subject to those sites' own terms and privacy policies.")
     H("Use")
-    P("Be kind. Don't use Waveroom to harass people, share illegal content, or violate others' privacy. Room hosts moderate their own rooms: they can mute, remove and ban people. There is no central authority that can see or remove content.")
-    P("Waveroom is provided as is, without warranty. You are responsible for what you share.")
+    P("Be kind. Don't use HoMit to harass people, share illegal content, or violate others' privacy. Room hosts moderate their own rooms: they can mute, remove and ban people. There is no central authority that can see or remove content.")
+    P("HoMit is provided as is, without warranty. You are responsible for what you share.")
 }
 
 @Composable
 fun AboutScreen(nav: Nav) = Page("About", nav) {
-    H("Waveroom")
+    H("HoMit")
     P("Server-free voice rooms for Android: stage and audience, hand-raising, room chat and reactions, direct messages, screen sharing, Watch Together, a shared browser, a shared infinite blackboard and voice effects — all peer to peer.")
     H("Built with")
     P("Kotlin and Jetpack Compose, native WebRTC (libwebrtc), ZXing for QR codes, CameraX and ML Kit for scanning, and the Lucide icon set.")

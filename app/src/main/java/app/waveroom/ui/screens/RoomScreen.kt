@@ -161,11 +161,7 @@ fun RoomScreen(nav: Nav) {
                         }
                     }
                     val live = participants.count { it.sid == session.mySid || connected.contains(it.uid) }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(7.dp).clip(CircleShape).background(if (live >= participants.size) WR.ok else WR.warn))
-                        Spacer(Modifier.width(6.dp))
-                        Muted("${participants.size} in room" + (if (live < participants.size) " · connecting ${participants.size - live}" else "") + (if (session.isEngine) " · hosting" else ""), size = 12, maxLines = 1)
-                    }
+                    Muted("${participants.size} in room" + (if (live < participants.size) " · connecting ${participants.size - live}" else ""), size = 12, maxLines = 1)
                 }
                 WrIconButton("user-plus", { nav.push(Route.Invite("room")) }, tint = WR.text)
                 Box {
@@ -213,22 +209,14 @@ fun RoomScreen(nav: Nav) {
                                 SharingBanner(sharer) { mode = "screen" }
                                 Spacer(Modifier.height(14.dp))
                             }
-                            val hands = audience.filter { it.hand }
-                            if (isHost && hands.isNotEmpty()) {
-                                HandsBanner(hands, onApprove = { session.promote(it.sid) })
-                                Spacer(Modifier.height(14.dp))
-                            }
-                            Tiny("On stage · ${speakers.size}/${s.meta.maxSpeakers}")
-                            Spacer(Modifier.height(10.dp))
-                            FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.fillMaxWidth()) {
+                            Tiny("In the room · ${participants.size}")
+                            Spacer(Modifier.height(12.dp))
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
                                 for (p in speakers) StageTile(p, speaking.contains(p.sid), p.sid == session.mySid || connected.contains(p.uid)) { person = p.sid }
                             }
-                            Spacer(Modifier.height(22.dp))
-                            Tiny("Audience · ${audience.size}")
-                            Spacer(Modifier.height(10.dp))
-                            if (audience.isEmpty()) Muted("Nobody listening yet. Invite someone with the + button.", size = 13)
-                            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                                for (p in audience) AudienceTile(p, p.sid == session.mySid || connected.contains(p.uid)) { person = p.sid }
+                            if (participants.size == 1) {
+                                Spacer(Modifier.height(18.dp))
+                                Muted("Nobody else is here yet. Invite someone with the + button.", size = 13)
                             }
                             Spacer(Modifier.height(24.dp))
                         }
@@ -247,23 +235,10 @@ fun RoomScreen(nav: Nav) {
                 Modifier.fillMaxWidth().background(WR.surface).navigationBarsPadding().padding(horizontal = 10.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically
             ) {
-                // main action: mic (speakers) or raise hand (audience)
-                if (canTalk) {
-                    MicButton(muted = me?.muted != false, level = micLevel, ptt = settings.ptt)
-                } else {
-                    val raised = me?.hand == true
-                    Box(
-                        Modifier.size(58.dp).clip(CircleShape).background(if (raised) WR.warn else WR.surface3)
-                            .border(1.dp, if (raised) WR.warn else WR.borderStrong, CircleShape)
-                            .clickable { session.raiseHand(!raised) },
-                        contentAlignment = Alignment.Center
-                    ) { WrIcon("hand", 26.dp, if (raised) Color(0xFF1A1100) else WR.text) }
-                }
                 WrIconButton(if (deaf) "volume-x" else "headphones", { session.toggleDeafen() }, size = 48.dp, tint = if (deaf) WR.danger else WR.text, bg = if (deaf) WR.dangerSoft else WR.surface2, border = WR.border)
                 WrIconButton("smile-plus", { reactOpen = true }, size = 48.dp, bg = WR.surface2, border = WR.border)
-                if (canTalk) {
-                    WrIconButton("monitor", { if (sharing) AppCore.screen.stop(true) else shareSheet = true }, size = 48.dp, tint = if (sharing) WR.ok else WR.text, bg = if (sharing) WR.ok.copy(alpha = 0.15f) else WR.surface2, border = if (sharing) WR.ok else WR.border)
-                }
+                MicButton(muted = me?.muted != false, level = micLevel, ptt = settings.ptt)
+                WrIconButton("monitor", { if (sharing) AppCore.screen.stop(true) else shareSheet = true }, size = 48.dp, tint = if (sharing) WR.accentBright else WR.text, bg = if (sharing) WR.accentSoft else WR.surface2, border = if (sharing) WR.accent else WR.border)
                 WrIconButton("message", { chatOpen = true; session.unreadChat.value = 0 }, size = 48.dp, bg = WR.surface2, border = WR.border, badge = unread)
             }
         }
@@ -317,10 +292,6 @@ private fun Tab(label: String, icon: String, on: Boolean, live: Boolean, onClick
         WrIcon(icon, 15.dp, if (on) WR.accentBright else WR.muted)
         Spacer(Modifier.width(6.dp))
         Text(label, color = if (on) WR.accentBright else WR.muted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-        if (live) {
-            Spacer(Modifier.width(6.dp))
-            Box(Modifier.size(6.dp).clip(CircleShape).background(WR.ok))
-        }
     }
 }
 
@@ -329,15 +300,15 @@ private fun StageTile(p: Participant, speaking: Boolean, online: Boolean, onClic
     val mine = p.sid == AppCore.session.mySid
     Column(Modifier.width(96.dp).clickable(onClick = onClick), horizontalAlignment = Alignment.CenterHorizontally) {
         Box {
-            AvatarView(p.avatar, 76.dp, uid = p.uid, mine = mine, ring = if (speaking) WR.ok else if (!online) WR.borderStrong else Color.Transparent)
+            AvatarView(p.avatar, 76.dp, uid = p.uid, mine = mine, ring = if (speaking) WR.accentBright else if (!online) WR.borderStrong else Color.Transparent)
             if (p.muted) {
                 Box(Modifier.align(Alignment.BottomEnd).size(24.dp).clip(CircleShape).background(WR.surface3).border(1.dp, WR.border, CircleShape), contentAlignment = Alignment.Center) {
                     WrIcon("mic-off", 13.dp, WR.danger)
                 }
             }
             if (p.sharing != null) {
-                Box(Modifier.align(Alignment.TopEnd).size(22.dp).clip(CircleShape).background(WR.ok), contentAlignment = Alignment.Center) {
-                    WrIcon("monitor", 12.dp, Color(0xFF04140B))
+                Box(Modifier.align(Alignment.TopEnd).size(22.dp).clip(CircleShape).background(WR.surface3), contentAlignment = Alignment.Center) {
+                    WrIcon("monitor", 12.dp, WR.accentBright)
                 }
             }
             if (!online) {
@@ -375,11 +346,11 @@ private fun AudienceTile(p: Participant, online: Boolean, onClick: () -> Unit) {
 @Composable
 private fun SharingBanner(p: Participant, onOpen: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(WR.surface).border(1.dp, WR.ok.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(WR.surface).border(1.dp, WR.border, RoundedCornerShape(14.dp))
             .clickable(onClick = onOpen).padding(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        WrIcon("monitor", 22.dp, WR.ok)
+        WrIcon("monitor", 22.dp, WR.accentBright)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text("${if (p.sid == AppCore.session.mySid) "You are" else p.displayName + " is"} sharing a screen", color = WR.text, fontSize = 14.sp, fontWeight = FontWeight.Medium)
@@ -409,9 +380,11 @@ private fun HandsBanner(hands: List<Participant>, onApprove: (Participant) -> Un
 private fun MicButton(muted: Boolean, level: Float, ptt: Boolean) {
     val session = AppCore.session
     val ring = (level * 6f).coerceIn(0f, 1f)
-    val base = Modifier.size(64.dp).clip(CircleShape)
+    val pulse = androidx.compose.animation.core.rememberInfiniteTransition(label = "mic")
+    val halo by pulse.animateFloat(0f, 1f, androidx.compose.animation.core.infiniteRepeatable(tween(1600, easing = LinearEasing)), label = "halo")
+    val base = Modifier.size(72.dp).clip(CircleShape)
         .background(if (muted) WR.surface3 else WR.accent)
-        .border((1 + (if (muted) 0f else ring * 4f)).dp, if (muted) WR.borderStrong else WR.accentBright, CircleShape)
+        .border((2 + (if (muted) 0f else ring * 4f)).dp, WR.accentBright, CircleShape)
     val m = if (ptt) {
         base.pointerInput(Unit) {
             detectTapGestures(onPress = {
@@ -421,8 +394,11 @@ private fun MicButton(muted: Boolean, level: Float, ptt: Boolean) {
             })
         }
     } else base.clickable { session.setMuted(!muted) }
-    Box(m, contentAlignment = Alignment.Center) {
-        WrIcon(if (muted) "mic-off" else "mic", 28.dp, if (muted) WR.muted else Color.White)
+    Box(Modifier.size(88.dp), contentAlignment = Alignment.Center) {
+        if (muted) Box(Modifier.size((72 + 16 * halo).dp).clip(CircleShape).border(2.dp, WR.accent.copy(alpha = 0.55f * (1f - halo)), CircleShape))
+        Box(m, contentAlignment = Alignment.Center) {
+            WrIcon(if (muted) "mic-off" else "mic", 32.dp, if (muted) WR.accentBright else Color.White)
+        }
     }
 }
 

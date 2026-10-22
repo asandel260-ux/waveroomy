@@ -62,6 +62,7 @@ object AppCore : MeshHandler {
     val settings = SettingsStore()
     val social = SocialStore()
     val dms = DmStore()
+    val groups = app.waveroom.core.GroupStore()
     val rooms = RoomsStore()
     val mod = ModStore()
 
@@ -87,7 +88,8 @@ object AppCore : MeshHandler {
         inited = true
         this.app = app
         Docs.init(app)
-        settings.load(); profile.load(); social.load(); dms.load(); rooms.load(); mod.load()
+        app.waveroom.core.Media.init(app)
+        settings.load(); profile.load(); social.load(); dms.load(); groups.load(); rooms.load(); mod.load()
         try {
             rtc = RtcEngine(app, settings)
             rtc.init()
@@ -129,7 +131,11 @@ object AppCore : MeshHandler {
     /* ---------------- first contact: codes ---------------- */
 
     fun createInviteCode(purpose: String, cb: (inviteId: String, code: String?) -> Unit) {
-        if (purpose == "room") {
+        if (purpose.startsWith("group:")) {
+            val g = groups.get(purpose.removePrefix("group:"))
+            if (g == null || g.left || !g.canAdd(profile.uid)) return cb("", null)
+            mesh.createInvite("dm", purpose, jsonOf("t" to g.name, "h" to "group"), cb)
+        } else if (purpose == "room") {
             val s = session.room
             if (s == null || !session.live) return cb("", null)
             mesh.createInvite("room", s.meta.id, session.previewJson(), cb)
@@ -142,7 +148,7 @@ object AppCore : MeshHandler {
     fun previewOfCode(text: String): JSONObject? = Sdp.unpack(text)?.obj("v")
 
     fun handleCode(text: String, cb: (CodeResult) -> Unit) {
-        val j = Sdp.unpack(text) ?: return cb(CodeResult.Error("That doesn't look like a Waveroom code."))
+        val j = Sdp.unpack(text) ?: return cb(CodeResult.Error("That doesn't look like a HoMit code."))
         when (j.str("k")) {
             "o" -> {
                 val purpose = j.str("p", "room")
@@ -191,7 +197,7 @@ object AppCore : MeshHandler {
         } catch (e: Exception) {
         }
         Docs.wipeAll()
-        dms.wipe(); mod.wipe()
+        dms.wipe(); mod.wipe(); groups.wipe(); app.waveroom.core.Media.wipe()
         social.contacts.value = emptyMap(); social.following.value = emptySet()
         social.followers.value = emptySet(); social.blocked.value = emptySet()
         rooms.rooms.value = emptyList()
@@ -228,7 +234,7 @@ object AppCore : MeshHandler {
 
     override fun onMessage(fromSid: String, msg: JSONObject, link: PeerLink?) {
         when (msg.str("t")) {
-            "dm", "dmack", "fol" -> if (link != null) dmHub.onMessage(link, msg)
+            "m", "mr", "mq", "mb", "dmack", "fol", "gh", "gr", "gi", "gu", "gl", "call", "callr", "callx" -> if (link != null) dmHub.onMessage(link, msg)
             else -> session.onMessage(fromSid, msg, link)
         }
     }

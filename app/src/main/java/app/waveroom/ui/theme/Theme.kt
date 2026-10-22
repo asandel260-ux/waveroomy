@@ -23,11 +23,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.shape.RoundedCornerShape
 
-/** Waveroom palette: ink on near-black, hairlines, one violet accent (ported from the web theme). */
+/** HoMit palette: ink on near-black, hairlines, one violet accent (ported from the web theme). */
 object WR {
     /** 0 = default. Set from settings; reading these in composition makes the whole UI follow. */
     private var accentArgb by mutableIntStateOf(0)
     private var bgArgb by mutableIntStateOf(0)
+
+    var animations by mutableStateOf(true)
+    /** Duration helper: 0 when animations are off. */
+    fun ms(n: Int): Int = if (animations) n else 0
+    /** Humanist serif used for section labels. */
+    val label: FontFamily = FontFamily(
+        androidx.compose.ui.text.font.Font(app.waveroom.R.font.caladea_bolditalic, FontWeight.Bold)
+    )
+    val display: FontFamily = FontFamily(
+        androidx.compose.ui.text.font.Font(app.waveroom.R.font.caladea_bold, FontWeight.Bold)
+    )
 
     fun setCustom(accent: Int, bgc: Int) {
         if (accentArgb != accent) accentArgb = accent
@@ -128,6 +139,7 @@ private val shapes = Shapes(
 fun WaveroomTheme(content: @Composable () -> Unit) {
     val st by app.waveroom.AppCore.settings.state.collectAsState()
     WR.setCustom(st.accentColor, st.bgColor)
+    WR.animations = st.animations
     val view = androidx.compose.ui.platform.LocalView.current
     val light = WR.isLight
     if (!view.isInEditMode) {

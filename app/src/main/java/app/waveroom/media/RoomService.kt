@@ -63,7 +63,7 @@ class RoomService : Service() {
     }
 
     private fun buildNotification(): Notification {
-        val title = AppCore.session.room?.meta?.title ?: "Waveroom"
+        val title = AppCore.session.room?.meta?.title ?: "HoMit"
         val open = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT

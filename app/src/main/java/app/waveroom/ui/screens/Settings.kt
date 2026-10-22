@@ -125,6 +125,7 @@ fun SettingsScreen(nav: Nav) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
             SectionTitle("Appearance")
             Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                SwitchRow("Animations", "Screen transitions, pulses and other motion. Turn off for a calmer, faster app.", s.animations, { AppCore.settings.update { st -> st.copy(animations = it) } })
                 ColorPickerCard(
                     "Buttons & accents", "Buttons, highlights, switches and sliders.",
                     s.accentColor, androidx.compose.ui.graphics.Color(0xFF6E56CF), ACCENT_PRESETS
@@ -174,7 +175,7 @@ fun SettingsScreen(nav: Nav) {
                 Spacer(Modifier.height(14.dp))
                 Tiny("Optional relay (TURN) for strict networks")
                 Spacer(Modifier.height(6.dp))
-                Muted("If two people can't connect (symmetric NAT, corporate Wi-Fi), a TURN relay you control makes it work. Waveroom never ships with one.", size = 12)
+                Muted("If two people can't connect (symmetric NAT, corporate Wi-Fi), a TURN relay you control makes it work. HoMit never ships with one.", size = 12)
                 Spacer(Modifier.height(8.dp))
                 WrField(s.turnUrl, { AppCore.settings.update { st -> st.copy(turnUrl = it) } }, placeholder = "turn:turn.example.com:3478", mono = true)
                 Spacer(Modifier.height(8.dp))
@@ -198,7 +199,7 @@ fun SettingsScreen(nav: Nav) {
                             try {
                                 val text = AppCore.app.contentResolver.openInputStream(uri)?.use { String(it.readBytes(), Charsets.UTF_8) } ?: ""
                                 val j = parseJsonOrNull(text)
-                                AppCore.toast(if (j != null && AppCore.profile.importBackup(j)) "Identity restored" else "That isn't a Waveroom backup")
+                                AppCore.toast(if (j != null && AppCore.profile.importBackup(j)) "Identity restored" else "That isn't a HoMit backup")
                             } catch (e: Exception) {
                                 AppCore.toast("Could not read that file")
                             }

@@ -241,41 +241,71 @@ private fun MessagesTab(nav: Nav) {
     val contacts by AppCore.social.contacts.collectAsState()
     val connected by AppCore.connected.collectAsState()
     var sheet by remember { mutableStateOf(false) }
-    val list = convs.values.filter { it.messages.isNotEmpty() }.sortedByDescending { it.lastAt }
+    val groups by AppCore.groups.groups.collectAsState()
+    val list = convs.values.filter { it.uid != "saved" && it.messages.isNotEmpty() && (!it.uid.startsWith("g:") || groups.containsKey(it.uid.removePrefix("g:"))) }
+        .sortedByDescending { it.lastAt }
+    val saved = convs["saved"]
 
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.statusBarsPadding().padding(start = 20.dp, end = 8.dp, top = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Messages", color = WR.text, fontSize = 32.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1).sp, modifier = Modifier.weight(1f))
-            WrIconButton("users", { nav.push(Route.People) }, tint = WR.muted)
+            Text("Messages", color = WR.text, fontSize = 32.sp, fontWeight = FontWeight.SemiBold, fontFamily = WR.display, letterSpacing = (-0.5).sp, modifier = Modifier.weight(1f))
+            WrIconButton("users", { nav.push(Route.NewGroup) }, tint = WR.muted)
             WrIconButton("user-plus", { sheet = true }, tint = WR.muted)
         }
-        Muted("Direct messages are delivered when you and the other person are connected — in a room together, or after swapping codes.", size = 12, modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp))
-        if (list.isEmpty()) {
-            EmptyState("message", "No conversations", "Join a room and message anyone in it, or add a friend with a QR code.") {
-                WrButton("Add a friend", { sheet = true }, small = true, icon = "user-plus")
+        Muted("Messages are delivered when you and the other person are connected — in a room together, on the same Wi-Fi, or after swapping codes. Groups catch up whenever two members connect.", size = 12, modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp))
+        LazyColumn(Modifier.fillMaxSize()) {
+            item(key = "saved") {
+                Row(Modifier.fillMaxWidth().clickable { nav.push(Route.Chat("saved")) }.padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(48.dp).clip(CircleShape).background(WR.accent), contentAlignment = Alignment.Center) { WrIcon("bookmark", 22.dp, Color.White) }
+                    Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Saved messages", color = WR.text, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                        Muted(saved?.messages?.lastOrNull()?.let { AppCore.dmHub.preview(it) } ?: "Notes, links and files for yourself", size = 13, maxLines = 1)
+                    }
+                }
             }
-        } else {
-            LazyColumn(Modifier.fillMaxSize()) {
-                items(list, key = { it.uid }) { c ->
-                    val ct = contacts[c.uid]
-                    val last = c.messages.lastOrNull()
-                    Row(Modifier.fillMaxWidth().clickable { nav.push(Route.Chat(c.uid)) }.padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box {
-                            AvatarView(ct?.avatar ?: app.waveroom.core.Avatar(), 48.dp, uid = c.uid)
-                            if (connected.contains(c.uid)) Box(Modifier.align(Alignment.BottomEnd).size(12.dp).clip(CircleShape).background(WR.bg).padding(2.dp).clip(CircleShape).background(WR.ok))
+            if (list.isEmpty()) {
+                item(key = "empty") {
+                    EmptyState("message", "No conversations yet", "Start a group, or add a friend with a QR code.") {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            WrButton("New group", { nav.push(Route.NewGroup) }, small = true, icon = "users")
+                            WrButton("Add a friend", { sheet = true }, small = true, kind = BtnKind.Secondary, icon = "user-plus")
                         }
-                        Spacer(Modifier.width(14.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(ct?.displayName ?: "Unknown", color = WR.text, fontSize = 16.sp, fontWeight = if (c.unread > 0) FontWeight.SemiBold else FontWeight.Medium, maxLines = 1)
-                            Muted(((if (last?.from == AppCore.profile.uid) "You: " else "")) + (last?.text ?: ""), size = 13, maxLines = 1)
+                    }
+                }
+            }
+            items(list, key = { it.uid }) { c ->
+                val isG = c.uid.startsWith("g:")
+                val grp = if (isG) groups[c.uid.removePrefix("g:")] else null
+                val ct = contacts[c.uid]
+                val last = c.messages.lastOrNull { it.kind != "call" } ?: c.messages.lastOrNull()
+                Row(Modifier.fillMaxWidth().clickable { nav.push(Route.Chat(c.uid)) }.padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (isG) GroupAvatar(grp?.emoji ?: "👥", grp?.hue ?: 265, 48)
+                    else AvatarView(ct?.avatar ?: app.waveroom.core.Avatar(), 48.dp, uid = c.uid)
+                    Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(if (isG) (grp?.name ?: "Group") else (ct?.displayName ?: "Unknown"), color = WR.text, fontSize = 16.sp, fontWeight = if (c.unread > 0) FontWeight.SemiBold else FontWeight.Medium, maxLines = 1, modifier = Modifier.weight(1f, fill = false))
+                            if (!isG && connected.contains(c.uid)) {
+                                Spacer(Modifier.width(6.dp))
+                                Muted("connected", size = 11)
+                            }
+                            if (c.muted) { Spacer(Modifier.width(6.dp)); WrIcon("bell-off", 12.dp, WR.faint) }
                         }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Tiny(timeAgo(c.lastAt))
-                            if (c.unread > 0) {
-                                Spacer(Modifier.height(4.dp))
-                                Box(Modifier.clip(CircleShape).background(WR.accent).padding(horizontal = 7.dp, vertical = 2.dp)) {
-                                    Text(c.unread.toString(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                }
+                        val who = when {
+                            last == null -> ""
+                            last.from == AppCore.profile.uid -> "You: "
+                            isG && last.from.isNotEmpty() -> (last.authorName.ifEmpty { AppCore.contactName(last.from) }) + ": "
+                            else -> ""
+                        }
+                        Muted(who + (last?.let { AppCore.dmHub.preview(it) } ?: ""), size = 13, maxLines = 1)
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Tiny(timeAgo(c.lastAt))
+                        if (c.unread > 0) {
+                            Spacer(Modifier.height(4.dp))
+                            Box(Modifier.clip(CircleShape).background(if (c.muted) WR.surface3 else WR.accent).padding(horizontal = 7.dp, vertical = 2.dp)) {
+                                Text(c.unread.toString(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -291,7 +321,7 @@ fun AddFriendSheet(nav: Nav, onDismiss: () -> Unit) {
     WrSheet(onDismiss, "Connect with someone") {
         Muted("Two phones exchange a code once (QR or text). After that you can message while you're connected, and meet again in rooms.", modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
         Spacer(Modifier.height(8.dp))
-        Row2("Show my code", "They scan it with Waveroom", "qr", onClick = { onDismiss(); nav.push(Route.Invite("dm")) })
+        Row2("Show my code", "They scan it with HoMit", "qr", onClick = { onDismiss(); nav.push(Route.Invite("dm")) })
         Row2("Scan or paste their code", null, "scan", onClick = { onDismiss(); nav.push(Route.Join("")) })
     }
 }
@@ -322,6 +352,6 @@ private fun YouTab(nav: Nav) {
         Hairline()
         Row2("Help", "How connecting works, tips", "book", onClick = { nav.push(Route.Help) })
         Row2("Privacy & terms", null, "shield", onClick = { nav.push(Route.Legal) })
-        Row2("About Waveroom", null, "info", onClick = { nav.push(Route.About) })
+        Row2("About HoMit", null, "info", onClick = { nav.push(Route.About) })
     }
 }

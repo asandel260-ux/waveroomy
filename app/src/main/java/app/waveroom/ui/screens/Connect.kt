@@ -91,10 +91,6 @@ fun CreateRoomScreen(nav: Nav) {
             Spacer(Modifier.height(14.dp))
             WrField(tags, { tags = it }, label = "Tags (comma separated)", placeholder = "music, chill")
             Spacer(Modifier.height(20.dp))
-            Tiny("Speaker seats")
-            Spacer(Modifier.height(8.dp))
-            Segmented(listOf("4" to "4", "8" to "8", "12" to "12"), seats, { seats = it })
-            Spacer(Modifier.height(10.dp))
             SwitchRow("Unlisted", "Don't announce this room on the local network. People need your QR code.", unlisted, { unlisted = it })
             Muted("You are the host. If you leave, hosting passes to the person who has been here longest — the room keeps going.", size = 12)
             if (error != null) {
@@ -108,7 +104,7 @@ fun CreateRoomScreen(nav: Nav) {
                 if (t.length < 3) { error = "Give the room a title (3+ characters)."; return@WrButton }
                 AppCore.platform?.requestMic { if (it) AppCore.startService() }
                 val tg = tags.split(',').map { it.trim().lowercase().take(20) }.filter { it.isNotEmpty() }.distinct().take(6)
-                if (!AppCore.session.createRoom(t, topic, tg, unlisted, seats.toInt())) error = "Could not start the room."
+                if (!AppCore.session.createRoom(t, topic, tg, unlisted, 24)) error = "Could not start the room."
             }, Modifier.fillMaxWidth(), icon = "mic")
         }
     }
@@ -198,8 +194,8 @@ fun InviteScreen(nav: Nav, purpose: String) {
     Box(Modifier.fillMaxSize().background(WR.bg)) {
         Column(Modifier.fillMaxSize().imePadding()) {
             ScreenHeader(
-                if (purpose == "room") "Invite to room" else "Add a friend", { nav.pop() },
-                subtitle = if (purpose == "room") roomTitle else null
+                if (purpose == "room") "Invite to room" else if (purpose.startsWith("group:")) "Add to group" else "Add a friend", { nav.pop() },
+                subtitle = if (purpose == "room") roomTitle else if (purpose.startsWith("group:")) AppCore.groups.get(purpose.removePrefix("group:"))?.name else null
             )
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 when {
@@ -219,8 +215,8 @@ fun InviteScreen(nav: Nav, purpose: String) {
                         QrDisplay(c)
                         Spacer(Modifier.height(12.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            WrButton("Copy", { AppCore.platform?.copy("Waveroom invite", c) }, kind = BtnKind.Secondary, small = true, icon = "copy")
-                            WrButton("Share", { AppCore.platform?.shareText("Join me on Waveroom: $c") }, kind = BtnKind.Secondary, small = true, icon = "share")
+                            WrButton("Copy", { AppCore.platform?.copy("HoMit invite", c) }, kind = BtnKind.Secondary, small = true, icon = "copy")
+                            WrButton("Share", { AppCore.platform?.shareText(if (purpose.startsWith("group:")) "Join my HoMit group “${AppCore.groups.get(purpose.removePrefix("group:"))?.name ?: ""}”: $c" else "Join me on HoMit: $c") }, kind = BtnKind.Secondary, small = true, icon = "share")
                         }
                         Spacer(Modifier.height(24.dp))
                         Step(2, "Then scan the reply on their screen")
@@ -336,7 +332,7 @@ fun JoinScreen(nav: Nav, initial: String) {
                     QrDisplay(a.code)
                     Spacer(Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        WrButton("Copy", { AppCore.platform?.copy("Waveroom reply", a.code) }, kind = BtnKind.Secondary, small = true, icon = "copy")
+                        WrButton("Copy", { AppCore.platform?.copy("HoMit reply", a.code) }, kind = BtnKind.Secondary, small = true, icon = "copy")
                         WrButton("Share", { AppCore.platform?.shareText(a.code) }, kind = BtnKind.Secondary, small = true, icon = "share")
                     }
                     Spacer(Modifier.height(20.dp))

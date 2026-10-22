@@ -296,6 +296,7 @@ data class Settings(
     val chatSlidesOpen: Boolean = false,
     val accentColor: Int = 0,                // ARGB, 0 = default
     val bgColor: Int = 0                     // ARGB, 0 = default
+    ,val animations: Boolean = true
 ) {
     fun toJson(): JSONObject = JSONObject()
         .put("ptt", ptt).put("sounds", sounds).put("dmPolicy", dmPolicy).put("showOnline", showOnline)
@@ -305,7 +306,7 @@ data class Settings(
         .put("shareRes", shareRes).put("shareFps", shareFps)
         .put("micDeviceId", micDeviceId).put("outputDeviceId", outputDeviceId)
         .put("chatSlidesOpen", chatSlidesOpen)
-        .put("accentColor", accentColor).put("bgColor", bgColor)
+        .put("accentColor", accentColor).put("bgColor", bgColor).put("animations", animations)
 
     companion object {
         fun from(j: JSONObject): Settings {
@@ -320,7 +321,7 @@ data class Settings(
                 shareRes = j.int("shareRes", d.shareRes), shareFps = j.int("shareFps", d.shareFps),
                 micDeviceId = j.int("micDeviceId", -1), outputDeviceId = j.int("outputDeviceId", -1),
                 chatSlidesOpen = j.bool("chatSlidesOpen", d.chatSlidesOpen),
-                accentColor = j.int("accentColor", 0), bgColor = j.int("bgColor", 0)
+                accentColor = j.int("accentColor", 0), bgColor = j.int("bgColor", 0), animations = j.bool("animations", true)
             )
         }
     }
@@ -446,7 +447,41 @@ class DmStore {
         Docs.write("dms.json", JSONObject().put("convs", a))
     }
 
-    fun unreadTotal(): Int = convs.value.values.sumOf { it.unread }
+    fun unreadTotal(): Int = convs.value.values.filter { !it.muted }.sumOf { it.unread }
+
+    fun find(chat: String, id: String): DmMessage? = convs.value[chat]?.messages?.firstOrNull { it.id == id }
+
+    /** Insert or replace a message (by id). */
+    fun put(chat: String, msg: DmMessage, unreadBump: Boolean = false) {
+        mutate(chat) { c ->
+            val i = c.messages.indexOfFirst { it.id == msg.id }
+            val list = if (i >= 0) c.messages.toMutableList().also { it[i] = msg } else (c.messages + msg).sortedBy { it.at }
+            c.copy(messages = list, lastAt = maxOf(c.lastAt, msg.at), unread = c.unread + (if (unreadBump && i < 0) 1 else 0))
+        }
+    }
+
+    fun edit(chat: String, id: String, block: (DmMessage) -> DmMessage) {
+        val cur = find(chat, id) ?: return
+        put(chat, block(cur))
+    }
+
+    fun setPinned(chat: String, id: String) = mutate(chat) { it.copy(pinned = id) }
+    fun setMuted(chat: String, on: Boolean) = mutate(chat) { it.copy(muted = on) }
+    fun ensure(chat: String) {
+        if (convs.value.containsKey(chat)) return
+        mutate(chat) { it }
+    }
+
+    fun removeMessage(chat: String, id: String) {
+        mutate(chat) { c -> c.copy(messages = c.messages.filter { it.id != id }, pinned = if (c.pinned == id) "" else c.pinned) }
+    }
+
+    fun deleteChat(chat: String) {
+        val m = LinkedHashMap(convs.value)
+        m.remove(chat)
+        convs.value = m
+        saver.poke()
+    }
 
     private fun mutate(uid: String, block: (Conversation) -> Conversation) {
         val m = LinkedHashMap(convs.value)

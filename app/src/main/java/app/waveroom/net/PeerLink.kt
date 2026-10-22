@@ -205,6 +205,8 @@ class PeerLink(
         listener.onMessage(this, text, reliable)
     }
 
+    fun buffered(): Long = try { ctl?.bufferedAmount() ?: 0L } catch (e: Exception) { 0L }
+
     /** Sends one JSON text. Returns false if the channel is not open. */
     fun send(text: String, reliable: Boolean = true): Boolean {
         val dc = (if (reliable) ctl else fast) ?: return false

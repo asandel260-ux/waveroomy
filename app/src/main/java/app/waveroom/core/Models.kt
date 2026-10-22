@@ -21,7 +21,7 @@ data class Avatar(val emoji: String = "🎧", val hue: Int = 265) {
 val AVATAR_EMOJIS = listOf("🎧", "🎙️", "🎹", "🎸", "🥁", "🎷", "📻", "🎤", "🌙", "⚡", "🔥", "🌊", "🪐", "🦊", "🐳", "🌵")
 val REACTIONS = listOf("👏", "🔥", "❤️", "😂", "🎉", "👍", "💯", "🤯")
 
-fun canSpeak(role: String): Boolean = role == "host" || role == "speaker"
+fun canSpeak(role: String): Boolean = true
 
 /* ----------------------------------------------------------------------------
  * Room
@@ -598,35 +598,83 @@ data class DmMessage(
     val at: Long,
     /** "sent" | "pending" | "failed" for my messages, "recv" for theirs */
     val status: String = "recv",
-    val error: String = ""
+    val error: String = "",
+    /** text | image | gif | file | call */
+    val kind: String = "text",
+    val name: String = "",           // file name
+    val mime: String = "",
+    val size: Long = 0L,
+    val url: String = "",            // remote gif / image link (no download needed)
+    val reply: String = "",          // id of the message this answers
+    val fwd: String = "",            // original author's name when forwarded
+    val authorName: String = "",     // snapshot of the sender's display name (groups)
+    val edited: Boolean = false,
+    val deleted: Boolean = false,
+    val ver: Int = 0,
+    val reactions: Map<String, List<String>> = emptyMap()
 ) {
-    fun toJson(): JSONObject = JSONObject().put("id", id).put("from", from).put("text", text)
-        .put("at", at).put("status", status).put("error", error)
+    fun toJson(): JSONObject {
+        val j = JSONObject().put("id", id).put("from", from).put("text", text)
+            .put("at", at).put("status", status).put("error", error)
+        if (kind != "text") j.put("kind", kind)
+        if (name.isNotEmpty()) j.put("name", name)
+        if (mime.isNotEmpty()) j.put("mime", mime)
+        if (size > 0) j.put("size", size)
+        if (url.isNotEmpty()) j.put("url", url)
+        if (reply.isNotEmpty()) j.put("reply", reply)
+        if (fwd.isNotEmpty()) j.put("fwd", fwd)
+        if (authorName.isNotEmpty()) j.put("an", authorName)
+        if (edited) j.put("edited", true)
+        if (deleted) j.put("deleted", true)
+        if (ver > 0) j.put("ver", ver)
+        if (reactions.isNotEmpty()) {
+            val r = JSONObject()
+            for ((e, u) in reactions) r.put(e, jsonArrayOf(u))
+            j.put("rx", r)
+        }
+        return j
+    }
 
     companion object {
-        fun from(j: JSONObject): DmMessage = DmMessage(
-            j.str("id"), j.str("from"), j.str("text"), j.lng("at"), j.str("status", "recv"), j.str("error")
-        )
+        fun from(j: JSONObject): DmMessage {
+            val rx = LinkedHashMap<String, List<String>>()
+            j.obj("rx")?.let { o ->
+                val it = o.keys()
+                while (it.hasNext()) {
+                    val k = it.next()
+                    rx[k] = o.arr(k)?.strings() ?: emptyList()
+                }
+            }
+            return DmMessage(
+                j.str("id"), j.str("from"), j.str("text"), j.lng("at"), j.str("status", "recv"), j.str("error"),
+                j.str("kind", "text"), j.str("name"), j.str("mime"), j.lng("size"), j.str("url"), j.str("reply"),
+                j.str("fwd"), j.str("an"), j.bool("edited"), j.bool("deleted"), j.int("ver"), rx
+            )
+        }
     }
 }
 
+/** A conversation: [uid] is a person's uid, "saved" for Saved Messages, or "g:<groupId>". */
 data class Conversation(
     val uid: String,
     val messages: List<DmMessage> = emptyList(),
     val unread: Int = 0,
-    val lastAt: Long = 0L
+    val lastAt: Long = 0L,
+    val pinned: String = "",
+    val muted: Boolean = false
 ) {
     fun toJson(): JSONObject {
         val a = JSONArray()
-        for (m in messages.takeLast(500)) a.put(m.toJson())
+        for (m in messages.takeLast(800)) a.put(m.toJson())
         return JSONObject().put("uid", uid).put("unread", unread).put("lastAt", lastAt).put("messages", a)
+            .put("pinned", pinned).put("muted", muted)
     }
 
     companion object {
         fun from(j: JSONObject): Conversation = Conversation(
             j.str("uid"),
             j.arr("messages")?.objects()?.map { DmMessage.from(it) } ?: emptyList(),
-            j.int("unread"), j.lng("lastAt")
+            j.int("unread"), j.lng("lastAt"), j.str("pinned"), j.bool("muted")
         )
     }
 }

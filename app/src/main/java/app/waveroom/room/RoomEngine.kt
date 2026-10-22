@@ -97,7 +97,7 @@ class RoomEngine(private val io: EngineIO) {
         val isOwner = uid == st.meta.ownerUid
         if (st.meta.locked && !isOwner) return err("This room is locked by the host.")
         val hasHost = st.participants.values.any { it.role == "host" }
-        val role = if (isOwner || !hasHost) "host" else "listener"
+        val role = if (isOwner || !hasHost) "host" else "speaker"
         val p = Participant(
             sid = sid, uid = uid, username = username, displayName = displayName, avatar = avatar,
             role = role, muted = true, joinedAt = nowMs(), via = via
@@ -245,7 +245,6 @@ class RoomEngine(private val io: EngineIO) {
         if (!isMod(from)) return err("Only the host can do that.")
         val t = st.participants[sid] ?: return err("Not in the room.")
         val speakers = st.participants.values.count { canSpeak(it.role) }
-        if (speakers >= st.meta.maxSpeakers) return err("All speaker seats are taken.")
         if (t.role == "listener") {
             setP(sid) { it.copy(role = "speaker", hand = false) }
             io.emit("room:role", jsonOf("role" to "speaker", "reason" to "You were invited to speak."), sid)
