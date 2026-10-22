@@ -298,6 +298,8 @@ data class Settings(
     val bgColor: Int = 0                     // ARGB, 0 = default
     ,val animations: Boolean = true
     ,val useRelay: Boolean = true
+    ,val reconnect: Boolean = true
+    ,val rvUrl: String = ""
 ) {
     fun toJson(): JSONObject = JSONObject()
         .put("ptt", ptt).put("sounds", sounds).put("dmPolicy", dmPolicy).put("showOnline", showOnline)
@@ -307,7 +309,7 @@ data class Settings(
         .put("shareRes", shareRes).put("shareFps", shareFps)
         .put("micDeviceId", micDeviceId).put("outputDeviceId", outputDeviceId)
         .put("chatSlidesOpen", chatSlidesOpen)
-        .put("accentColor", accentColor).put("bgColor", bgColor).put("animations", animations).put("useRelay", useRelay)
+        .put("accentColor", accentColor).put("bgColor", bgColor).put("animations", animations).put("useRelay", useRelay).put("reconnect", reconnect).put("rvUrl", rvUrl)
 
     companion object {
         fun from(j: JSONObject): Settings {
@@ -322,7 +324,7 @@ data class Settings(
                 shareRes = j.int("shareRes", d.shareRes), shareFps = j.int("shareFps", d.shareFps),
                 micDeviceId = j.int("micDeviceId", -1), outputDeviceId = j.int("outputDeviceId", -1),
                 chatSlidesOpen = j.bool("chatSlidesOpen", d.chatSlidesOpen),
-                accentColor = j.int("accentColor", 0), bgColor = j.int("bgColor", 0), animations = j.bool("animations", true), useRelay = j.bool("useRelay", true)
+                accentColor = j.int("accentColor", 0), bgColor = j.int("bgColor", 0), animations = j.bool("animations", true), useRelay = j.bool("useRelay", true), reconnect = j.bool("reconnect", true), rvUrl = j.str("rvUrl")
             )
         }
     }
@@ -382,7 +384,16 @@ class SocialStore {
     fun upsert(c: Contact) {
         val m = LinkedHashMap(contacts.value)
         val old = m[c.uid]
-        m[c.uid] = if (old != null) c.copy(firstSeen = old.firstSeen) else c
+        m[c.uid] = if (old != null) c.copy(firstSeen = old.firstSeen, pair = old.pair) else c
+        contacts.value = m
+        saver.poke()
+    }
+
+    fun setPair(uid: String, pair: String) {
+        val c = contacts.value[uid] ?: return
+        if (c.pair == pair) return
+        val m = LinkedHashMap(contacts.value)
+        m[uid] = c.copy(pair = pair)
         contacts.value = m
         saver.poke()
     }

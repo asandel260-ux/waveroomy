@@ -175,6 +175,17 @@ fun SettingsScreen(nav: Nav) {
                     "Lets phones on different networks (mobile data, strict Wi-Fi) connect when a direct path is impossible. A public relay carries only encrypted packets and is used as a last resort. Turn off to never touch any outside server.",
                     s.useRelay, { AppCore.settings.update { st -> st.copy(useRelay = it) } }
                 )
+                SwitchRow(
+                    "Reconnect helper (recommended)",
+                    "Lets saved friends find each other again over the internet without scanning anything. Only tiny encrypted notes, readable only by the two of you, pass through a public message board (ntfy.sh by default). Turn off to reconnect on the same Wi-Fi only.",
+                    s.reconnect, { AppCore.settings.update { st -> st.copy(reconnect = it) } }
+                )
+                if (s.reconnect) {
+                    val rvs by AppCore.rendezvous.status.collectAsState()
+                    Muted("Status: $rvs", size = 12)
+                    Spacer(Modifier.height(6.dp))
+                    WrField(s.rvUrl, { AppCore.settings.update { st -> st.copy(rvUrl = it) } }, label = "Message board address (optional)", placeholder = "https://ntfy.sh", mono = true)
+                }
                 Spacer(Modifier.height(8.dp))
                 WrField(s.customStun, { AppCore.settings.update { st -> st.copy(customStun = it) } }, label = "Extra STUN servers (comma separated)", placeholder = "stun.example.com:3478", mono = true)
                 Spacer(Modifier.height(14.dp))

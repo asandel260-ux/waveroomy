@@ -68,9 +68,8 @@ fun HomeScreen(nav: Nav) {
     val convs by AppCore.dms.convs.collectAsState()
     val unread = convs.values.sumOf { it.unread }
     val st by AppCore.settings.state.collectAsState()
-    androidx.compose.runtime.DisposableEffect(st.nearby) {
-        if (st.nearby) AppCore.lan.startListening()
-        onDispose { AppCore.lan.stopListening() }
+    androidx.compose.runtime.LaunchedEffect(st.nearby) {
+        if (st.nearby) AppCore.lan.startListening() else AppCore.lan.stopListening()
     }
     Column(Modifier.fillMaxSize().background(WR.bg)) {
         Box(Modifier.weight(1f)) {

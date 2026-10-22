@@ -577,16 +577,18 @@ data class Contact(
     val pronouns: String = "",
     val pub: String = "",
     val lastSeen: Long = 0L,
-    val firstSeen: Long = nowMs()
+    val firstSeen: Long = nowMs(),
+    /** Secret shared with this friend at first contact; lets us find each other again with no codes. */
+    val pair: String = ""
 ) {
-    fun toJson(): JSONObject = JSONObject().put("uid", uid).put("username", username)
+    fun toJson(): JSONObject = JSONObject().put("pair", pair).put("uid", uid).put("username", username)
         .put("displayName", displayName).put("avatar", avatar.toJson()).put("bio", bio)
         .put("pronouns", pronouns).put("pub", pub).put("lastSeen", lastSeen).put("firstSeen", firstSeen)
 
     companion object {
         fun from(j: JSONObject): Contact = Contact(
             j.str("uid"), j.str("username"), j.str("displayName"), Avatar.from(j.obj("avatar")),
-            j.str("bio"), j.str("pronouns"), j.str("pub"), j.lng("lastSeen"), j.lng("firstSeen", nowMs())
+            j.str("bio"), j.str("pronouns"), j.str("pub"), j.lng("lastSeen"), j.lng("firstSeen", nowMs()), j.str("pair")
         )
     }
 }

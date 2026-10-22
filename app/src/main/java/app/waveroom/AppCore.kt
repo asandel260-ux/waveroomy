@@ -14,6 +14,8 @@ import app.waveroom.core.RoomsStore
 import app.waveroom.core.SettingsStore
 import app.waveroom.core.SocialStore
 import app.waveroom.core.jsonOf
+import app.waveroom.core.later
+import app.waveroom.core.nowMs
 import app.waveroom.core.obj
 import app.waveroom.core.str
 import app.waveroom.media.AudioController
@@ -78,6 +80,8 @@ object AppCore : MeshHandler, app.waveroom.net.LanApp {
     lateinit var sfx: Sfx
     lateinit var screen: ScreenShare
     lateinit var dmHub: DmHub
+    val rendezvous get() = Rendezvous
+    private val lanTries = HashMap<String, Long>()
 
     var platform: Platform? = null
 
@@ -112,6 +116,33 @@ object AppCore : MeshHandler, app.waveroom.net.LanApp {
         sfx = Sfx(settings)
         screen = ScreenShare(this)
         dmHub = DmHub(this)
+        if (settings.state.value.nearby) lan.startListening()
+        Rendezvous.start()
+        later(3000) { lanReconnectTick() }
+    }
+
+    /** Saved friends who show up on the same network are reconnected automatically. */
+    private fun lanReconnectTick() {
+        try {
+            val st = settings.state.value
+            val me = profile.uid
+            if (st.nearby && profile.profile.value != null) {
+                for (p in lan.people.value) {
+                    val c = social.contact(p.uid) ?: continue
+                    if (c.pair.isEmpty() || social.blocked.value.contains(p.uid) || connected.value.contains(p.uid)) continue
+                    val last = lanTries[p.uid] ?: 0L
+                    if (nowMs() - last < 25_000) continue
+                    // lower id goes first; the other waits a moment in case the first try already works
+                    if (me > p.uid && nowMs() - last < 33_000 && last != 0L) continue
+                    lanTries[p.uid] = nowMs()
+                    if (me > p.uid) {
+                        later(6000) { if (!connected.value.contains(p.uid)) connectNearby(p) { } }
+                    } else connectNearby(p) { }
+                }
+            }
+        } catch (e: Exception) {
+        }
+        later(4000) { lanReconnectTick() }
     }
 
     fun toast(t: String) {
@@ -248,6 +279,7 @@ object AppCore : MeshHandler, app.waveroom.net.LanApp {
 
     override fun onLinkAuthed(link: PeerLink) {
         refreshConnected()
+        if (link.purpose == "dm") shareFriendSecret(link)
         dmHub.onLinkAuthed(link)
         session.onLinkAuthed(link)
         audio.attach(link)
@@ -258,8 +290,25 @@ object AppCore : MeshHandler, app.waveroom.net.LanApp {
 
     private fun offerer(link: PeerLink) = link.offerer
 
+    /** The lower user id invents the shared secret for a friendship; both phones keep it. */
+    private fun shareFriendSecret(link: PeerLink) {
+        val uid = link.uid
+        val c = social.contact(uid) ?: return
+        if (profile.uid < uid) {
+            var s = c.pair
+            if (s.isEmpty()) {
+                s = ByteArray(24).also { java.security.SecureRandom().nextBytes(it) }
+                    .joinToString("") { "%02x".format(it) }
+                social.setPair(uid, s)
+            }
+            link.send(jsonOf("t" to "pk", "s" to s).toString())
+        }
+        Rendezvous.kick()
+    }
+
     override fun onLinkGone(link: PeerLink, reason: String) {
         refreshConnected()
+        if (link.authed && link.purpose == "dm") Rendezvous.lost(link.uid)
         session.onLinkGone(link, reason)
     }
 
@@ -271,6 +320,10 @@ object AppCore : MeshHandler, app.waveroom.net.LanApp {
     override fun onMessage(fromSid: String, msg: JSONObject, link: PeerLink?) {
         when (msg.str("t")) {
             "m", "mr", "mq", "mb", "dmack", "fol", "gh", "gr", "gi", "gu", "gl", "call", "callr", "callx" -> if (link != null) dmHub.onMessage(link, msg)
+            "pk" -> if (link != null && link.authed && link.purpose == "dm" && link.uid < profile.uid) {
+                val s = msg.str("s")
+                if (s.length in 16..128 && s.all { it.isLetterOrDigit() }) { social.setPair(link.uid, s); Rendezvous.kick() }
+            }
             else -> session.onMessage(fromSid, msg, link)
         }
     }
