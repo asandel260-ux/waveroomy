@@ -118,13 +118,23 @@ class RtcEngine(private val ctx: Context, private val settings: SettingsStore) {
         val stun = ArrayList<String>()
         if (s.useStun) {
             stun.add("stun:stun.l.google.com:19302")
+            stun.add("stun:stun1.l.google.com:19302")
             stun.add("stun:stun.cloudflare.com:3478")
+            stun.add("stun:stun.nextcloud.com:443")
         }
         for (u in s.customStun.split(',', '\n', ' ')) {
             val t = u.trim()
             if (t.isNotEmpty()) stun.add(if (t.startsWith("stun:") || t.startsWith("stuns:")) t else "stun:$t")
         }
         if (stun.isNotEmpty()) out.add(PeerConnection.IceServer.builder(stun).createIceServer())
+        if (s.useRelay && s.turnUrl.isBlank()) {
+            // last-resort relay so phones on different networks can still connect; it only sees encrypted packets
+            out.add(
+                PeerConnection.IceServer.builder(
+                    listOf("turn:openrelay.metered.ca:80", "turn:openrelay.metered.ca:443", "turn:openrelay.metered.ca:443?transport=tcp")
+                ).setUsername("openrelayproject").setPassword("openrelayproject").createIceServer()
+            )
+        }
         val turn = s.turnUrl.trim()
         if (turn.isNotEmpty()) {
             val urls = turn.split(',', ' ', '\n').map { it.trim() }.filter { it.isNotEmpty() }

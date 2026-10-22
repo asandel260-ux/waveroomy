@@ -31,6 +31,8 @@ import app.waveroom.room.RoomSession
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.json.JSONObject
+import app.waveroom.core.arr
+import app.waveroom.core.strings
 
 /** Things only an Activity can do. Implemented by MainActivity. */
 interface Platform {
@@ -49,13 +51,13 @@ interface Platform {
 
 sealed class CodeResult {
     /** We accepted an invite: show [code] to the inviter so they can finish the link. */
-    data class Answer(val code: String, val from: String, val title: String, val purpose: String) : CodeResult()
+    data class Answer(val code: String, val from: String, val title: String, val purpose: String, val auto: Boolean = false) : CodeResult()
     /** We applied an answer to one of our invites: the link is coming up. */
     object Applied : CodeResult()
     data class Error(val msg: String) : CodeResult()
 }
 
-object AppCore : MeshHandler {
+object AppCore : MeshHandler, app.waveroom.net.LanApp {
     lateinit var app: Application
         private set
     private var inited = false
@@ -103,6 +105,8 @@ object AppCore : MeshHandler {
         mesh.handler = this
         mesh.start()
         lan = LanService(app) { mesh.mySid }
+        mesh.lanHint = { lan.addresses() }
+        lan.startServer(this)
         session = RoomSession(this)
         audio = AudioController(app, this)
         sfx = Sfx(settings)
@@ -149,7 +153,7 @@ object AppCore : MeshHandler {
 
     fun previewOfCode(text: String): JSONObject? = Sdp.unpack(text)?.obj("v")
 
-    fun handleCode(text: String, cb: (CodeResult) -> Unit) {
+    fun handleCode(text: String, autoDeliver: Boolean = true, cb: (CodeResult) -> Unit) {
         val j = Sdp.unpack(text) ?: return cb(CodeResult.Error("That doesn't look like a HoMit code."))
         when (j.str("k")) {
             "o" -> {
@@ -165,7 +169,10 @@ object AppCore : MeshHandler {
                         else cb(CodeResult.Error("Could not prepare a connection. Try again."))
                     } else {
                         if (purpose == "room") session.expectJoin = remoteSid
-                        cb(CodeResult.Answer(answer, remoteSid, j.obj("v")?.str("t") ?: j.str("n"), purpose))
+                        val res = CodeResult.Answer(answer, remoteSid, j.obj("v")?.str("t") ?: j.str("n"), purpose)
+                        val addrs = j.arr("l")?.strings() ?: emptyList()
+                        if (autoDeliver && addrs.isNotEmpty()) lan.deliverAnswer(addrs, answer) { ok -> cb(res.copy(auto = ok)) }
+                        else cb(res)
                     }
                 }
             }
@@ -204,6 +211,33 @@ object AppCore : MeshHandler {
         social.followers.value = emptySet(); social.blocked.value = emptySet()
         rooms.rooms.value = emptyList()
         profile.load()
+    }
+
+    /* ---------------- LanApp ---------------- */
+
+    override fun presence(): JSONObject? {
+        val st = settings.state.value
+        val p = profile.profile.value ?: return null
+        if (!st.nearby || !st.showOnline) return null
+        return jsonOf("uid" to profile.uid, "name" to p.displayName, "user" to p.username, "av" to p.avatar.toJson())
+    }
+
+    override fun admitFriend(hello: JSONObject): String? =
+        if (social.blocked.value.contains(hello.str("uid"))) "Not available." else null
+
+    override fun issueFriendInvite(cb: (code: String?) -> Unit) = createInviteCode("dm") { _, c -> cb(c) }
+
+    override fun acceptAnswer(answer: JSONObject, cb: (Boolean) -> Unit) = mesh.applyAnswer(answer, cb)
+
+    /** Connect to somebody found on the same Wi-Fi, no codes involved. */
+    fun connectNearby(p: app.waveroom.net.NearbyPerson, done: (String?) -> Unit) {
+        val me = profile.profile.value ?: return done("Profile missing")
+        if (social.blocked.value.contains(p.uid)) return done("You blocked this person.")
+        lan.connectPerson(
+            p, jsonOf("uid" to profile.uid, "name" to me.displayName),
+            accept = { code, cb -> handleCode(code, autoDeliver = false) { res -> cb((res as? CodeResult.Answer)?.code) } },
+            done = done
+        )
     }
 
     /* ---------------- MeshHandler ---------------- */

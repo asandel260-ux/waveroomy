@@ -29,6 +29,7 @@ interface LinkListener {
     fun onMessage(link: PeerLink, text: String, reliable: Boolean)
     /** "connecting" | "connected" | "disconnected" | "failed" | "closed" */
     fun onState(link: PeerLink, state: String)
+    fun onDiag(link: PeerLink)
 }
 
 private open class PcObserver : PeerConnection.Observer {
@@ -62,7 +63,7 @@ class PeerLink(
     private val rtc: RtcEngine,
     var remoteSid: String,
     val offerer: Boolean,
-    private val trickle: Boolean,
+    val trickle: Boolean,
     private val listener: LinkListener
 ) {
     // --- identity / protocol state, managed by Mesh ---
@@ -89,6 +90,48 @@ class PeerLink(
     private var gatherCb: (() -> Unit)? = null
     private var gatherTimeout: Runnable? = null
     private var closed = false
+    val log = ArrayList<String>()
+    private val localTypes = HashMap<String, Int>()
+    private var remoteTypes = HashMap<String, Int>()
+    private var remoteMdns = false
+    var iceState = "new"
+
+    private fun note(s: String) {
+        log.add(s)
+        if (log.size > 40) log.removeAt(0)
+    }
+
+    private fun countTypes(sdp: String): HashMap<String, Int> {
+        val m = HashMap<String, Int>()
+        for (l in sdp.split("\r\n", "\n")) if (l.startsWith("a=candidate:")) {
+            val i = l.indexOf(" typ ")
+            if (i > 0) { val t = l.substring(i + 5).substringBefore(' '); m[t] = (m[t] ?: 0) + 1 }
+            if (l.contains(".local ")) remoteMdns = true
+        }
+        return m
+    }
+
+    /** Human readable summary of how this link's connection attempt is going. */
+    fun report(): String {
+        fun fmt(m: Map<String, Int>) = if (m.isEmpty()) "none" else m.entries.joinToString(", ") { "${it.value} ${it.key}" }
+        val sb = StringBuilder()
+        sb.append("Connection: $state · ICE: $iceState\n")
+        sb.append("My candidates: ${fmt(localTypes)}\n")
+        sb.append("Their candidates: ${fmt(remoteTypes)}\n")
+        if (remoteMdns) sb.append("Their address is hidden behind a .local name\n")
+        val local = localTypes.keys; val remote = remoteTypes.keys
+        if (state != "connected") {
+            val hint = when {
+                remote.isEmpty() && remoteTypes.isEmpty() && log.none { it.startsWith("remote set") } -> "Waiting for their reply to be applied."
+                localTypes.isEmpty() -> "This phone found no network address. Is it online?"
+                remote.isNotEmpty() && remote.all { it == "host" } && local.all { it == "host" } -> "Both phones only shared local addresses. They must be on the same Wi-Fi (or one on the other's hotspot), with no VPN and no 'AP isolation'. Turn on the relay helper in Settings to connect across networks."
+                !remote.contains("relay") && !local.contains("relay") -> "Phones on different networks (mobile data / strict routers) usually need the relay helper. Enable it in Settings → Network on both phones."
+                else -> "Still negotiating…"
+            }
+            sb.append(hint)
+        }
+        return sb.toString().trim()
+    }
     private val partial = HashMap<String, Array<String?>>()
 
     val isOpen: Boolean get() = ctl?.state() == DataChannel.State.OPEN
@@ -106,8 +149,14 @@ class PeerLink(
             else PeerConnection.ContinualGatheringPolicy.GATHER_ONCE
 
         val obs = object : PcObserver() {
+            override fun onIceConnectionChange(p0: PeerConnection.IceConnectionState?) {
+                onMain { iceState = p0?.name?.lowercase() ?: "?"; note("ice $iceState"); if (!closed) listener.onDiag(this@PeerLink) }
+            }
+
             override fun onIceCandidate(p0: IceCandidate?) {
                 val c = p0 ?: return
+                val ty = Regex(" typ (\\w+)").find(c.sdp)?.groupValues?.get(1) ?: "?"
+                onMain { localTypes[ty] = (localTypes[ty] ?: 0) + 1 }
                 if (trickle) onMain { if (!closed) listener.onLocalCandidate(this@PeerLink, c.sdpMid ?: "", c.sdpMLineIndex, c.sdp) }
             }
 
@@ -264,6 +313,7 @@ class PeerLink(
     /** Apply a remote offer and produce our answer. */
     fun acceptOffer(sdp: String, done: (Boolean) -> Unit) {
         val p = pc ?: return done(false)
+        remoteTypes = countTypes(sdp); note("remote set (offer): $remoteTypes")
         p.setRemoteDescription(object : SdpObs() {
             override fun onSetSuccess() {
                 onMain {
@@ -307,6 +357,7 @@ class PeerLink(
 
     fun acceptAnswer(sdp: String, done: (Boolean) -> Unit) {
         val p = pc ?: return done(false)
+        remoteTypes = countTypes(sdp); note("remote set (answer): $remoteTypes")
         p.setRemoteDescription(object : SdpObs() {
             override fun onSetSuccess() {
                 onMain { remoteSet = true; flushCandidates(); done(true) }

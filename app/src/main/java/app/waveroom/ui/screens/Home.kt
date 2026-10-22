@@ -67,6 +67,11 @@ fun HomeScreen(nav: Nav) {
     var tab by remember { mutableStateOf(nav.homeTab) }
     val convs by AppCore.dms.convs.collectAsState()
     val unread = convs.values.sumOf { it.unread }
+    val st by AppCore.settings.state.collectAsState()
+    androidx.compose.runtime.DisposableEffect(st.nearby) {
+        if (st.nearby) AppCore.lan.startListening()
+        onDispose { AppCore.lan.stopListening() }
+    }
     Column(Modifier.fillMaxSize().background(WR.bg)) {
         Box(Modifier.weight(1f)) {
             when (tab) {
@@ -110,10 +115,6 @@ private fun RoomsTab(nav: Nav) {
     var menuFor by remember { mutableStateOf<String?>(null) }
     var deleteRoom by remember { mutableStateOf<SavedRoom?>(null) }
 
-    DisposableEffect(settings.nearby) {
-        if (settings.nearby) AppCore.lan.startListening()
-        onDispose { AppCore.lan.stopListening() }
-    }
 
     fun joinNearby(r: NearbyRoom) {
         val p = AppCore.profile.profile.value ?: return
@@ -121,7 +122,7 @@ private fun RoomsTab(nav: Nav) {
         AppCore.platform?.requestMic { }
         AppCore.lan.join(
             r, jsonOf("uid" to AppCore.profile.uid, "name" to p.displayName),
-            accept = { code, cb -> AppCore.handleCode(code) { res -> cb((res as? CodeResult.Answer)?.code) } },
+            accept = { code, cb -> AppCore.handleCode(code, autoDeliver = false) { res -> cb((res as? CodeResult.Answer)?.code) } },
             done = { err ->
                 joining = null
                 if (err != null) AppCore.toast(err)
@@ -254,6 +255,7 @@ private fun MessagesTab(nav: Nav) {
         }
         Muted("Messages are delivered when you and the other person are connected — in a room together, on the same Wi-Fi, or after swapping codes. Groups catch up whenever two members connect.", size = 12, modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp))
         LazyColumn(Modifier.fillMaxSize()) {
+            item(key = "nearby") { NearbyPeople(nav) }
             item(key = "saved") {
                 Row(Modifier.fillMaxWidth().clickable { nav.push(Route.Chat("saved")) }.padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(48.dp).clip(CircleShape).background(WR.accent), contentAlignment = Alignment.Center) { WrIcon("bookmark", 22.dp, Color.White) }
@@ -323,6 +325,7 @@ fun AddFriendSheet(nav: Nav, onDismiss: () -> Unit) {
         Spacer(Modifier.height(8.dp))
         Row2("Show my code", "They scan it with HoMit", "qr", onClick = { onDismiss(); nav.push(Route.Invite("dm")) })
         Row2("Scan or paste their code", null, "scan", onClick = { onDismiss(); nav.push(Route.Join("")) })
+        NearbyPeople(nav, compact = true)
     }
 }
 
@@ -353,5 +356,52 @@ private fun YouTab(nav: Nav) {
         Row2("Help", "How connecting works, tips", "book", onClick = { nav.push(Route.Help) })
         Row2("Privacy & terms", null, "shield", onClick = { nav.push(Route.Legal) })
         Row2("About HoMit", null, "info", onClick = { nav.push(Route.About) })
+    }
+}
+
+
+/** People on the same Wi-Fi who are running HoMit: one tap connects, no codes. */
+@Composable
+fun NearbyPeople(nav: Nav, compact: Boolean = false) {
+    val people by AppCore.lan.people.collectAsState()
+    val connected by AppCore.connected.collectAsState()
+    val settings by AppCore.settings.state.collectAsState()
+    var busy by remember { mutableStateOf<String?>(null) }
+    if (!settings.nearby) return
+    val list = people.filter { it.uid != AppCore.profile.uid }
+    if (list.isEmpty() && compact) {
+        Row(Modifier.padding(horizontal = 20.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            WrIcon("wifi", 18.dp, WR.faint)
+            Spacer(Modifier.width(10.dp))
+            Muted("Looking for people on this Wi-Fi… make sure both phones are on the same network.", size = 13)
+        }
+        return
+    }
+    if (list.isEmpty()) return
+    SectionTitle("On this Wi-Fi")
+    for (p in list) {
+        val on = connected.contains(p.uid)
+        Row(
+            Modifier.fillMaxWidth().clickable(enabled = busy == null) {
+                if (on) nav.push(Route.Chat(p.uid))
+                else {
+                    busy = p.uid
+                    AppCore.connectNearby(p) { err ->
+                        busy = null
+                        AppCore.toast(err ?: "Connecting to ${p.name}…")
+                    }
+                }
+            }.padding(horizontal = 20.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AvatarView(app.waveroom.core.Avatar.from(p.avatar), 44.dp, uid = p.uid)
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(p.name, color = WR.text, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                Muted("@${p.username}", size = 12)
+            }
+            if (busy == p.uid) androidx.compose.material3.CircularProgressIndicator(color = WR.accentBright, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+            else WrChip(if (on) "Open chat" else "Connect", selected = !on)
+        }
     }
 }

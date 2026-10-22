@@ -1,6 +1,6 @@
-# Waveroom for Android
+# HoMit for Android
 
-A native Android port of Waveroom (Kotlin, Jetpack Compose, native WebRTC). **No server of any kind.**
+A native Android port of HoMit (Kotlin, Jetpack Compose, native WebRTC). **No server of any kind.**
 Every feature of the web app is rebuilt to run phone-to-phone.
 
 ## Status: read this first

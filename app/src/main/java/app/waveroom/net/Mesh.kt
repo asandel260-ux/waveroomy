@@ -13,6 +13,7 @@ import app.waveroom.core.bool
 import app.waveroom.core.cancelLater
 import app.waveroom.core.int
 import app.waveroom.core.jsonOf
+import app.waveroom.core.jsonArrayOf
 import app.waveroom.core.later
 import app.waveroom.core.lng
 import app.waveroom.core.nowMs
@@ -57,6 +58,15 @@ class Mesh(
 
     /* ---- queries ---- */
 
+    var lanHint: (() -> List<String>)? = null
+    /** Plain-language status of the most recent first-contact attempt (shown when things go wrong). */
+    val report = kotlinx.coroutines.flow.MutableStateFlow("")
+
+    override fun onDiag(link: PeerLink) {
+        if (link.authed && link.state == "connected") return
+        report.value = link.report()
+    }
+
     fun link(sid: String): PeerLink? = links[sid]
     fun authedLinks(): List<PeerLink> = links.values.filter { it.authed }
     fun linkForUid(uid: String): PeerLink? = links.values.firstOrNull { it.authed && it.uid == uid }
@@ -96,7 +106,7 @@ class Mesh(
             if (!ok) {
                 pending.remove(id); l.close(); cb(id, null)
             } else {
-                l.whenGathered(3500) {
+                l.whenGathered(6000) {
                     val sdp = l.localSdp()
                     if (sdp == null) {
                         pending.remove(id); l.close(); cb(id, null)
@@ -107,6 +117,8 @@ class Mesh(
                             "p" to purpose, "r" to roomId,
                             "d" to Sdp.filterCandidates(sdp)
                         )
+                        val hint = lanHint?.invoke() ?: emptyList()
+                        if (hint.isNotEmpty()) j.put("l", jsonArrayOf(hint))
                         if (preview != null) j.put("v", preview)
                         cb(id, Sdp.pack(j))
                     }
@@ -148,7 +160,7 @@ class Mesh(
             if (!ok) {
                 links.remove(remote); l.close(); cb(null, remote)
             } else {
-                l.whenGathered(3500) {
+                l.whenGathered(6000) {
                     val sdp = l.localSdp()
                     if (sdp == null) {
                         links.remove(remote); l.close(); cb(null, remote)
@@ -180,7 +192,7 @@ class Mesh(
                 l.remoteSid = sid
                 links[sid]?.close()
                 links[sid] = l
-                armWatchdog(l)
+                armWatchdog(l, 60_000)
                 cb(true)
             }
         }
@@ -264,6 +276,7 @@ class Mesh(
 
     override fun onState(link: PeerLink, state: String) {
         handler?.onLinkState(link, state)
+        if (state != "connected") report.value = link.report()
         when (state) {
             "connected" -> {
                 cancelLater(dropTimers.remove(link.remoteSid))
@@ -304,6 +317,7 @@ class Mesh(
     }
 
     fun dropLink(link: PeerLink, reason: String) {
+        if (!link.authed && !link.trickle) report.value = link.report() + "\nStopped: $reason"
         if (links[link.remoteSid] === link) links.remove(link.remoteSid)
         pending.remove(link.inviteId)
         cancelLater(dropTimers.remove(link.remoteSid))

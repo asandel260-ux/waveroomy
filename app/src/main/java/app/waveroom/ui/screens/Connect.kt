@@ -165,7 +165,7 @@ fun InviteScreen(nav: Nav, purpose: String) {
     // success: somebody new is now connected
     LaunchedEffect(connected) {
         val added = connected - before
-        if (applying && added.isNotEmpty()) {
+        if (added.isNotEmpty()) {
             val uid = added.first()
             AppCore.toast("Connected to ${AppCore.contactName(uid)}")
             if (purpose == "dm") {
@@ -176,7 +176,7 @@ fun InviteScreen(nav: Nav, purpose: String) {
     LaunchedEffect(applying) {
         if (applying) {
             delay(40_000)
-            if (applying) { applying = false; error = "The connection didn't come up. Check both phones are online and try a new invite." }
+            if (applying) { applying = false; error = "The connection didn't come up.\n\n" + AppCore.mesh.report.value }
         }
     }
 
@@ -211,6 +211,8 @@ fun InviteScreen(nav: Nav, purpose: String) {
                     else -> {
                         val c = code!!
                         Step(1, "They scan this code")
+                        Spacer(Modifier.height(4.dp))
+                        Muted("On the same Wi-Fi that is all it takes — the link comes up by itself.", size = 12, align = TextAlign.Center)
                         Spacer(Modifier.height(10.dp))
                         QrDisplay(c)
                         Spacer(Modifier.height(12.dp))
@@ -219,7 +221,7 @@ fun InviteScreen(nav: Nav, purpose: String) {
                             WrButton("Share", { AppCore.platform?.shareText(if (purpose.startsWith("group:")) "Join my HoMit group “${AppCore.groups.get(purpose.removePrefix("group:"))?.name ?: ""}”: $c" else "Join me on HoMit: $c") }, kind = BtnKind.Secondary, small = true, icon = "share")
                         }
                         Spacer(Modifier.height(24.dp))
-                        Step(2, "Then scan the reply on their screen")
+                        Step(2, "Different networks? Scan the reply on their screen")
                         Spacer(Modifier.height(10.dp))
                         if (applying) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -314,7 +316,7 @@ fun JoinScreen(nav: Nav, initial: String) {
             delay(60_000)
             if (waiting && AppCore.session.phase.value == "idle") {
                 waiting = false; answer = null
-                error = "The connection didn't come up. Ask for a fresh invite and try again."
+                error = "The connection didn't come up.\n\n" + AppCore.mesh.report.value.ifBlank { "Ask for a fresh invite and try again." }
             }
         }
     }
@@ -324,10 +326,20 @@ fun JoinScreen(nav: Nav, initial: String) {
             ScreenHeader("Join with a code", { nav.pop() })
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 val a = answer
-                if (a != null) {
+                if (a != null && a.auto) {
+                    Spacer(Modifier.height(80.dp))
+                    CircularProgressIndicator(color = WR.accentBright, strokeWidth = 2.dp, modifier = Modifier.size(28.dp))
+                    Spacer(Modifier.height(12.dp))
+                    Text("Connecting directly…", color = WR.text, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    Muted("You're on the same Wi-Fi, so no reply code is needed.", align = TextAlign.Center)
+                    Spacer(Modifier.height(16.dp))
+                    ConnectionReport()
+                } else if (a != null) {
                     Step(2, if (a.purpose == "room") "Show this reply to the host" else "Show this reply to them")
                     Spacer(Modifier.height(6.dp))
                     Muted("Have them tap “Scan their reply”. The link comes up by itself.", align = TextAlign.Center)
+                    Spacer(Modifier.height(4.dp))
+                    Muted("Tip: if you are both on the same Wi-Fi, create the code again from the other phone's Messages tab → On this Wi-Fi — no codes needed.", size = 12, align = TextAlign.Center)
                     Spacer(Modifier.height(14.dp))
                     QrDisplay(a.code)
                     Spacer(Modifier.height(12.dp))
@@ -341,7 +353,9 @@ fun JoinScreen(nav: Nav, initial: String) {
                         Spacer(Modifier.size(10.dp))
                         Muted("Waiting for the link…")
                     }
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(10.dp))
+                    ConnectionReport()
+                    Spacer(Modifier.height(10.dp))
                     WrButton("Start over", { answer = null; waiting = false; text = "" }, kind = BtnKind.Ghost, small = true)
                 } else if (waiting) {
                     Spacer(Modifier.height(80.dp))
@@ -385,5 +399,18 @@ fun JoinScreen(nav: Nav, initial: String) {
         if (scanning) {
             ScannerOverlay("Scan a code", "Point at the QR code on their phone", onCode = { scanning = false; text = it; submit(it) }, onClose = { scanning = false })
         }
+    }
+}
+
+
+/** Plain-language view of what the last connection attempt found. Helps when two phones can't reach each other. */
+@Composable
+fun ConnectionReport() {
+    val r by AppCore.mesh.report.collectAsState()
+    var open by remember { mutableStateOf(false) }
+    if (r.isBlank()) return
+    Column(Modifier.fillMaxWidth()) {
+        Text(if (open) "Hide connection details" else "Connection details", color = WR.accentBright, fontSize = 12.sp, modifier = Modifier.clickable { open = !open }.padding(vertical = 6.dp))
+        if (open) Text(r, color = WR.muted, fontSize = 12.sp, fontFamily = WR.mono, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(WR.surface).padding(10.dp))
     }
 }

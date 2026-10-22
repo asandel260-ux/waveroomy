@@ -170,6 +170,11 @@ fun SettingsScreen(nav: Nav) {
                     "Helps two phones on different networks find a direct path. It only reveals your IP address to the STUN server — no audio or content. Turn off to stay strictly on the local network.",
                     s.useStun, { AppCore.settings.update { st -> st.copy(useStun = it) } }
                 )
+                SwitchRow(
+                    "Relay helper (recommended)",
+                    "Lets phones on different networks (mobile data, strict Wi-Fi) connect when a direct path is impossible. A public relay carries only encrypted packets and is used as a last resort. Turn off to never touch any outside server.",
+                    s.useRelay, { AppCore.settings.update { st -> st.copy(useRelay = it) } }
+                )
                 Spacer(Modifier.height(8.dp))
                 WrField(s.customStun, { AppCore.settings.update { st -> st.copy(customStun = it) } }, label = "Extra STUN servers (comma separated)", placeholder = "stun.example.com:3478", mono = true)
                 Spacer(Modifier.height(14.dp))

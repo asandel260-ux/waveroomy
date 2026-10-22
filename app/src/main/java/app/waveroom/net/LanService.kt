@@ -13,6 +13,7 @@ import app.waveroom.core.jsonArrayOf
 import app.waveroom.core.later
 import app.waveroom.core.mainHandler
 import app.waveroom.core.nowMs
+import app.waveroom.core.obj
 import app.waveroom.core.parseJsonOrNull
 import app.waveroom.core.str
 import app.waveroom.core.strings
@@ -42,6 +43,18 @@ interface LanHost {
     fun acceptAnswer(answer: JSONObject, cb: (Boolean) -> Unit)
 }
 
+/** App-level hooks: who I am on the LAN, and how to complete friend / answer exchanges. Main thread. */
+interface LanApp {
+    /** My presence beacon fields (uid, name, ...) or null when hidden. */
+    fun presence(): JSONObject?
+    /** null when this person may connect, otherwise a refusal. */
+    fun admitFriend(hello: JSONObject): String?
+    fun issueFriendInvite(cb: (code: String?) -> Unit)
+    fun acceptAnswer(answer: JSONObject, cb: (Boolean) -> Unit)
+}
+
+data class NearbyPerson(val uid: String, val name: String, val username: String, val avatar: JSONObject?, val ip: String, val port: Int, val seenAt: Long)
+
 /**
  * Same-network discovery without any server: hosts broadcast a tiny UDP beacon,
  * listeners show them as "Nearby rooms", and tapping one runs the offer/answer
@@ -51,6 +64,9 @@ interface LanHost {
 class LanService(private val ctx: Context, private val mySid: () -> String) {
 
     val nearby = MutableStateFlow<List<NearbyRoom>>(emptyList())
+    val people = MutableStateFlow<List<NearbyPerson>>(emptyList())
+    private val seenPeople = HashMap<String, NearbyPerson>()
+    private var app: LanApp? = null
 
     private var listenSocket: DatagramSocket? = null
     private var listenThread: Thread? = null
@@ -94,6 +110,11 @@ class LanService(private val ctx: Context, private val mySid: () -> String) {
                     val ip = p.address.hostAddress ?: continue
                     val j = parseJsonOrNull(text) ?: continue
                     if (j.int("wr") != 1 || j.str("sid") == mySid()) continue
+                    if (j.str("k") == "p") {
+                        val pp = NearbyPerson(j.str("uid"), j.str("name"), j.str("user"), j.obj("av"), ip, j.int("port"), nowMs())
+                        if (pp.uid.isNotEmpty()) mainHandler.post { seenPeople[pp.uid] = pp; publishPeople() }
+                        continue
+                    }
                     val r = NearbyRoom(
                         roomId = j.str("room"), title = j.str("title"), topic = j.str("topic"),
                         tags = j.arr("tags")?.strings() ?: emptyList(), hostName = j.str("host"),
@@ -122,7 +143,15 @@ class LanService(private val ctx: Context, private val mySid: () -> String) {
             it.remove(); changed = true
         }
         if (changed) publish()
+        val pit = seenPeople.entries.iterator()
+        var pchanged = false
+        while (pit.hasNext()) if (t - pit.next().value.seenAt > 8000) { pit.remove(); pchanged = true }
+        if (pchanged) publishPeople()
         if (listening) cleanup = later(2000) { sweep() }
+    }
+
+    private fun publishPeople() {
+        people.value = seenPeople.values.sortedBy { it.name.lowercase() }
     }
 
     private fun publish() {
@@ -142,24 +171,32 @@ class LanService(private val ctx: Context, private val mySid: () -> String) {
         } catch (e: Exception) {
         }
         mcLock = null
-        seen.clear()
-        nearby.value = emptyList()
+        seen.clear(); seenPeople.clear()
+        nearby.value = emptyList(); people.value = emptyList()
     }
 
     /* ====================== hosting ====================== */
 
+    /** Room hosting just plugs the room into the always-on server/beacon. */
     fun startHosting(h: LanHost) {
-        if (hosting) {
-            host = h
-            return
-        }
         host = h
         hosting = true
+    }
+
+    fun stopHosting() {
+        hosting = false
+        host = null
+    }
+
+    /** Always-on: a TCP server (for friend connects and answer delivery) and presence/room beacons. */
+    fun startServer(a: LanApp) {
+        app = a
+        if (hostSocket != null) return
         try {
             val ss = ServerSocket(0)
             hostSocket = ss
             hostThread = Thread {
-                while (hosting) {
+                while (true) {
                     val c = try {
                         ss.accept()
                     } catch (e: Exception) {
@@ -170,7 +207,6 @@ class LanService(private val ctx: Context, private val mySid: () -> String) {
             }.also { it.isDaemon = true; it.start() }
         } catch (e: Exception) {
             Log.w("Lan", "cannot open server: $e")
-            hosting = false
             return
         }
         beaconThread = Thread {
@@ -178,10 +214,12 @@ class LanService(private val ctx: Context, private val mySid: () -> String) {
             try {
                 ds = DatagramSocket()
                 ds.broadcast = true
-                while (hosting) {
-                    val b = callMain(2000) { host?.beacon() }
-                    if (b != null) {
-                        b.put("wr", 1).put("sid", mySid()).put("port", hostSocket?.localPort ?: 0)
+                while (true) {
+                    val port = hostSocket?.localPort ?: 0
+                    val packets = ArrayList<JSONObject>()
+                    callMain(2000) { host?.beacon() }?.let { packets.add(it.put("wr", 1).put("sid", mySid()).put("port", port)) }
+                    callMain(2000) { app?.presence() }?.let { packets.add(it.put("wr", 1).put("k", "p").put("sid", mySid()).put("port", port)) }
+                    for (b in packets) {
                         val data = b.toString().toByteArray(Charsets.UTF_8)
                         for (addr in broadcastAddresses()) {
                             try {
@@ -190,7 +228,7 @@ class LanService(private val ctx: Context, private val mySid: () -> String) {
                             }
                         }
                     }
-                    Thread.sleep(2000)
+                    Thread.sleep(2500)
                 }
             } catch (e: Exception) {
                 Log.w("Lan", "beacon ended: $e")
@@ -203,14 +241,46 @@ class LanService(private val ctx: Context, private val mySid: () -> String) {
         }.also { it.isDaemon = true; it.start() }
     }
 
-    fun stopHosting() {
-        hosting = false
-        host = null
+    /** "ip:port" strings other phones can use to reach this one on the local network. */
+    fun addresses(): List<String> {
+        val port = hostSocket?.localPort ?: return emptyList()
+        val out = ArrayList<String>()
         try {
-            hostSocket?.close()
+            val en = NetworkInterface.getNetworkInterfaces()
+            while (en != null && en.hasMoreElements()) {
+                val ni = en.nextElement()
+                if (!ni.isUp || ni.isLoopback || ni.isVirtual) continue
+                for (ia in ni.interfaceAddresses) {
+                    val a = ia.address
+                    if (a is Inet4Address && !a.isLoopbackAddress && !a.isLinkLocalAddress) out.add("${a.hostAddress}:$port")
+                }
+            }
         } catch (e: Exception) {
         }
-        hostSocket = null
+        return out.take(3)
+    }
+
+    /** Joiner side: push our answer code straight to the inviter's phone when it is on the same network. */
+    fun deliverAnswer(addrs: List<String>, code: String, done: (Boolean) -> Unit) {
+        Thread {
+            var ok = false
+            for (a in addrs) {
+                try {
+                    val i = a.lastIndexOf(':')
+                    val s = Socket()
+                    s.connect(InetSocketAddress(a.substring(0, i), a.substring(i + 1).toInt()), 2500)
+                    s.soTimeout = 8000
+                    val rd = BufferedReader(InputStreamReader(s.getInputStream(), Charsets.UTF_8))
+                    val wr = PrintWriter(s.getOutputStream(), true)
+                    wr.println(jsonOf("t" to "ans", "code" to code).toString())
+                    val r = parseJsonOrNull(rd.readLine() ?: "")
+                    s.close()
+                    if (r != null && r.str("t") == "ok") { ok = true; break }
+                } catch (e: Exception) {
+                }
+            }
+            mainHandler.post { done(ok) }
+        }.also { it.isDaemon = true; it.start() }
     }
 
     private fun broadcastAddresses(): List<InetAddress> {
@@ -253,7 +323,38 @@ class LanService(private val ctx: Context, private val mySid: () -> String) {
             val rd = BufferedReader(InputStreamReader(sock.getInputStream(), Charsets.UTF_8))
             val wr = PrintWriter(sock.getOutputStream(), true)
             val hello = parseJsonOrNull(rd.readLine() ?: return) ?: return
-            if (hello.str("t") != "join") return
+            when (hello.str("t")) {
+                "ans" -> {
+                    val parsed = Sdp.unpack(hello.str("code"))
+                    var ok = false
+                    if (parsed != null) {
+                        val latch = CountDownLatch(1)
+                        mainHandler.post { app?.acceptAnswer(parsed) { r -> ok = r; latch.countDown() } ?: latch.countDown() }
+                        latch.await(8, TimeUnit.SECONDS)
+                    }
+                    wr.println(jsonOf("t" to (if (ok) "ok" else "deny")).toString())
+                    return
+                }
+                "friend" -> {
+                    val deny0 = callMain(3000) { app?.admitFriend(hello) ?: "" }
+                    if (deny0 == null || deny0.isNotEmpty()) { wr.println(jsonOf("t" to "deny", "error" to (deny0 ?: "Busy.")).toString()); return }
+                    var fc: String? = null
+                    val l2 = CountDownLatch(1)
+                    mainHandler.post { app?.issueFriendInvite { c -> fc = c; l2.countDown() } ?: l2.countDown() }
+                    l2.await(10, TimeUnit.SECONDS)
+                    val offer0 = fc
+                    if (offer0 == null) { wr.println(jsonOf("t" to "deny", "error" to "Could not prepare a connection.").toString()); return }
+                    wr.println(jsonOf("t" to "offer", "code" to offer0).toString())
+                    val ans0 = parseJsonOrNull(rd.readLine() ?: return) ?: return
+                    if (ans0.str("t") != "answer") return
+                    val parsed0 = Sdp.unpack(ans0.str("code")) ?: return
+                    mainHandler.post { app?.acceptAnswer(parsed0) { } }
+                    wr.println(jsonOf("t" to "ok").toString())
+                    return
+                }
+                "join" -> {}
+                else -> return
+            }
             val deny = callMain(3000) { host?.admit(hello) ?: "" }
             if (deny == null) {
                 wr.println(jsonOf("t" to "deny", "error" to "Host is busy.").toString()); return
@@ -295,11 +396,19 @@ class LanService(private val ctx: Context, private val mySid: () -> String) {
      * Joiner side. [accept] must turn the host's offer code into our answer code
      * (Mesh.acceptInvite) and call back with it. [done] reports success/failure text.
      */
+    fun connectPerson(
+        p: NearbyPerson,
+        myHello: JSONObject,
+        accept: (offerCode: String, cb: (answer: String?) -> Unit) -> Unit,
+        done: (error: String?) -> Unit
+    ) = join(NearbyRoom("", "", "", emptyList(), "", 0, 0, false, p.ip, p.port, 0), myHello, accept, done, "friend")
+
     fun join(
         room: NearbyRoom,
         myHello: JSONObject,
         accept: (offerCode: String, cb: (answer: String?) -> Unit) -> Unit,
-        done: (error: String?) -> Unit
+        done: (error: String?) -> Unit,
+        kind: String = "join"
     ) {
         Thread {
             var err: String? = null
@@ -309,7 +418,7 @@ class LanService(private val ctx: Context, private val mySid: () -> String) {
                 s.soTimeout = 25_000
                 val rd = BufferedReader(InputStreamReader(s.getInputStream(), Charsets.UTF_8))
                 val wr = PrintWriter(s.getOutputStream(), true)
-                myHello.put("t", "join").put("roomId", room.roomId)
+                myHello.put("t", kind).put("roomId", room.roomId)
                 wr.println(myHello.toString())
                 val resp = parseJsonOrNull(rd.readLine() ?: throw IllegalStateException("no reply"))
                     ?: throw IllegalStateException("bad reply")
