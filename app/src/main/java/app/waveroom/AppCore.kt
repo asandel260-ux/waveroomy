@@ -6,6 +6,8 @@ import android.net.Uri
 import app.waveroom.core.Contact
 import app.waveroom.core.Docs
 import app.waveroom.core.DmStore
+import app.waveroom.core.GroupStore
+import app.waveroom.core.Media
 import app.waveroom.core.ModStore
 import app.waveroom.core.ProfileStore
 import app.waveroom.core.RoomsStore
@@ -62,7 +64,7 @@ object AppCore : MeshHandler {
     val settings = SettingsStore()
     val social = SocialStore()
     val dms = DmStore()
-    val groups = app.waveroom.core.GroupStore()
+    val groups = GroupStore()
     val rooms = RoomsStore()
     val mod = ModStore()
 
@@ -88,7 +90,7 @@ object AppCore : MeshHandler {
         inited = true
         this.app = app
         Docs.init(app)
-        app.waveroom.core.Media.init(app)
+        Media.init(app)
         settings.load(); profile.load(); social.load(); dms.load(); groups.load(); rooms.load(); mod.load()
         try {
             rtc = RtcEngine(app, settings)
@@ -197,7 +199,7 @@ object AppCore : MeshHandler {
         } catch (e: Exception) {
         }
         Docs.wipeAll()
-        dms.wipe(); mod.wipe(); groups.wipe(); app.waveroom.core.Media.wipe()
+        dms.wipe(); mod.wipe(); groups.wipe(); Media.wipe()
         social.contacts.value = emptyMap(); social.following.value = emptySet()
         social.followers.value = emptySet(); social.blocked.value = emptySet()
         rooms.rooms.value = emptyList()
