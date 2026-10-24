@@ -282,7 +282,7 @@ private fun MessagesTab(nav: Nav) {
                 val ct = contacts[c.uid]
                 val last = c.messages.lastOrNull { it.kind != "call" } ?: c.messages.lastOrNull()
                 Row(Modifier.fillMaxWidth().clickable { nav.push(Route.Chat(c.uid)) }.padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    if (isG) GroupAvatar(grp?.emoji ?: "👥", grp?.hue ?: 265, 48)
+                    if (isG) GroupAvatar(grp?.emoji ?: "💬", grp?.hue ?: 265, 48)
                     else AvatarView(ct?.avatar ?: app.waveroom.core.Avatar(), 48.dp, uid = c.uid)
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {

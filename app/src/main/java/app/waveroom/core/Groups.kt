@@ -35,7 +35,7 @@ data class Group(
     val createdAt: Long = nowMs(),
     val rev: Long = 0L,
     val membersCanAdd: Boolean = true,
-    val emoji: String = "👥",
+    val emoji: String = "💬",
     val hue: Int = 265,
     val left: Boolean = false
 ) {
@@ -59,7 +59,7 @@ data class Group(
             j.arr("members")?.objects()?.forEach { val gm = GroupMember.from(it); m[gm.uid] = gm }
             return Group(
                 j.str("id"), j.str("name"), j.str("about"), j.str("owner"), m, j.lng("at"), j.lng("rev"),
-                j.bool("mca", true), j.str("emoji", "👥"), j.int("hue", 265), j.bool("left")
+                j.bool("mca", true), j.str("emoji", "💬"), j.int("hue", 265), j.bool("left")
             )
         }
     }

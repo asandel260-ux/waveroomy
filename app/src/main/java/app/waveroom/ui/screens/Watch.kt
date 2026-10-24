@@ -110,7 +110,7 @@ setInterval(function(){if(ready&&player.getCurrentTime){WR.tick(player.getCurren
 
 /** Fallback: play the watch page itself and drive its <video> element (works for videos whose owner blocked embedding). */
 private const val PAGE_JS = """(function(){if(window.__wr)return;window.__wr=1;
-var st=document.createElement('style');st.textContent='html,body{overflow:hidden!important;background:#000!important}video{position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:2147483647!important;object-fit:contain!important;background:#000!important;pointer-events:none!important}';document.documentElement.appendChild(st);
+var st=document.createElement('style');st.textContent='html,body{overflow:hidden!important;background:#000!important}body *{visibility:hidden!important}video{visibility:visible!important;position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:2147483647!important;object-fit:contain!important;background:#000!important;pointer-events:none!important}';document.documentElement.appendChild(st);
 function V(){return document.querySelector('video')}
 window.load=function(){};
 window.play=function(){var v=V();if(v){var p=v.play();if(p&&p.catch)p.catch(function(){})}};
@@ -120,7 +120,7 @@ window.rate=function(r){var v=V();if(v)v.playbackRate=r};
 window.vol=function(x){var v=V();if(v){v.muted=(x==0);v.volume=x/100}};
 WR.ready();
 setInterval(function(){var v=V();if(!v)return;var s=v.ended?0:(v.paused?2:(v.readyState<3?3:1));
-WR.tick(v.currentTime||0,isFinite(v.duration)?v.duration:0,s,v.playbackRate)},500);
+var d=(isFinite(v.duration)&&v.duration>0)?v.duration:0;if(!d){try{d=parseFloat(window.ytInitialPlayerResponse.videoDetails.lengthSeconds)||0}catch(e){}}WR.tick(v.currentTime||0,d,s,v.playbackRate)},500);
 })();"""
 
 private class YtBridge(

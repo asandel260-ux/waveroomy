@@ -390,11 +390,14 @@ private fun StyleBar(ctrl: BoardController) {
     val sel = ctrl.selected()
     val textMode = ctrl.tool == "text" || (sel.isNotEmpty() && sel.all { it.type == "text" })
     val curColor = if (sel.isNotEmpty()) sel[0].color else ctrl.color
-    Row(
-        Modifier.padding(horizontal = 8.dp).clip(RoundedCornerShape(14.dp)).background(WR.surface.copy(alpha = 0.94f)).border(1.dp, WR.border, RoundedCornerShape(14.dp))
-            .horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
+    var paletteOpen by remember { mutableStateOf(false) }
+    androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    if (paletteOpen) {
+        Row(
+            Modifier.padding(horizontal = 8.dp).clip(RoundedCornerShape(14.dp)).background(WR.surface.copy(alpha = 0.94f)).border(1.dp, WR.border, RoundedCornerShape(14.dp))
+                .horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
         for (col in BOARD_COLORS) {
             Box(
                 Modifier.size(26.dp).clip(CircleShape).background(Color(0xFF000000.toInt() or col))
@@ -404,6 +407,17 @@ private fun StyleBar(ctrl: BoardController) {
                         if (sel.isNotEmpty()) ctrl.styleSelection(JSONObject().put("color", rgbToHex(col)))
                     }
             )
+        }
+        }
+        Spacer(Modifier.height(6.dp))
+    }
+    Row(
+        Modifier.padding(horizontal = 8.dp).clip(RoundedCornerShape(14.dp)).background(WR.surface.copy(alpha = 0.94f)).border(1.dp, WR.border, RoundedCornerShape(14.dp))
+            .horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Box(Modifier.size(32.dp).clickable { paletteOpen = !paletteOpen }, contentAlignment = Alignment.Center) {
+            Box(Modifier.size(26.dp).clip(CircleShape).background(Color(0xFF000000.toInt() or curColor)).border(2.dp, Color.White, CircleShape))
         }
         Box(Modifier.width(1.dp).height(22.dp).background(WR.border))
         if (textMode) {
@@ -440,6 +454,7 @@ private fun StyleBar(ctrl: BoardController) {
         }
     }
     Spacer(Modifier.height(6.dp))
+    }
 }
 
 @Composable
@@ -487,5 +502,6 @@ private fun ExportSheet(ctrl: BoardController, onDismiss: () -> Unit) {
                 }
             }
         }
+    }
     }
 }

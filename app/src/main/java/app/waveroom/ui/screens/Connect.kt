@@ -89,7 +89,7 @@ fun CreateRoomScreen(nav: Nav) {
     Column(Modifier.fillMaxSize().background(WR.bg).imePadding()) {
         ScreenHeader("New room", { nav.pop() })
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp)) {
-            WrField(title, { title = it }, label = "Title", placeholder = "Friday night jam", maxLength = 60)
+            WrField(title, { title = it; error = null }, label = "Title", placeholder = "Friday night jam", maxLength = 60)
             Spacer(Modifier.height(14.dp))
             WrField(topic, { topic = it }, label = "Topic (optional)", placeholder = "What is this about?", singleLine = false, maxLines = 3, maxLength = 140)
             Spacer(Modifier.height(14.dp))

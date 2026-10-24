@@ -1,5 +1,8 @@
 package app.waveroom.ui.screens
 
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -62,18 +65,18 @@ fun WelcomeScreen(onStart: () -> Unit) {
     val phase by t.animateFloat(0f, 1f, infiniteRepeatable(tween(WR.ms(3600).coerceAtLeast(1), easing = LinearEasing), RepeatMode.Restart), label = "p")
     val accent = WR.accent
 
+    var iconCenter by remember { mutableStateOf(Offset.Unspecified) }
     Box(Modifier.fillMaxSize().background(WR.bg)) {
         Canvas(Modifier.fillMaxSize()) {
-            val c = Offset(size.width / 2f, size.height * 0.30f)
+            val c = if (iconCenter == Offset.Unspecified) Offset(size.width / 2f, size.height * 0.18f) else iconCenter
             for (i in 0 until 4) {
                 val p = ((phase + i / 4f) % 1f)
                 drawCircle(accent.copy(alpha = (1f - p) * 0.35f), radius = 60f + p * size.width * 0.55f, center = c, style = Stroke(width = 2.5f))
             }
-            drawCircle(accent.copy(alpha = 0.18f), radius = 70f, center = c)
         }
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(Modifier.height(36.dp))
-            Box(Modifier.height(120.dp), contentAlignment = Alignment.Center) {
+            Box(Modifier.height(120.dp).onGloballyPositioned { val b = it.boundsInRoot(); iconCenter = Offset(b.center.x, b.center.y) }, contentAlignment = Alignment.Center) {
                 AnimatedContent(page, transitionSpec = { (fadeIn(tween(WR.ms(350))) + slideInVertically(tween(WR.ms(350))) { it / 3 }) togetherWith fadeOut(tween(WR.ms(200))) }, label = "icon") { p ->
                     Box(Modifier.size(84.dp).clip(CircleShape).background(WR.accent), contentAlignment = Alignment.Center) { WrIcon(SLIDES[p].icon, 38.dp, Color.White) }
                 }

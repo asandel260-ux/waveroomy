@@ -138,5 +138,6 @@ fun Onboarding() {
         }, Modifier.fillMaxWidth(), kind = BtnKind.Secondary)
         Spacer(Modifier.height(20.dp))
         Muted("No account, no email, no server. Back up your identity from Settings to keep it if you change phones.", size = 12)
+        Spacer(Modifier.height(40.dp))
     }
 }

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -160,51 +161,75 @@ fun RoomScreen(nav: Nav) {
 
     val land = androidx.compose.ui.platform.LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
+    val titleBlock: @Composable (Modifier) -> Unit = { mod ->
+        Column(mod) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(s.meta.title, color = WR.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                if (s.meta.locked) {
+                    Spacer(Modifier.width(6.dp))
+                    WrIcon("lock", 14.dp, WR.warn)
+                }
+            }
+            val live = participants.count { it.sid == session.mySid || connected.contains(it.uid) }
+            Muted("${participants.size} in room" + (if (live < participants.size) " · connecting ${participants.size - live}" else ""), size = 12, maxLines = 1)
+        }
+    }
+    val actionsBlock: @Composable () -> Unit = {
+        WrIconButton("user-plus", { nav.push(Route.Invite("room")) }, tint = WR.text)
+        Box {
+            WrIconButton("more-v", { menuOpen = true }, tint = WR.text)
+            WrMenu(menuOpen, { menuOpen = false }, buildList {
+                if (isHost) add(MenuEntry("Room settings", "sliders") { settingsOpen = true })
+                if (canTalk) add(MenuEntry("Voice effects", "waveform") { fxOpen = true })
+                add(MenuEntry(if (AppCore.audio.speakerOn.value) "Use earpiece" else "Use speaker", "volume") { AppCore.audio.setSpeaker(!AppCore.audio.speakerOn.value) })
+                add(MenuEntry("Report this room", "flag") { reportRoom = true })
+                add(MenuEntry("Leave room", "log-out", danger = true) { leaveConfirm = true })
+            })
+        }
+    }
+    val tabChips: @Composable () -> Unit = {
+        Tab("Stage", "users", mode == "stage", false) { mode = "stage" }
+        if (sharer != null) Tab("Screen", "monitor", mode == "screen", true) { mode = "screen" }
+        Tab("Watch", "youtube", mode == "watch", watching) { mode = "watch" }
+        Tab("Board", "board", mode == "board", s.board.objects.isNotEmpty()) { mode = "board" }
+        Tab("Browser", "globe", mode == "browse", browsing) { mode = "browse" }
+    }
+    val modeAction: @Composable () -> Unit = {
+        val iShare = sharer?.sid == session.mySid
+        when (mode) {
+            "screen" -> if (iShare) WrButton("Stop sharing", { AppCore.screen.stop(true); mode = "stage" }, kind = BtnKind.Danger, small = true)
+            "watch" -> if (watching && session.canWatchControl()) WrButton("End Watch", { session.watchEnd(); mode = "stage" }, kind = BtnKind.Danger, small = true)
+            "browse" -> if (browsing && session.canBrowseControl()) WrButton("Close browser", { session.browseEnd(); mode = "stage" }, kind = BtnKind.Danger, small = true)
+        }
+    }
     val topBar: @Composable () -> Unit = {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(s.meta.title, color = WR.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-                    if (s.meta.locked) {
-                        Spacer(Modifier.width(6.dp))
-                        WrIcon("lock", 14.dp, WR.warn)
-                    }
-                }
-                val live = participants.count { it.sid == session.mySid || connected.contains(it.uid) }
-                Muted("${participants.size} in room" + (if (live < participants.size) " · connecting ${participants.size - live}" else ""), size = 12, maxLines = 1)
-            }
-            WrIconButton("user-plus", { nav.push(Route.Invite("room")) }, tint = WR.text)
-            Box {
-                WrIconButton("more-v", { menuOpen = true }, tint = WR.text)
-                WrMenu(menuOpen, { menuOpen = false }, buildList {
-                    if (isHost) add(MenuEntry("Room settings", "sliders") { settingsOpen = true })
-                    if (canTalk) add(MenuEntry("Voice effects", "waveform") { fxOpen = true })
-                    add(MenuEntry(if (AppCore.audio.speakerOn.value) "Use earpiece" else "Use speaker", "volume") { AppCore.audio.setSpeaker(!AppCore.audio.speakerOn.value) })
-                    add(MenuEntry("Report this room", "flag") { reportRoom = true })
-                    add(MenuEntry("Leave room", "log-out", danger = true) { leaveConfirm = true })
-                })
-            }
+            titleBlock(Modifier.weight(1f))
+            actionsBlock()
         }
     }
     val tabsRow: @Composable () -> Unit = {
-        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Tab("Stage", "users", mode == "stage", false) { mode = "stage" }
-            if (sharer != null) Tab("Screen", "monitor", mode == "screen", true) { mode = "screen" }
-            Tab("Watch", "youtube", mode == "watch", watching) { mode = "watch" }
-            Tab("Board", "board", mode == "board", s.board.objects.isNotEmpty()) { mode = "board" }
-            Tab("Browser", "globe", mode == "browse", browsing) { mode = "browse" }
-        }
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) { tabChips() }
         if (mode != "stage") {
-            val iShare = sharer?.sid == session.mySid
             Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                 WrButton("Exit to stage", { mode = "stage" }, kind = BtnKind.Ghost, small = true, icon = "arrow-left")
                 Spacer(Modifier.weight(1f))
-                when (mode) {
-                    "screen" -> if (iShare) WrButton("Stop sharing", { AppCore.screen.stop(true); mode = "stage" }, kind = BtnKind.Danger, small = true)
-                    "watch" -> if (watching && session.canWatchControl()) WrButton("End Watch", { session.watchEnd(); mode = "stage" }, kind = BtnKind.Danger, small = true)
-                    "browse" -> if (browsing && session.canBrowseControl()) WrButton("Close browser", { session.browseEnd(); mode = "stage" }, kind = BtnKind.Danger, small = true)
-                }
+                modeAction()
             }
+        }
+        Hairline()
+    }
+    /** Landscape: one slim row so the content gets the height. */
+    val landHeader: @Composable () -> Unit = {
+        Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 2.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+            titleBlock(Modifier.widthIn(max = 130.dp))
+            Spacer(Modifier.width(10.dp))
+            Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (mode != "stage") WrButton("Exit", { mode = "stage" }, kind = BtnKind.Ghost, small = true, icon = "arrow-left")
+                tabChips()
+                modeAction()
+            }
+            actionsBlock()
         }
         Hairline()
     }
@@ -270,7 +295,7 @@ fun RoomScreen(nav: Nav) {
         if (land) {
             Row(Modifier.fillMaxSize()) {
                 Column(Modifier.weight(1f).fillMaxHeight()) {
-                    Box(Modifier.statusBarsPadding()) { Column { topBar(); tabsRow() } }
+                    Box(Modifier.statusBarsPadding()) { landHeader() }
                     mainArea(Modifier.weight(1f))
                 }
                 Box(Modifier.fillMaxHeight()) { Row { Box(Modifier.width(1.dp).fillMaxHeight().background(WR.border)); controls(true) } }

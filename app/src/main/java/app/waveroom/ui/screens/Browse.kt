@@ -7,6 +7,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -74,6 +75,7 @@ fun BrowsePanel(modifier: Modifier = Modifier) {
     var perms by remember { mutableStateOf(false) }
     var requested by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(false) }
+    var loadError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(b.url) { address = b.url ?: "" }
     LaunchedEffect(b.nonce, b.url, web) {
@@ -163,6 +165,11 @@ fun BrowsePanel(modifier: Modifier = Modifier) {
 
                             override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
                                 loading = true
+                                loadError = null
+                            }
+
+                            override fun onReceivedError(view: WebView, request: WebResourceRequest, error: android.webkit.WebResourceError) {
+                                if (request.isForMainFrame) loadError = error.description?.toString() ?: "unknown error"
                             }
 
                             override fun onPageFinished(view: WebView, url: String?) {
@@ -177,6 +184,19 @@ fun BrowsePanel(modifier: Modifier = Modifier) {
                     }
                 }
             )
+            if (loading) androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth().align(Alignment.TopCenter), color = WR.accentBright, trackColor = Color.Transparent)
+            val err = loadError
+            if (err != null && b.url != null) {
+                Column(Modifier.fillMaxSize().background(WR.bg).padding(28.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+                    WrIcon("globe", 32.dp, WR.faint)
+                    Spacer(Modifier.height(10.dp))
+                    Text("Couldn't load this page", color = WR.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(6.dp))
+                    Muted("$err\n\nCheck your connection. Some sites are blocked on certain networks.", align = androidx.compose.ui.text.style.TextAlign.Center)
+                    Spacer(Modifier.height(14.dp))
+                    WrButton("Try again", { loadError = null; web?.reload() }, small = true)
+                }
+            }
             if (b.url == null) {
                 Column(Modifier.fillMaxSize().background(WR.bg).verticalScroll(rememberScrollState()).padding(20.dp)) {
                     WrIcon("globe", 32.dp, WR.faint)

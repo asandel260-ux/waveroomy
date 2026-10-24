@@ -66,7 +66,7 @@ fun NewGroupScreen(nav: Nav) {
     val contacts by AppCore.social.contacts.collectAsState()
     var name by remember { mutableStateOf("") }
     var about by remember { mutableStateOf("") }
-    var emoji by remember { mutableStateOf("👥") }
+    var emoji by remember { mutableStateOf("💬") }
     var hue by remember { mutableStateOf(HUES.first()) }
     val picked = remember { mutableStateListOf<String>() }
     var error by remember { mutableStateOf<String?>(null) }
@@ -87,7 +87,7 @@ fun NewGroupScreen(nav: Nav) {
             Tiny("Icon")
             Spacer(Modifier.height(8.dp))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                for (e in listOf("👥", "🎧", "🔥", "🌙", "🎮", "📚", "🍕", "✈️", "💬", "🎨")) {
+                for (e in listOf("💬", "🎧", "🔥", "🌙", "🎮", "📚", "🍕", "✈️", "💬", "🎨")) {
                     Box(Modifier.size(44.dp).clip(CircleShape).background(if (e == emoji) WR.accentSoft else WR.surface2).border(1.dp, if (e == emoji) WR.accent else WR.border, CircleShape).clickable { emoji = e }, contentAlignment = Alignment.Center) { Text(e, fontSize = 20.sp) }
                 }
             }
@@ -152,7 +152,7 @@ fun GroupInfoScreen(nav: Nav, gid: String) {
                 Spacer(Modifier.height(12.dp))
                 Text(g.name, color = WR.text, fontSize = 24.sp, fontWeight = FontWeight.SemiBold, textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 3, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 if (g.about.isNotEmpty()) Muted(g.about, modifier = Modifier.padding(top = 4.dp), align = androidx.compose.ui.text.style.TextAlign.Center)
-                Muted("${g.members.size} members", size = 12, modifier = Modifier.padding(top = 6.dp))
+                Muted(if (g.members.size == 1) "1 member" else "${g.members.size} members", size = 12, modifier = Modifier.padding(top = 6.dp))
                 Spacer(Modifier.height(14.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     WrButton("Message", { nav.popTo(Route.Chat(chat)); if (nav.top != Route.Chat(chat)) nav.replaceTop(Route.Chat(chat)) }, kind = BtnKind.Secondary, small = true, icon = "message")
@@ -199,7 +199,7 @@ fun GroupInfoScreen(nav: Nav, gid: String) {
                 WrField(a, { a = it }, label = "About", maxLength = 200)
                 Spacer(Modifier.height(10.dp))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    for (x in listOf("👥", "🎧", "🔥", "🌙", "🎮", "📚", "🍕", "✈️", "💬", "🎨")) {
+                    for (x in listOf("💬", "🎧", "🔥", "🌙", "🎮", "📚", "🍕", "✈️", "💬", "🎨")) {
                         Box(Modifier.size(40.dp).clip(CircleShape).background(if (x == e) WR.accentSoft else WR.surface2).clickable { e = x }, contentAlignment = Alignment.Center) { Text(x, fontSize = 20.sp) }
                     }
                 }

@@ -179,7 +179,7 @@ fun ChatScreen(nav: Nav, chat: String) {
             ) {
                 when {
                     isSaved -> Box(Modifier.size(40.dp).clip(CircleShape).background(WR.accent), contentAlignment = Alignment.Center) { WrIcon("bookmark", 20.dp, Color.White) }
-                    isGroup -> GroupAvatar(group?.emoji ?: "👥", group?.hue ?: 265, 40)
+                    isGroup -> GroupAvatar(group?.emoji ?: "💬", group?.hue ?: 265, 40)
                     else -> AvatarView(dmAvatar ?: Avatar(), 40.dp, uid = chat)
                 }
                 Spacer(Modifier.width(10.dp))
@@ -188,7 +188,7 @@ fun ChatScreen(nav: Nav, chat: String) {
                     Muted(
                         when {
                             isSaved -> "Notes, links and files for yourself"
-                            isGroup -> "${group?.members?.size ?: 0} members · ${hub.connectedCount(chat)} connected"
+                            isGroup -> (group?.members?.size ?: 0).let { n -> (if (n == 1) "1 member" else "$n members") } + " · ${hub.connectedCount(chat)} connected"
                             online -> "connected"
                             else -> "not connected"
                         }, size = 12, maxLines = 1
@@ -405,7 +405,7 @@ private fun nameOf(uid: String, snap: String): String =
 @Composable
 fun GroupAvatar(emoji: String, hue: Int, size: Int) {
     Box(Modifier.size(size.dp).clip(CircleShape).background(WR.hue(hue, 0.5f, 0.32f)), contentAlignment = Alignment.Center) {
-        Text(emoji, fontSize = (size * 0.5f).sp)
+        Text(if (emoji == "👥") "💬" else emoji, fontSize = (size * 0.5f).sp)
     }
 }
 
