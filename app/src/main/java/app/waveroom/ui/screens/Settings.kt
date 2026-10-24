@@ -172,6 +172,8 @@ fun SettingsScreen(nav: Nav) {
                 )
             }
 
+            app.waveroom.ui.components.Row2("Send diagnostics", "Share a technical report if something misbehaves", "info", onClick = { AppCore.platform?.shareText(app.waveroom.Diag.report()) })
+
             SectionTitle("Network")
             Column(Modifier.padding(horizontal = 20.dp)) {
                 SwitchRow("Show rooms on this Wi-Fi", "Listen for rooms hosted on the same network and list them under Rooms.", s.nearby, { AppCore.settings.update { st -> st.copy(nearby = it) } })

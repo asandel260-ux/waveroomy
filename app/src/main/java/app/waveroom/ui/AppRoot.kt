@@ -90,6 +90,13 @@ private fun MainShell() {
             }
         }
     }
+    var crash by remember { mutableStateOf(app.waveroom.Diag.pending()) }
+    crash?.let { rep ->
+        app.waveroom.ui.components.ConfirmDialog(
+            "HoMit closed unexpectedly", "It crashed last time. Sending the report helps me fix the exact cause. It contains no messages.",
+            "Share report", { AppCore.platform?.shareText(rep); app.waveroom.Diag.clear(); crash = null }, { app.waveroom.Diag.clear(); crash = null }, cancel = "Dismiss"
+        )
+    }
     val adding by AppCore.pendingAdd.collectAsState()
     adding?.let { c ->
         app.waveroom.ui.components.ConfirmDialog(
