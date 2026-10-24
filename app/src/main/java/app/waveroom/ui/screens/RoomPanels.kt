@@ -1,5 +1,7 @@
 package app.waveroom.ui.screens
 
+import androidx.compose.foundation.layout.fillMaxHeight
+import app.waveroom.ui.components.RichText
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -84,7 +86,7 @@ fun ChatSheet(nav: Nav, onDismiss: () -> Unit) {
     val listState = rememberLazyListState()
     val blocked by AppCore.social.blocked.collectAsState()
 
-    LaunchedEffect(msgs.size) {
+    LaunchedEffect(msgs.lastOrNull()?.id) {
         if (msgs.isNotEmpty()) listState.animateScrollToItem(msgs.size - 1)
         session.unreadChat.value = 0
     }
@@ -96,15 +98,15 @@ fun ChatSheet(nav: Nav, onDismiss: () -> Unit) {
     }
 
     WrSheet(onDismiss, "Room chat", fullHeight = true) {
-        Column(Modifier.fillMaxWidth().height(560.dp).imePadding()) {
+        Column(Modifier.fillMaxWidth().fillMaxHeight(0.92f).imePadding()) {
             if (msgs.isEmpty()) {
-                Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Muted("No messages yet. Say hi 👋") }
+                Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { app.waveroom.ui.components.EmptyState("message", "No messages yet", "Say hi 👋") }
             } else {
                 LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = listState, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(msgs, key = { it.id }) { m ->
                         val mine = m.uid == session.myUid
                         val hidden = blocked.contains(m.uid) && !mine
-                        Row(Modifier.fillMaxWidth().clickable(enabled = !m.deleted) { actionFor = m }) {
+                        Row(Modifier.fillMaxWidth().clickable(enabled = !m.deleted && !hidden) { actionFor = m }) {
                             AvatarView(m.avatar, 34.dp, uid = m.uid, mine = mine)
                             Spacer(Modifier.width(10.dp))
                             Column(Modifier.weight(1f)) {
@@ -116,7 +118,7 @@ fun ChatSheet(nav: Nav, onDismiss: () -> Unit) {
                                 when {
                                     m.deleted -> Text("message removed", color = WR.faint, fontSize = 13.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
                                     hidden -> Text("message from a blocked person", color = WR.faint, fontSize = 13.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
-                                    else -> Text(m.text, color = WR.text, fontSize = 14.sp)
+                                    else -> RichText(m.text, WR.text, WR.accentBright)
                                 }
                                 if (!m.deleted && m.reactions.isNotEmpty()) {
                                     Spacer(Modifier.height(4.dp))

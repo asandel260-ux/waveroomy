@@ -1,5 +1,10 @@
 package app.waveroom.ui
 
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -114,6 +119,7 @@ private fun MainShell() {
         },
         label = "nav"
     ) { r ->
+      Box(if (r == Route.Room) Modifier else Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))) {
         when (r) {
             Route.Home -> HomeScreen(nav)
             Route.Room -> RoomScreen(nav)
@@ -132,6 +138,7 @@ private fun MainShell() {
             Route.NewGroup -> NewGroupScreen(nav)
             is Route.GroupInfo -> GroupInfoScreen(nav, r.gid)
         }
+      }
     }
 
     if (ended != null) {

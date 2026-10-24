@@ -292,7 +292,7 @@ fun WatchPanel(modifier: Modifier = Modifier, land: Boolean = false) {
             }
                 }
     }
-    val lowerPart: @Composable (Boolean) -> Unit = { scroll ->
+    val lowerPart: @Composable androidx.compose.foundation.layout.ColumnScope.(Boolean) -> Unit = { scroll ->
         // transport
         val v = w.video
         if (v != null) {

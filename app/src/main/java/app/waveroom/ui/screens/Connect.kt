@@ -1,5 +1,8 @@
 package app.waveroom.ui.screens
 
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.heightIn
 import android.content.ClipboardManager
 import android.content.Context
 import androidx.activity.compose.BackHandler
@@ -120,7 +123,7 @@ fun ScannerOverlay(title: String, hint: String, onCode: (String) -> Unit, onClos
     Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black)) {
         QrScanner(onCode, Modifier.fillMaxSize(), onProgress = { a, b -> progress = Pair(a, b) })
         Box(
-            Modifier.align(Alignment.Center).size(260.dp).clip(RoundedCornerShape(24.dp))
+            Modifier.align(Alignment.Center).heightIn(max = 260.dp).fillMaxHeight(0.55f).aspectRatio(1f).clip(RoundedCornerShape(24.dp))
                 .border(2.dp, WR.accentBright, RoundedCornerShape(24.dp))
         )
         Column(Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
