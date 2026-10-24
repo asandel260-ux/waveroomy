@@ -503,5 +503,4 @@ private fun ExportSheet(ctrl: BoardController, onDismiss: () -> Unit) {
             }
         }
     }
-    }
 }
