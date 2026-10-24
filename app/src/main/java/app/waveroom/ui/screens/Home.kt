@@ -55,6 +55,7 @@ import app.waveroom.ui.components.SectionTitle
 import app.waveroom.ui.components.Tiny
 import app.waveroom.ui.components.WrButton
 import app.waveroom.ui.components.WrChip
+import app.waveroom.ui.components.WrField
 import app.waveroom.ui.components.WrIcon
 import app.waveroom.ui.components.WrIconButton
 import app.waveroom.ui.components.WrMenu
@@ -252,8 +253,8 @@ private fun MessagesTab(nav: Nav) {
             WrIconButton("users", { nav.push(Route.NewGroup) }, tint = WR.muted)
             WrIconButton("user-plus", { sheet = true }, tint = WR.muted)
         }
-        Muted("Messages are delivered when you and the other person are connected — in a room together, on the same Wi-Fi, or after swapping codes. Groups catch up whenever two members connect.", size = 12, modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp))
         LazyColumn(Modifier.fillMaxSize()) {
+            item(key = "requests") { FriendRequests() }
             item(key = "nearby") { NearbyPeople(nav) }
             item(key = "saved") {
                 Row(Modifier.fillMaxWidth().clickable { nav.push(Route.Chat("saved")) }.padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -319,12 +320,63 @@ private fun MessagesTab(nav: Nav) {
 
 @Composable
 fun AddFriendSheet(nav: Nav, onDismiss: () -> Unit) {
-    WrSheet(onDismiss, "Connect with someone") {
-        Muted("Two phones exchange a code once (QR or text). After that you can message while you're connected, and meet again in rooms.", modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
-        Spacer(Modifier.height(8.dp))
-        Row2("Show my code", "They scan it with HoMit", "qr", onClick = { onDismiss(); nav.push(Route.Invite("dm")) })
-        Row2("Scan or paste their code", null, "scan", onClick = { onDismiss(); nav.push(Route.Join("")) })
+    var q by remember { mutableStateOf("") }
+    val results by app.waveroom.Discovery.results.collectAsState()
+    val searching by app.waveroom.Discovery.searching.collectAsState()
+    val note by app.waveroom.Discovery.searchNote.collectAsState()
+    val contacts by AppCore.social.contacts.collectAsState()
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        app.waveroom.Discovery.results.value = emptyList(); app.waveroom.Discovery.searchNote.value = ""
+        onDispose { }
+    }
+    WrSheet(onDismiss, "Add someone") {
+        Column(Modifier.padding(horizontal = 20.dp)) {
+            WrField(q, { q = it }, label = "Find by @username, or paste a link", placeholder = "@name")
+            Spacer(Modifier.height(10.dp))
+            WrButton(if (searching) "Searching…" else "Search", { app.waveroom.Discovery.search(q) }, Modifier.fillMaxWidth(), enabled = q.isNotBlank() && !searching)
+            if (note.isNotEmpty()) { Spacer(Modifier.height(8.dp)); Muted(note, size = 13) }
+        }
+        for (c in results) {
+            val already = contacts[c.uid]?.pair?.isNotEmpty() == true
+            Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                AvatarView(c.avatar, 46.dp)
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(c.name, color = WR.text, fontSize = 16.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Muted("@${c.username} · id ${c.uid.take(5)}", size = 12, maxLines = 1)
+                }
+                if (already) WrChip("Added") else WrButton("Add", { app.waveroom.Discovery.sendRequest(c) }, small = true)
+            }
+        }
+        Hairline()
+        Row2("Share my link", "Send it in any messenger", "share", onClick = {
+            val l = app.waveroom.Discovery.myLink()
+            if (l != null) AppCore.platform?.shareText("Add me on HoMit: $l")
+        })
+        Row2("Show my QR code", "They scan it with HoMit", "qr", onClick = { onDismiss(); nav.push(Route.Invite("dm")) })
+        Row2("Scan or paste a code", null, "scan", onClick = { onDismiss(); nav.push(Route.Join("")) })
         NearbyPeople(nav, compact = true)
+    }
+}
+
+/** Friend requests waiting for a yes or a no. */
+@Composable
+fun FriendRequests() {
+    val reqs by app.waveroom.Discovery.requests.collectAsState()
+    if (reqs.isEmpty()) return
+    SectionTitle("Friend requests")
+    for (r in reqs) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            AvatarView(r.card.avatar, 46.dp)
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(r.card.name, color = WR.text, fontSize = 16.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Muted("@${r.card.username} · wants to connect", size = 12, maxLines = 1)
+            }
+            WrButton("Accept", { app.waveroom.Discovery.accept(r) }, small = true)
+            Spacer(Modifier.width(6.dp))
+            WrIconButton("x", { app.waveroom.Discovery.decline(r) }, tint = WR.muted)
+        }
     }
 }
 

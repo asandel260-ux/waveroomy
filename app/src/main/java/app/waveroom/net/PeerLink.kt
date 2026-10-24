@@ -69,6 +69,7 @@ class PeerLink(
     // --- identity / protocol state, managed by Mesh ---
     var uid: String = ""
     var authed = false
+    var hello: org.json.JSONObject? = null
     var purpose = "room"            // "room" | "dm"
     var joinRoomId: String = ""
     var myNonce: String = Ids.nonce()
@@ -241,6 +242,8 @@ class PeerLink(
             val n = text.substring(p2 + 1, p3).toIntOrNull() ?: return
             if (n <= 0 || n > 400 || i < 0 || i >= n) return
             val arr = partial.getOrPut(id) { arrayOfNulls<String>(n) }
+            if (arr.size != n) return
+            if (partial.size > 64) partial.remove(partial.keys.first())
             arr[i] = text.substring(p3 + 1)
             if (arr.all { it != null }) {
                 partial.remove(id)

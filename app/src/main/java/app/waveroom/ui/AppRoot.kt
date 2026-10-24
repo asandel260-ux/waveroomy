@@ -78,6 +78,13 @@ private fun MainShell() {
             nav.pop()
         }
     }
+    val adding by AppCore.pendingAdd.collectAsState()
+    adding?.let { c ->
+        app.waveroom.ui.components.ConfirmDialog(
+            "Add ${c.name}?", "@${c.username} · id ${c.uid.take(5)}\nThey'll get a request and, once they accept, you'll connect automatically.",
+            "Send request", { app.waveroom.Discovery.sendRequest(c); AppCore.pendingAdd.value = null }, { AppCore.pendingAdd.value = null }
+        )
+    }
     LaunchedEffect(pending) {
         val p = pending
         if (p != null && session.phase.value == "idle") {

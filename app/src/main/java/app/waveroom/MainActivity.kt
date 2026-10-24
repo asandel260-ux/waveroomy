@@ -58,7 +58,7 @@ class MainActivity : ComponentActivity(), Platform {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         AppCore.platform = this
-        handleIntent(intent)
+        if (savedInstanceState == null) handleIntent(intent)
         setContent {
             WaveroomTheme { AppRoot() }
         }
@@ -71,6 +71,22 @@ class MainActivity : ComponentActivity(), Platform {
         handleIntent(intent)
     }
 
+    override fun onStart() {
+        super.onStart()
+        try {
+            app.waveroom.Rendezvous.resume()
+        } catch (e: Exception) {
+        }
+    }
+
+    override fun onStop() {
+        try {
+            AppCore.flushAll()
+        } catch (e: Exception) {
+        }
+        super.onStop()
+    }
+
     override fun onDestroy() {
         if (AppCore.platform === this) AppCore.platform = null
         super.onDestroy()
@@ -78,6 +94,10 @@ class MainActivity : ComponentActivity(), Platform {
 
     private fun handleIntent(i: Intent?) {
         val d = i?.data ?: return
+        if (d.scheme == "waveroom" && d.host == "add") {
+            app.waveroom.Discovery.cardFromLink(d.toString())?.let { AppCore.pendingAdd.value = it }
+            return
+        }
         if (d.scheme == "waveroom") {
             val c = d.getQueryParameter("c")
             if (!c.isNullOrEmpty()) AppCore.pendingCode.value = c

@@ -193,7 +193,8 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
         cursors.value = emptyMap()
         unreadChat.value = 0
         joinTarget = ""; expectJoin = ""
-        for (sid in toClose) core.mesh.closeLink(sid, "left room")
+        // give the last "ended / kicked" packets a moment to leave before the links close
+        later(350) { for (sid in toClose) core.mesh.closeLink(sid, "left room") }
         reconnect.clear()
         core.mesh.hintProvider = null
         core.stopService()
@@ -335,6 +336,9 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
         val s = st ?: return
         if (!isEngine || !s.participants.containsKey(from)) return
         val who = m.obj("who") ?: return
+        val wsid = who.str("sid")
+        if (wsid.isEmpty() || wsid == mySid || wsid.length > 64 || who.str("uid").length > 64) return
+        s.participants[wsid]?.let { if (it.uid != who.str("uid")) return }
         core.mesh.noteRoute(who.str("sid"), from)
         doJoin(who, from)
     }
@@ -342,10 +346,14 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
     private fun doJoin(who: JSONObject, via: String) {
         val eng = engine ?: return
         val sid = who.str("sid")
-        val r = eng.handleJoin(
-            sid, who.str("uid"), who.str("user"), who.str("name").ifEmpty { who.str("user") },
-            Avatar.from(who.obj("av")), via
-        )
+        val r = try {
+            eng.handleJoin(
+                sid, who.str("uid").take(64), who.str("user").take(40), who.str("name").ifEmpty { who.str("user") }.take(60),
+                Avatar.from(who.obj("av")), via
+            )
+        } catch (e: Exception) {
+            jsonOf("ok" to false, "error" to "Could not join.")
+        }
         core.mesh.sendTo(sid, jsonOf("t" to "rjoined", "r" to r, "engine" to mySid))
         if (r.bool("ok")) {
             core.sfx.play("join")
@@ -357,6 +365,7 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
 
     private fun onRJoined(from: String, m: JSONObject) {
         if (phase.value != "joining") return
+        if (from != joinTarget && from != m.str("engine")) return
         val r = m.obj("r") ?: return
         if (!r.bool("ok")) {
             failJoin(r.str("error", "Could not join."))
@@ -447,18 +456,18 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
             return
         }
         s.apply(ev, data)
-        if (mySid !in except) sideEffects(ev, data)
         for (p in s.participants.values.toList()) {
             if (p.sid == mySid || p.sid in except) continue
             core.mesh.sendTo(p.sid, msg)
         }
+        if (mySid !in except) sideEffects(ev, data)
         bump()
     }
 
     private fun onEv(from: String, m: JSONObject) {
         val s = st ?: return
         if (phase.value != "live") return
-        if (from != s.engineSid() && s.participants.size > 1) return
+        if (isEngine || from != s.engineSid()) return
         val e = m.str("e")
         val d = m.obj("d") ?: JSONObject()
         s.apply(e, d)

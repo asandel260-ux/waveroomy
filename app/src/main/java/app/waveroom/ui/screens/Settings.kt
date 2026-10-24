@@ -162,6 +162,16 @@ fun SettingsScreen(nav: Nav) {
                 "message", onClick = { dmSheet = true }
             )
 
+            Column(Modifier.padding(horizontal = 20.dp, vertical = 6.dp)) {
+                Text("Who can find me", color = WR.text, fontSize = 15.sp)
+                Muted("Everyone: people can search your @username. Link only: they need your link. Nobody: no new requests.", size = 12)
+                Spacer(Modifier.height(8.dp))
+                app.waveroom.ui.components.Segmented(
+                    listOf("everyone" to "Everyone", "link" to "Link only", "nobody" to "Nobody"), s.findMe,
+                    { v -> AppCore.settings.update { st -> st.copy(findMe = v) }; app.waveroom.Rendezvous.kick(); app.waveroom.Discovery.profileChanged() }
+                )
+            }
+
             SectionTitle("Network")
             Column(Modifier.padding(horizontal = 20.dp)) {
                 SwitchRow("Show rooms on this Wi-Fi", "Listen for rooms hosted on the same network and list them under Rooms.", s.nearby, { AppCore.settings.update { st -> st.copy(nearby = it) } })

@@ -398,7 +398,8 @@ class RoomEngine(private val io: EngineIO) {
                     "play" -> nw = w.copy(position = nowPos, playing = true)
                     "pause" -> nw = w.copy(position = nowPos, playing = false)
                     "seek" -> {
-                        val target = d.dbl("value")
+                        val raw = d.dbl("value")
+                        val target = if (raw.isNaN() || raw.isInfinite()) 0.0 else raw.coerceIn(0.0, 86_400.0)
                         nw = w.copy(position = maxOf(0.0, if (dur > 0) minOf(target, dur.toDouble()) else target))
                     }
                     "rate" -> nw = w.copy(position = nowPos, rate = d.dbl("value", 1.0).coerceIn(0.25, 2.0))

@@ -99,7 +99,8 @@ class DmHub(private val core: AppCore) {
         core.dms.put(chat, m)
         if (chat == SAVED) return
         val sent = recipients(chat).count { core.mesh.linkForUid(it)?.send(wire(chat, m)) == true }
-        if (sent == 0 && recipients(chat).isNotEmpty()) core.dms.edit(chat, m.id) { it.copy(status = "pending") }
+        if (recipients(chat).isEmpty()) core.dms.edit(chat, m.id) { it.copy(status = "sent") }
+        else if (sent == 0) core.dms.edit(chat, m.id) { it.copy(status = "pending") }
     }
 
     private fun base(chat: String, text: String, reply: String) = DmMessage(
@@ -121,6 +122,7 @@ class DmHub(private val core: AppCore) {
     /** Copy a picked attachment into private storage and send it. */
     fun sendUri(chat: String, uri: Uri, kind: String, reply: String = "", caption: String = "") {
         io.execute {
+            var destRef: File? = null
             try {
                 val cr = core.app.contentResolver
                 val mime = cr.getType(uri) ?: "application/octet-stream"
@@ -131,6 +133,7 @@ class DmHub(private val core: AppCore) {
                 }
                 val id = Ids.id("m_")
                 val dest = Media.file(id)
+                destRef = dest
                 var total = 0L
                 cr.openInputStream(uri)?.use { ins ->
                     dest.outputStream().use { out ->
@@ -152,6 +155,7 @@ class DmHub(private val core: AppCore) {
                 val msg = DmMessage(id, myUid, caption.trim(), nowMs(), "pending", kind = k, name = name, mime = mime, size = total, reply = reply, authorName = myName)
                 onMain { dispatch(chat, msg); mediaTick.value++ }
             } catch (e: Exception) {
+                try { destRef?.delete() } catch (x: Exception) {}
                 onMain { core.toast(if (e.message == "too big") "Files over 16 MB can't be sent" else "Couldn't read that file") }
             }
         }
@@ -214,6 +218,7 @@ class DmHub(private val core: AppCore) {
 
     private fun applyReaction(chat: String, id: String, emoji: String, uid: String, on: Boolean) {
         core.dms.edit(chat, id) { m ->
+            if (m.deleted) return@edit m
             val r = LinkedHashMap(m.reactions)
             val cur = (r[emoji] ?: emptyList()).filter { it != uid }
             val next = if (on) cur + uid else cur
@@ -255,7 +260,8 @@ class DmHub(private val core: AppCore) {
     }
 
     private fun sendDigest(link: PeerLink, g: Group) {
-        val ids = core.dms.convs.value[g.chatId]?.messages?.takeLast(150)?.map { it.id } ?: emptyList()
+        val ids = (core.dms.convs.value[g.chatId]?.messages?.takeLast(150)?.map { "${it.id}:${it.ver}" } ?: emptyList()) +
+            core.dms.removed.toList().takeLast(150).map { "$it:999999" }
         link.send(jsonOf("t" to "gh", "g" to g.id, "rev" to g.rev, "ids" to jsonArrayOf(ids)).toString())
     }
 
@@ -283,7 +289,7 @@ class DmHub(private val core: AppCore) {
                 applyReaction(chat, m.str("id"), m.str("e"), uid, m.bool("on"))
             }
             "mq" -> onMediaRequest(link, m)
-            "mb" -> onMediaChunk(m)
+            "mb" -> onMediaChunk(link, m)
             "gh" -> onDigest(link, m)
             "gr" -> {
                 val g = core.groups.get(m.str("g")) ?: return
@@ -294,13 +300,14 @@ class DmHub(private val core: AppCore) {
             "gl" -> onGroupLeave(link, m)
             "call" -> onCall(link, m)
             "callr" -> {
+                if (outgoing?.first != m.str("cid") || outgoing?.third?.contains(uid) != true) return
                 val why = if (m.str("r") == "busy") "is busy" else "declined the call"
                 core.toast("${core.contactName(uid)} $why")
                 addSystem(outgoing?.second ?: uid, "${core.contactName(uid)} $why")
             }
             "callx" -> {
                 val c = incomingCall.value
-                if (c != null && c.cid == m.str("cid")) {
+                if (c != null && c.cid == m.str("cid") && c.uid == uid) {
                     clearRing()
                     addSystem(c.chat, "Missed call from ${core.contactName(c.uid)}", from = c.uid)
                 }
@@ -325,8 +332,8 @@ class DmHub(private val core: AppCore) {
         val c = j.str("c")
         val chat = chatFor(link, c)
         val backfill = j.bool("bf")
-        var msg = DmMessage.from(j).copy(status = "recv")
-        if (msg.id.isEmpty()) return
+        var msg = sanitize(DmMessage.from(j).copy(status = "recv")) ?: return
+        if (core.dms.removed.contains(msg.id)) return
         val group = isGroup(chat)
         val g = if (group) core.groups.get(gid(chat)) else null
         fun ack(ok: Boolean, err: String = "") {
@@ -334,12 +341,14 @@ class DmHub(private val core: AppCore) {
         }
         if (group) {
             if (g == null || g.left || !g.members.containsKey(uid) || !g.members.containsKey(msg.from)) { ack(false, "Not a member"); return }
+            if (msg.from != uid && !backfill) return
+            if (core.social.blocked.value.contains(msg.from)) { ack(true); return }
         } else {
             if (msg.from != uid) return
         }
         val existing = core.dms.find(chat, msg.id)
         if (existing != null) {
-            val allowed = existing.from == uid || (msg.deleted && g?.isAdmin(uid) == true) || (msg.from == uid)
+            val allowed = msg.from == existing.from && (existing.from == uid || (msg.deleted && g?.isAdmin(uid) == true))
             if (msg.ver > existing.ver && allowed) {
                 if (msg.deleted) Media.file(msg.id).delete()
                 core.dms.put(chat, msg.copy(status = existing.status, reactions = if (msg.deleted) emptyMap() else existing.reactions))
@@ -365,6 +374,23 @@ class DmHub(private val core: AppCore) {
         if ((msg.kind == "image" || msg.kind == "gif") && msg.url.isEmpty() && msg.size <= AUTO_MEDIA) requestMedia(link, msg.id)
     }
 
+    private val idRx = Regex("^[A-Za-z0-9_]{1,40}$")
+
+    /** Remote messages are untrusted: bound every field before they touch the store or the disk. */
+    private fun sanitize(m: DmMessage): DmMessage? {
+        if (!idRx.matches(m.id)) return null
+        val now = nowMs()
+        val rx = LinkedHashMap<String, List<String>>()
+        for ((e, u) in m.reactions) { if (rx.size >= 24) break; rx[e.take(16)] = u.take(60).map { it.take(40) } }
+        return m.copy(
+            from = m.from.take(40), text = m.text.take(4000), name = m.name.take(120).replace('/', '_').replace('\\', '_'),
+            mime = m.mime.take(100), url = m.url.take(2000), authorName = m.authorName.take(60), fwd = m.fwd.take(60),
+            reply = m.reply.take(40), size = m.size.coerceIn(0L, MAX_FILE), ver = m.ver.coerceIn(0, 100000),
+            at = if (m.at <= 0L || m.at > now + 300_000L) now else m.at, reactions = rx,
+            kind = if (m.kind in setOf("text", "image", "gif", "file", "call")) m.kind else "text"
+        )
+    }
+
     fun preview(m: DmMessage): String = when {
         m.deleted -> "Message deleted"
         m.kind == "image" -> "📷 Photo" + if (m.text.isNotEmpty()) " · ${m.text.take(40)}" else ""
@@ -384,10 +410,30 @@ class DmHub(private val core: AppCore) {
         requestMedia(link, m.id)
     }
 
+    /** A download I asked for: only chunks of exactly this shape, from exactly this peer, are accepted. */
+    private class Dl(val sid: String, val expect: Long, var next: Int = 0, var n: Int = -1, var bytes: Long = 0, var lastAt: Long = nowMs())
+    private val downloads = HashMap<String, Dl>()
+
+    private fun failDownload(id: String) {
+        downloads.remove(id)
+        Media.part(id).delete()
+        setProgress(id, null)
+    }
+
     private fun requestMedia(link: PeerLink, id: String) {
-        if (Media.has(id) || mediaProgress.value.containsKey(id)) return
+        if (Media.has(id) || mediaProgress.value.containsKey(id) || downloads.containsKey(id)) return
+        val size = core.dms.convs.value.values.firstNotNullOfOrNull { c -> c.messages.firstOrNull { it.id == id } }?.size ?: 0L
+        downloads[id] = Dl(link.remoteSid, size)
+        Media.part(id).delete()
         setProgress(id, 0.001f)
         link.send(jsonOf("t" to "mq", "id" to id).toString())
+        fun watch() {
+            later(15_000) {
+                val d = downloads[id] ?: return@later
+                if (nowMs() - d.lastAt > 14_000) { failDownload(id); core.toast("Download interrupted. Tap to retry.") } else watch()
+            }
+        }
+        watch()
     }
 
     private fun setProgress(id: String, p: Float?) {
@@ -400,20 +446,23 @@ class DmHub(private val core: AppCore) {
         for ((chat, conv) in core.dms.convs.value) {
             if (chat == SAVED) continue
             if (conv.messages.none { it.id == id }) continue
-            if (chat == uid) return true
+            if (chat == uid && conv.messages.any { it.id == id && it.from == myUid }) return true
             if (isGroup(chat) && core.groups.get(gid(chat))?.members?.containsKey(uid) == true) return true
         }
         return false
     }
 
+    private val serveIo = Executors.newSingleThreadExecutor()
+
     private fun onMediaRequest(link: PeerLink, m: JSONObject) {
         val id = m.str("id")
+        if (!idRx.matches(id)) return
         val f = Media.file(id)
-        if (!f.exists() || f.length() > MAX_FILE || !canAccess(link.uid, id)) {
+        if (!f.isFile || f.length() > MAX_FILE || !canAccess(link.uid, id)) {
             link.send(jsonOf("t" to "mb", "id" to id, "i" to 0, "n" to 0).toString())
             return
         }
-        io.execute {
+        serveIo.execute {
             try {
                 val total = f.length()
                 val chunk = 24_000
@@ -423,7 +472,8 @@ class DmHub(private val core: AppCore) {
                     for (i in 0 until n) {
                         val len = raf.read(buf)
                         var waited = 0
-                        while (link.buffered() > 256_000 && waited < 3000) { Thread.sleep(8); waited++ }
+                        while (link.buffered() > 256_000 && waited < 1500) { Thread.sleep(8); waited++ }
+                        if (waited >= 1500) return@execute      // peer is not draining: give up, they can retry
                         val d = Base64.encodeToString(buf, 0, maxOf(len, 0), Base64.NO_WRAP)
                         if (!link.send(jsonOf("t" to "mb", "id" to id, "i" to i, "n" to n, "d" to d).toString())) return@execute
                     }
@@ -433,28 +483,40 @@ class DmHub(private val core: AppCore) {
         }
     }
 
-    private fun onMediaChunk(m: JSONObject) {
+    private fun onMediaChunk(link: PeerLink, m: JSONObject) {
         val id = m.str("id")
+        val dl = downloads[id] ?: return
+        if (dl.sid != link.remoteSid) return
         val n = m.int("n")
-        if (n == 0) { onMain { setProgress(id, null) }; return }
         val i = m.int("i")
+        if (n <= 0) { failDownload(id); core.toast("That file isn't available from this person"); return }
+        if (dl.n < 0) {
+            if (i != 0 || n > MAX_FILE / 20_000 + 2) { failDownload(id); return }
+            dl.n = n
+        }
+        if (n != dl.n || i != dl.next) { failDownload(id); return }
+        val d = m.str("d")
+        if (d.length > 40_000) { failDownload(id); return }
+        dl.next = i + 1
+        dl.lastAt = nowMs()
         io.execute {
             try {
+                val bytes = Base64.decode(d, Base64.NO_WRAP)
+                dl.bytes += bytes.size
+                if (dl.bytes > MAX_FILE || (dl.expect > 0 && dl.bytes > dl.expect + 1024)) throw IllegalStateException("too big")
                 val part = Media.part(id)
-                if (i == 0) part.delete()
-                val bytes = Base64.decode(m.str("d"), Base64.NO_WRAP)
                 part.parentFile?.mkdirs()
-                java.io.FileOutputStream(part, true).use { it.write(bytes) }
+                java.io.FileOutputStream(part, i != 0).use { it.write(bytes) }
                 if (i == n - 1) {
                     val f = Media.file(id)
                     f.delete()
                     part.renameTo(f)
-                    onMain { setProgress(id, null); mediaTick.value++ }
+                    onMain { downloads.remove(id); setProgress(id, null); mediaTick.value++ }
                 } else if (i % 4 == 0) {
                     onMain { setProgress(id, (i + 1f) / n) }
                 }
             } catch (e: Exception) {
-                onMain { setProgress(id, null) }
+                onMain { failDownload(id) }
             }
         }
     }
@@ -495,15 +557,17 @@ class DmHub(private val core: AppCore) {
     private fun onDigest(link: PeerLink, m: JSONObject) {
         val gidv = m.str("g")
         val g = core.groups.get(gidv)
+        if (core.dms.removed.contains("g:$gidv")) return
         if (g == null || g.left) {
             // they say we share a group we don't know yet: ask for details
             link.send(jsonOf("t" to "gr", "g" to gidv).toString())
             return
         }
         if (!g.members.containsKey(link.uid)) return
-        val have = m.arr("ids")?.let { a -> (0 until a.length()).map { a.optString(it) }.toSet() } ?: emptySet()
+        val have = HashMap<String, Int>()
+        m.arr("ids")?.let { a -> for (k in 0 until minOf(a.length(), 400)) { val p = a.optString(k).split(":"); have[p[0]] = p.getOrNull(1)?.toIntOrNull() ?: 0 } }
         if (m.lng("rev") < g.rev) link.send(jsonOf("t" to "gu", "g" to g.toJson()).toString())
-        val missing = core.dms.convs.value[g.chatId]?.messages?.takeLast(150)?.filter { it.id !in have && it.from.isNotEmpty() }?.takeLast(100) ?: emptyList()
+        val missing = core.dms.convs.value[g.chatId]?.messages?.takeLast(150)?.filter { (have[it.id] ?: -1) < it.ver && it.from.isNotEmpty() }?.takeLast(100) ?: emptyList()
         for (x in missing) link.send(wire(g.chatId, x, true))
     }
 
@@ -513,6 +577,9 @@ class DmHub(private val core: AppCore) {
         if (g.id.isEmpty() || !g.members.containsKey(myUid) || !g.members.containsKey(link.uid)) return
         if (core.social.blocked.value.contains(link.uid)) return
         val cur = core.groups.get(g.id)
+        if (core.dms.removed.contains("g:${g.id}") || cur?.left == true) return
+        if (cur != null && !cur.members.containsKey(link.uid)) return
+        if (cur == null && refuse(link) != null) return
         if (cur != null && cur.rev >= g.rev && !cur.left) {
             // already know it; still merge messages
         } else {
@@ -531,7 +598,9 @@ class DmHub(private val core: AppCore) {
     private fun onGroupUpdate(link: PeerLink, m: JSONObject) {
         val g = Group.from(m.obj("g") ?: return)
         val cur = core.groups.get(g.id) ?: return
-        if (!cur.members.containsKey(link.uid) || g.rev <= cur.rev) return
+        if (cur.left || core.dms.removed.contains("g:${g.id}")) return
+        if (!cur.members.containsKey(link.uid) || g.rev <= cur.rev || g.rev > cur.rev + 50) return
+        if (!validGroupChange(cur, g, link.uid)) return
         if (!g.members.containsKey(myUid)) {
             core.groups.put(cur.copy(left = true, rev = g.rev))
             addSystem(cur.chatId, "You were removed from this group")
@@ -545,6 +614,25 @@ class DmHub(private val core: AppCore) {
         if (cur.name != g.name) addSystem(g.chatId, "Group renamed to “${g.name}”")
     }
 
+    /** A group update is only believed if the sender was allowed to make exactly that change. */
+    private fun validGroupChange(cur: Group, g: Group, sender: String): Boolean {
+        if (g.ownerUid != cur.ownerUid || g.members.size > 256) return false
+        val admin = cur.isAdmin(sender)
+        val isOwner = cur.ownerUid == sender
+        for ((u, mem) in g.members) {
+            val old = cur.members[u]
+            if (old == null) {
+                if (!cur.canAdd(sender) || mem.role != "member") return false
+            } else if (old.role != mem.role && !isOwner) return false
+        }
+        for (u in cur.members.keys) {
+            if (!g.members.containsKey(u) && (!admin || u == cur.ownerUid)) return false
+        }
+        if (!admin && (g.name != cur.name || g.about != cur.about || g.emoji != cur.emoji || g.hue != cur.hue || g.membersCanAdd != cur.membersCanAdd)) return false
+        if (g.name.length > 60 || g.about.length > 200) return false
+        return true
+    }
+
     private fun onGroupLeave(link: PeerLink, m: JSONObject) {
         val g = core.groups.get(m.str("g")) ?: return
         val who = g.members[link.uid] ?: return
@@ -555,7 +643,7 @@ class DmHub(private val core: AppCore) {
             val next = members.values.firstOrNull { it.role == "admin" } ?: members.values.minByOrNull { it.addedAt }
             if (next != null) { owner = next.uid; members[next.uid] = next.copy(role = "owner") }
         }
-        core.groups.put(g.copy(members = members, rev = maxOf(g.rev, m.lng("rev")) + 0, ownerUid = owner))
+        core.groups.put(g.copy(members = members, rev = g.rev + 1, ownerUid = owner))
         addSystem(g.chatId, "${who.name} left")
     }
 
@@ -619,6 +707,7 @@ class DmHub(private val core: AppCore) {
             val g = core.groups.get(gid(chat))
             if (g != null && !g.left) leaveGroup(g.id)
             core.groups.remove(gid(chat))
+            core.dms.markRemoved("g:" + gid(chat))
         }
         core.dms.deleteChat(chat)
     }

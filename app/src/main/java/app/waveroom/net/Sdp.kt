@@ -145,6 +145,8 @@ object Sdp {
             if (j.str("k").isEmpty()) null else j
         } catch (e: Exception) {
             null
+        } catch (e: StackOverflowError) {
+            null
         }
     }
 }

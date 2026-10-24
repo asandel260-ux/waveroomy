@@ -41,8 +41,12 @@ object Docs {
     }
 
     fun read(name: String): JSONObject? {
-        val t = readText(name) ?: return null
-        return parseJsonOrNull(t)
+        val t = readText(name)
+        val j = if (t != null) parseJsonOrNull(t) else null
+        if (j != null) return j
+        // the main file is missing or damaged: fall back to the previous good copy
+        val b = readText("$name.bak") ?: return null
+        return parseJsonOrNull(b)
     }
 
     fun write(name: String, json: JSONObject) {
@@ -52,7 +56,12 @@ object Docs {
                 val f = file(name)
                 f.parentFile?.mkdirs()
                 val tmp = File(f.parentFile, f.name + ".tmp")
-                tmp.writeText(text, Charsets.UTF_8)
+                java.io.FileOutputStream(tmp).use { o ->
+                    o.write(text.toByteArray(Charsets.UTF_8))
+                    o.fd.sync()
+                }
+                val bak = File(f.parentFile, f.name + ".bak")
+                if (f.exists()) { bak.delete(); f.renameTo(bak) }
                 if (!tmp.renameTo(f)) {
                     f.delete()
                     tmp.renameTo(f)
@@ -117,6 +126,7 @@ class Debounced(private val ms: Long, private val action: () -> Unit) {
     }
 
     fun flush() {
+        if (pending == null) return
         cancelLater(pending)
         pending = null
         action()
@@ -138,6 +148,17 @@ class Identity(val uid: String, val pubB64: String, private val privB64: String)
         s.initSign(priv)
         s.update(data)
         return Base64.encodeToString(s.sign(), Base64.NO_WRAP)
+    }
+
+    /** ECDH with someone's public key: both sides get the same secret, nobody else can. */
+    fun agree(theirPubB64: String): ByteArray {
+        val kf = KeyFactory.getInstance("EC")
+        val priv = kf.generatePrivate(PKCS8EncodedKeySpec(Base64.decode(privB64, Base64.NO_WRAP)))
+        val pub = kf.generatePublic(X509EncodedKeySpec(Base64.decode(theirPubB64, Base64.NO_WRAP)))
+        val ka = javax.crypto.KeyAgreement.getInstance("ECDH")
+        ka.init(priv)
+        ka.doPhase(pub, true)
+        return ka.generateSecret()
     }
 
     fun toJson(): JSONObject = JSONObject().put("uid", uid).put("pub", pubB64).put("priv", privB64)
@@ -242,6 +263,7 @@ class ProfileStore {
     fun save(p: MyProfile) {
         profile.value = p
         Docs.write("profile.json", p.toJson())
+        app.waveroom.Discovery.profileChanged()
     }
 
     fun setPhoto(bytes: ByteArray?) {
@@ -299,6 +321,7 @@ data class Settings(
     ,val animations: Boolean = true
     ,val useRelay: Boolean = true
     ,val reconnect: Boolean = true
+    ,val findMe: String = "everyone"   // everyone | link | nobody
     ,val rvUrl: String = ""
 ) {
     fun toJson(): JSONObject = JSONObject()
@@ -309,7 +332,7 @@ data class Settings(
         .put("shareRes", shareRes).put("shareFps", shareFps)
         .put("micDeviceId", micDeviceId).put("outputDeviceId", outputDeviceId)
         .put("chatSlidesOpen", chatSlidesOpen)
-        .put("accentColor", accentColor).put("bgColor", bgColor).put("animations", animations).put("useRelay", useRelay).put("reconnect", reconnect).put("rvUrl", rvUrl)
+        .put("accentColor", accentColor).put("bgColor", bgColor).put("animations", animations).put("useRelay", useRelay).put("reconnect", reconnect).put("findMe", findMe).put("rvUrl", rvUrl)
 
     companion object {
         fun from(j: JSONObject): Settings {
@@ -324,13 +347,14 @@ data class Settings(
                 shareRes = j.int("shareRes", d.shareRes), shareFps = j.int("shareFps", d.shareFps),
                 micDeviceId = j.int("micDeviceId", -1), outputDeviceId = j.int("outputDeviceId", -1),
                 chatSlidesOpen = j.bool("chatSlidesOpen", d.chatSlidesOpen),
-                accentColor = j.int("accentColor", 0), bgColor = j.int("bgColor", 0), animations = j.bool("animations", true), useRelay = j.bool("useRelay", true), reconnect = j.bool("reconnect", true), rvUrl = j.str("rvUrl")
+                accentColor = j.int("accentColor", 0), bgColor = j.int("bgColor", 0), animations = j.bool("animations", true), useRelay = j.bool("useRelay", true), reconnect = j.bool("reconnect", true), findMe = j.str("findMe", "everyone"), rvUrl = j.str("rvUrl")
             )
         }
     }
 }
 
 class SettingsStore {
+    fun flush() = saver.flush()
     val state = MutableStateFlow(Settings())
     private val saver = Debounced(300) { Docs.write("settings.json", state.value.toJson()) }
 
@@ -350,6 +374,7 @@ class SettingsStore {
  * ========================================================================= */
 
 class SocialStore {
+    fun flush() = saver.flush()
     val contacts = MutableStateFlow<Map<String, Contact>>(emptyMap())
     val following = MutableStateFlow<Set<String>>(emptySet())
     /** People who told me (while connected) that they follow me. */
@@ -443,6 +468,7 @@ class SocialStore {
  * ========================================================================= */
 
 class DmStore {
+    fun flush() = saver.flush()
     val convs = MutableStateFlow<Map<String, Conversation>>(emptyMap())
     private val saver = Debounced(500) { persist() }
 
@@ -451,13 +477,20 @@ class DmStore {
         val m = LinkedHashMap<String, Conversation>()
         j.arr("convs")?.objects()?.forEach { val c = Conversation.from(it); m[c.uid] = c }
         convs.value = m
+        j.arr("removed")?.strings()?.let { removed.addAll(it) }
     }
+
+    /** Messages and groups this person deleted on this phone; never let a sync bring them back. */
+    val removed = LinkedHashSet<String>()
 
     private fun persist() {
         val a = JSONArray()
         for (c in convs.value.values) a.put(c.toJson())
-        Docs.write("dms.json", JSONObject().put("convs", a))
+        while (removed.size > 3000) removed.remove(removed.first())
+        Docs.write("dms.json", JSONObject().put("convs", a).put("removed", jsonArrayOf(removed.toList())))
     }
+
+    fun markRemoved(key: String) { removed.add(key); saver.poke() }
 
     fun unreadTotal(): Int = convs.value.values.filter { !it.muted }.sumOf { it.unread }
 
@@ -467,7 +500,7 @@ class DmStore {
     fun put(chat: String, msg: DmMessage, unreadBump: Boolean = false) {
         mutate(chat) { c ->
             val i = c.messages.indexOfFirst { it.id == msg.id }
-            val list = if (i >= 0) c.messages.toMutableList().also { it[i] = msg } else (c.messages + msg).sortedBy { it.at }
+            val list = if (i >= 0) c.messages.toMutableList().also { it[i] = msg } else (c.messages + msg).sortedBy { it.at }.let { l -> if (l.size > 3000) l.takeLast(3000) else l }
             c.copy(messages = list, lastAt = maxOf(c.lastAt, msg.at), unread = c.unread + (if (unreadBump && i < 0) 1 else 0))
         }
     }
@@ -485,6 +518,7 @@ class DmStore {
     }
 
     fun removeMessage(chat: String, id: String) {
+        removed.add(id)
         mutate(chat) { c -> c.copy(messages = c.messages.filter { it.id != id }, pinned = if (c.pinned == id) "" else c.pinned) }
     }
 
@@ -540,6 +574,7 @@ class DmStore {
  * ========================================================================= */
 
 class RoomsStore {
+    fun flush() = saver.flush()
     val rooms = MutableStateFlow<List<SavedRoom>>(emptyList())
     private val saver = Debounced(400) { persist() }
 
@@ -583,6 +618,7 @@ class RoomsStore {
  * ========================================================================= */
 
 class ModStore {
+    fun flush() = saver.flush()
     val reports = MutableStateFlow<List<Report>>(emptyList())
     val audit = MutableStateFlow<List<AuditEntry>>(emptyList())
     val stats = MutableStateFlow(JSONObject())

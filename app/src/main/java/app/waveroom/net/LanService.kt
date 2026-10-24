@@ -61,12 +61,24 @@ data class NearbyPerson(val uid: String, val name: String, val username: String,
  * exchange over a short-lived TCP socket so no code has to be copied by hand.
  * (Works on Wi-Fi, a phone hotspot or any LAN that allows device-to-device traffic.)
  */
+private fun readCapped(r: java.io.BufferedReader, max: Int = 80_000): String? {
+    val sb = StringBuilder()
+    while (true) {
+        val c = r.read()
+        if (c < 0) return if (sb.isEmpty()) null else sb.toString()
+        if (c == '\n'.code) return sb.toString()
+        if (c != '\r'.code) sb.append(c.toChar())
+        if (sb.length > max) return null
+    }
+}
+
 class LanService(private val ctx: Context, private val mySid: () -> String) {
 
     val nearby = MutableStateFlow<List<NearbyRoom>>(emptyList())
     val people = MutableStateFlow<List<NearbyPerson>>(emptyList())
     private val seenPeople = HashMap<String, NearbyPerson>()
     private var app: LanApp? = null
+    private val active = java.util.concurrent.atomic.AtomicInteger(0)
 
     private var listenSocket: DatagramSocket? = null
     private var listenThread: Thread? = null
@@ -202,7 +214,8 @@ class LanService(private val ctx: Context, private val mySid: () -> String) {
                     } catch (e: Exception) {
                         break
                     }
-                    Thread { serve(c) }.also { it.isDaemon = true; it.start() }
+                    if (active.incrementAndGet() > 6) { active.decrementAndGet(); try { c.close() } catch (e: Exception) {}; continue }
+                    Thread { try { serve(c) } finally { active.decrementAndGet() } }.also { it.isDaemon = true; it.start() }
                 }
             }.also { it.isDaemon = true; it.start() }
         } catch (e: Exception) {
@@ -273,7 +286,7 @@ class LanService(private val ctx: Context, private val mySid: () -> String) {
                     val rd = BufferedReader(InputStreamReader(s.getInputStream(), Charsets.UTF_8))
                     val wr = PrintWriter(s.getOutputStream(), true)
                     wr.println(jsonOf("t" to "ans", "code" to code).toString())
-                    val r = parseJsonOrNull(rd.readLine() ?: "")
+                    val r = parseJsonOrNull(readCapped(rd) ?: "")
                     s.close()
                     if (r != null && r.str("t") == "ok") { ok = true; break }
                 } catch (e: Exception) {
@@ -322,7 +335,7 @@ class LanService(private val ctx: Context, private val mySid: () -> String) {
             sock.soTimeout = 20_000
             val rd = BufferedReader(InputStreamReader(sock.getInputStream(), Charsets.UTF_8))
             val wr = PrintWriter(sock.getOutputStream(), true)
-            val hello = parseJsonOrNull(rd.readLine() ?: return) ?: return
+            val hello = parseJsonOrNull(readCapped(rd) ?: return) ?: return
             when (hello.str("t")) {
                 "ans" -> {
                     val parsed = Sdp.unpack(hello.str("code"))
@@ -345,7 +358,7 @@ class LanService(private val ctx: Context, private val mySid: () -> String) {
                     val offer0 = fc
                     if (offer0 == null) { wr.println(jsonOf("t" to "deny", "error" to "Could not prepare a connection.").toString()); return }
                     wr.println(jsonOf("t" to "offer", "code" to offer0).toString())
-                    val ans0 = parseJsonOrNull(rd.readLine() ?: return) ?: return
+                    val ans0 = parseJsonOrNull(readCapped(rd) ?: return) ?: return
                     if (ans0.str("t") != "answer") return
                     val parsed0 = Sdp.unpack(ans0.str("code")) ?: return
                     mainHandler.post { app?.acceptAnswer(parsed0) { } }
@@ -375,7 +388,7 @@ class LanService(private val ctx: Context, private val mySid: () -> String) {
                 wr.println(jsonOf("t" to "deny", "error" to "Could not prepare a connection.").toString()); return
             }
             wr.println(jsonOf("t" to "offer", "code" to offer).toString())
-            val ans = parseJsonOrNull(rd.readLine() ?: return) ?: return
+            val ans = parseJsonOrNull(readCapped(rd) ?: return) ?: return
             if (ans.str("t") != "answer") return
             val parsed = Sdp.unpack(ans.str("code")) ?: return
             mainHandler.post { host?.acceptAnswer(parsed) { } }
@@ -420,7 +433,7 @@ class LanService(private val ctx: Context, private val mySid: () -> String) {
                 val wr = PrintWriter(s.getOutputStream(), true)
                 myHello.put("t", kind).put("roomId", room.roomId)
                 wr.println(myHello.toString())
-                val resp = parseJsonOrNull(rd.readLine() ?: throw IllegalStateException("no reply"))
+                val resp = parseJsonOrNull(readCapped(rd) ?: throw IllegalStateException("no reply"))
                     ?: throw IllegalStateException("bad reply")
                 if (resp.str("t") == "deny") {
                     err = resp.str("error", "The host refused the connection.")
@@ -436,7 +449,7 @@ class LanService(private val ctx: Context, private val mySid: () -> String) {
                         err = "Could not prepare a connection."
                     } else {
                         wr.println(jsonOf("t" to "answer", "code" to a).toString())
-                        rd.readLine()
+                        readCapped(rd)
                     }
                 } else err = "Unexpected reply."
                 s.close()

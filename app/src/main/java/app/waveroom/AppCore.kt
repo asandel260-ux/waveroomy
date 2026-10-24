@@ -89,6 +89,7 @@ object AppCore : MeshHandler, app.waveroom.net.LanApp {
     /** uids we currently hold a verified live link to */
     val connected = MutableStateFlow<Set<String>>(emptySet())
     val pendingCode = MutableStateFlow<String?>(null)
+    val pendingAdd = MutableStateFlow<Card?>(null)
     val rtcError = MutableStateFlow<String?>(null)
 
     fun init(app: Application) {
@@ -117,6 +118,7 @@ object AppCore : MeshHandler, app.waveroom.net.LanApp {
         screen = ScreenShare(this)
         dmHub = DmHub(this)
         if (settings.state.value.nearby) lan.startListening()
+        Discovery.init()
         Rendezvous.start()
         later(3000) { lanReconnectTick() }
     }
@@ -143,6 +145,11 @@ object AppCore : MeshHandler, app.waveroom.net.LanApp {
         } catch (e: Exception) {
         }
         later(4000) { lanReconnectTick() }
+    }
+
+    /** Write everything pending to disk now (called when the app leaves the screen). */
+    fun flushAll() {
+        dms.flush(); groups.flush(); social.flush(); rooms.flush(); mod.flush(); settings.flush()
     }
 
     fun toast(t: String) {
@@ -290,19 +297,21 @@ object AppCore : MeshHandler, app.waveroom.net.LanApp {
 
     private fun offerer(link: PeerLink) = link.offerer
 
-    /** The lower user id invents the shared secret for a friendship; both phones keep it. */
+    /** Both phones derive the same friendship secret from their two identity keys; nothing has to be exchanged. */
+    fun pairFor(uid: String, pub: String): String? = try {
+        val z = profile.identity.agree(pub)
+        val (x, y) = if (profile.uid < uid) profile.uid to uid else uid to profile.uid
+        val md = java.security.MessageDigest.getInstance("SHA-256")
+        md.update("homit-pair|$x|$y|".toByteArray())
+        md.update(z)
+        md.digest().joinToString("") { "%02x".format(it) }.take(48)
+    } catch (e: Exception) {
+        null
+    }
+
     private fun shareFriendSecret(link: PeerLink) {
-        val uid = link.uid
-        val c = social.contact(uid) ?: return
-        if (profile.uid < uid) {
-            var s = c.pair
-            if (s.isEmpty()) {
-                s = ByteArray(24).also { java.security.SecureRandom().nextBytes(it) }
-                    .joinToString("") { "%02x".format(it) }
-                social.setPair(uid, s)
-            }
-            link.send(jsonOf("t" to "pk", "s" to s).toString())
-        }
+        val c = social.contact(link.uid) ?: return
+        pairFor(link.uid, c.pub)?.let { social.setPair(link.uid, it) }
         Rendezvous.kick()
     }
 
@@ -320,10 +329,6 @@ object AppCore : MeshHandler, app.waveroom.net.LanApp {
     override fun onMessage(fromSid: String, msg: JSONObject, link: PeerLink?) {
         when (msg.str("t")) {
             "m", "mr", "mq", "mb", "dmack", "fol", "gh", "gr", "gi", "gu", "gl", "call", "callr", "callx" -> if (link != null) dmHub.onMessage(link, msg)
-            "pk" -> if (link != null && link.authed && link.purpose == "dm" && link.uid < profile.uid) {
-                val s = msg.str("s")
-                if (s.length in 16..128 && s.all { it.isLetterOrDigit() }) { social.setPair(link.uid, s); Rendezvous.kick() }
-            }
             else -> session.onMessage(fromSid, msg, link)
         }
     }

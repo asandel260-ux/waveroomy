@@ -66,6 +66,7 @@ data class Group(
 }
 
 class GroupStore {
+    fun flush() = saver.flush()
     val groups = MutableStateFlow<Map<String, Group>>(emptyMap())
     private val saver = Debounced(400) { persist() }
 

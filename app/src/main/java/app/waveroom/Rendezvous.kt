@@ -7,6 +7,7 @@ import app.waveroom.core.later
 import app.waveroom.core.mainHandler
 import app.waveroom.core.nowMs
 import app.waveroom.core.str
+import app.waveroom.net.Sdp
 import app.waveroom.core.lng
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.json.JSONObject
@@ -61,7 +62,49 @@ object Rendezvous {
         later(2500) { tick(once = true) }
     }
 
-    fun kick() { later(500) { tick(once = true) } }
+    fun kick() { tries.clear(); later(500) { tick(once = true) } }
+
+    /** The app came back to the screen: look for everyone again. */
+    fun resume() = kick()
+
+    /** Fire-and-forget POST of a small text to a mailbox. */
+    fun post(topic: String, body: String, done: (Boolean) -> Unit) {
+        val base = baseUrl()
+        Thread {
+            var ok = false
+            try {
+                val c = URL("$base/$topic").openConnection() as HttpURLConnection
+                c.requestMethod = "POST"
+                c.doOutput = true
+                c.connectTimeout = 8000
+                c.readTimeout = 8000
+                c.outputStream.use { it.write(body.toByteArray()) }
+                val code = c.responseCode
+                c.disconnect()
+                ok = code in 200..299
+                if (code == 429) mainHandler.post { status.value = "the message board is limiting us, will retry later" }
+            } catch (e: Exception) {
+            }
+            mainHandler.post { done(ok) }
+        }.also { it.isDaemon = true; it.start() }
+    }
+
+    /** Read what a mailbox still holds (blocking: call from a thread). */
+    fun poll(topic: String): List<JSONObject> {
+        val c = URL("${baseUrl()}/$topic/json?poll=1&since=13h").openConnection() as HttpURLConnection
+        c.connectTimeout = 8000
+        c.readTimeout = 10000
+        if (c.responseCode !in 200..299) throw IllegalStateException("HTTP ${c.responseCode}")
+        val out = ArrayList<JSONObject>()
+        BufferedReader(InputStreamReader(c.inputStream)).use { r ->
+            var n = 0
+            while (n++ < 200) {
+                val line = r.readLine() ?: break
+                try { out.add(JSONObject(line)) } catch (e: Exception) {}
+            }
+        }
+        return out
+    }
 
     private fun enabled() = AppCore.settings.state.value.reconnect
 
@@ -95,7 +138,7 @@ object Rendezvous {
                     if (AppCore.connected.value.contains(p.uid)) { tries.remove(p.uid); continue }
                     val n = tries[p.uid] ?: 0
                     // back off: every tick for a while, then every few minutes
-                    if (n > 8 && n % 4 != 0) { tries[p.uid] = n + 1; continue }
+                    if (n >= 12) continue   // stop knocking after ~10 minutes until the app is used again (saves the board's quota)
                     tries[p.uid] = n + 1
                     if (me > p.uid) send(p, jsonOf("t" to "knock"))
                     else if (n < 3 || nowMs() - (lastOffer[p.uid] ?: 0L) > 240_000) offerTo(p)
@@ -170,18 +213,22 @@ object Rendezvous {
         subKey = ""
     }
 
+    private var inbox = ""
+
     private fun ensureSub(fl: List<Peer>) {
         peers = fl.associateBy { it.topic }
-        if (fl.isEmpty()) {
-            status.value = "no saved friends yet"
+        inbox = if (AppCore.settings.state.value.findMe != "nobody") Discovery.inboxTopic(AppCore.profile.uid) else ""
+        val all = fl.map { it.topic } + (if (inbox.isNotEmpty()) listOf(inbox) else emptyList())
+        if (all.isEmpty()) {
+            status.value = "nobody to look for yet"
             stopSub(); return
         }
-        val key = baseUrl() + "|" + fl.map { it.topic }.sorted().joinToString(",")
+        val key = baseUrl() + "|" + all.sorted().joinToString(",")
         if (key == subKey && sub?.isAlive == true) return
         subKey = key
         val gen = ++subGen
         val base = baseUrl()
-        val topics = fl.map { it.topic }.sorted().joinToString(",")
+        val topics = all.sorted().joinToString(",")
         val t = Thread {
             var wait = 3000L
             while (gen == subGen) {
@@ -191,7 +238,7 @@ object Rendezvous {
                     c.connectTimeout = 10000
                     c.readTimeout = 100_000
                     if (c.responseCode !in 200..299) throw IllegalStateException("HTTP ${c.responseCode}")
-                    mainHandler.post { if (gen == subGen) status.value = "listening for ${peers.size} friend(s)" }
+                    mainHandler.post { if (gen == subGen) status.value = if (peers.isEmpty()) "listening for friend requests" else "listening for ${peers.size} friend(s)" }
                     wait = 3000L
                     BufferedReader(InputStreamReader(c.inputStream)).use { r ->
                         while (gen == subGen) {
@@ -222,6 +269,7 @@ object Rendezvous {
     private fun onEvent(evId: String, topic: String, message: String) {
         if (evId.isNotEmpty() && !seenIds.add(evId)) return
         if (seenIds.size > 400) seenIds.remove(seenIds.first())
+        if (topic == inbox && inbox.isNotEmpty()) { Discovery.onInbox(message); return }
         val p = peers[topic] ?: return
         val w = try { JSONObject(message) } catch (e: Exception) { return }
         val m = w.optString("m"); val n = w.optInt("n", 1); val i = w.optInt("i", 0)
@@ -239,7 +287,7 @@ object Rendezvous {
         val me = AppCore.profile.uid
         when (note.str("t")) {
             "knock" -> if (me < p.uid) offerTo(p)
-            "offer" -> if (me > p.uid && handled.add(note.str("code").takeLast(40))) {
+            "offer" -> if (me > p.uid && Sdp.unpack(note.str("code"))?.str("p") == "dm" && handled.add(note.str("code").takeLast(40))) {
                 AppCore.handleCode(note.str("code"), autoDeliver = false) { res ->
                     if (res is CodeResult.Answer) send(p, jsonOf("t" to "answer", "code" to res.code))
                 }

@@ -183,14 +183,15 @@ class Mesh(
         if (code.str("k") != "a") return cb(false)
         val l = pending[code.str("i")] ?: return cb(false)
         val sid = code.str("s")
-        if (sid.isEmpty()) return cb(false)
+        if (sid.isEmpty() || sid == mySid) return cb(false)
+        if (links[sid]?.authed == true) return cb(false)
         l.acceptAnswer(code.str("d")) { ok ->
             if (!ok) {
                 cb(false)
             } else {
                 pending.remove(l.inviteId)
                 l.remoteSid = sid
-                links[sid]?.close()
+                links[sid]?.let { old -> links.remove(sid); old.close() }
                 links[sid] = l
                 armWatchdog(l, 60_000)
                 cb(true)
@@ -312,7 +313,7 @@ class Mesh(
 
     private fun armWatchdog(link: PeerLink, ms: Long = 25_000) {
         later(ms) {
-            if (links[link.remoteSid] === link && link.state != "connected") dropLink(link, "no path")
+            if (links[link.remoteSid] === link && (link.state != "connected" || !link.authed)) dropLink(link, if (link.state != "connected") "no path" else "no handshake")
         }
     }
 
@@ -355,6 +356,7 @@ class Mesh(
         "wr-auth|$nonce|$signerSid|$verifierSid".toByteArray(Charsets.UTF_8)
 
     private fun onHello(link: PeerLink, m: JSONObject) {
+        if (link.authed || link.remotePub.isNotEmpty()) return
         val pub = m.str("pub")
         val uid = m.str("uid")
         val sid = m.str("sid")
@@ -375,16 +377,7 @@ class Mesh(
         link.remoteNonce = m.str("nonce")
         if (m.str("purpose").isNotEmpty()) link.purpose = m.str("purpose")
         if (m.str("room").isNotEmpty()) link.joinRoomId = m.str("room")
-        val c = Contact(
-            uid, m.str("user"), m.str("name").ifEmpty { m.str("user") }, Avatar.from(m.obj("av")),
-            m.str("bio"), m.str("pron"), pub, nowMs()
-        )
-        social.upsert(c)
-        val ph = m.str("photo")
-        if (ph.isNotEmpty()) try {
-            social.setPhoto(uid, Base64.decode(ph, Base64.NO_WRAP))
-        } catch (e: Exception) {
-        }
+        link.hello = m   // the profile is only saved once the signature checks out
         val sig = profile.identity.sign(authPayload(link.remoteNonce, mySid, link.remoteSid))
         link.send(jsonOf("t" to "auth", "sig" to sig).toString())
     }
@@ -396,13 +389,31 @@ class Mesh(
             dropLink(link, "auth failed"); return
         }
         link.authed = true
+        link.hello?.let { h ->
+            val c = Contact(
+                link.uid, h.str("user").take(40), h.str("name").ifEmpty { h.str("user") }.take(60), Avatar.from(h.obj("av")),
+                h.str("bio").take(400), h.str("pron").take(40), link.remotePub, nowMs()
+            )
+            social.upsert(c)
+            val ph = h.str("photo")
+            if (ph.isNotEmpty() && ph.length < 700_000) try {
+                social.setPhoto(link.uid, Base64.decode(ph, Base64.NO_WRAP))
+            } catch (e: Exception) {
+            }
+        }
+        link.hello = null
         social.touchSeen(link.uid)
-        // a second link to the same person replaces the older one
+        // two links to the same person: both phones keep the one whose offerer has the lower id
         for (other in links.values.toList()) {
             if (other !== link && other.uid == link.uid && other.authed) {
-                if (other.createdAt < link.createdAt) {
-                    // keep the newer direct link; tell upper layers the older one vanished silently
+                val mine = if (link.offerer) profile.uid else link.uid
+                val theirs = if (other.offerer) profile.uid else other.uid
+                val keepNew = if (mine != theirs) mine < theirs else other.createdAt < link.createdAt
+                if (keepNew) {
                     links.remove(other.remoteSid); other.close()
+                } else {
+                    links.remove(link.remoteSid); pending.remove(link.inviteId); link.close()
+                    return
                 }
             }
         }
@@ -434,13 +445,15 @@ class Mesh(
         val to = m.str("to")
         val inner = m.obj("m") ?: return
         if (from.isEmpty() || from == mySid) return
+        // someone I am directly linked to talks to me directly; a relayed copy claiming to be them is a forgery
+        if (from != via.remoteSid && links[from]?.authed == true) return
         if (from != via.remoteSid) route[from] = via.remoteSid
         if (to == mySid) {
             if (inner.str("t") == "sig") onSig(from, inner.obj("d") ?: return)
             else handler?.onMessage(from, inner, links[from]?.takeIf { it.authed })
             return
         }
-        val ttl = m.int("ttl", 0)
+        val ttl = minOf(m.int("ttl", 0), 3)
         if (ttl <= 0) return
         val direct = links[to]
         if (direct != null && direct.authed) {

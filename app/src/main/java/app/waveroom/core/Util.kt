@@ -113,6 +113,8 @@ fun parseJsonOrNull(s: String): JSONObject? = try {
     JSONObject(s)
 } catch (e: Exception) {
     null
+} catch (e: StackOverflowError) {
+    null
 }
 
 /* ---------------------------------------------------------------------------
