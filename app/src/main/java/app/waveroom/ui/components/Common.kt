@@ -1,5 +1,12 @@
 package app.waveroom.ui.components
 
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.heightIn
 import android.graphics.BitmapFactory
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -82,7 +89,7 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun Tiny(text: String, modifier: Modifier = Modifier, color: Color = WR.faint) {
-    Text(text, modifier = modifier, color = if (color == WR.faint) WR.muted else color, fontFamily = WR.label, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+    Text(text, modifier = modifier, color = if (color == WR.faint) WR.muted else color, fontFamily = WR.label, fontWeight = FontWeight.Bold, fontSize = 14.sp, letterSpacing = 0.4.sp)
 }
 
 @Composable
@@ -164,7 +171,8 @@ fun WrButton(
             .background(bg.copy(alpha = bg.alpha * a))
             .border(1.dp, bd.copy(alpha = bd.alpha * a), RoundedCornerShape(10.dp))
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = if (small) 12.dp else 18.dp, vertical = if (small) 8.dp else 13.dp),
+            .heightIn(min = if (small) 40.dp else 48.dp)
+            .padding(horizontal = if (small) 14.dp else 18.dp, vertical = if (small) 8.dp else 13.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -172,7 +180,7 @@ fun WrButton(
             WrIcon(icon, if (small) 15.dp else 18.dp, fg.copy(alpha = a))
             Spacer(Modifier.width(8.dp))
         }
-        Text(text, color = fg.copy(alpha = a), fontSize = if (small) 13.sp else 15.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+        Text(text, color = fg.copy(alpha = a), fontSize = if (small) 13.sp else 15.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -187,10 +195,13 @@ fun WrIconButton(
     bg: Color = Color.Transparent,
     border: Color = Color.Transparent,
     enabled: Boolean = true,
-    badge: Int = 0
+    badge: Int = 0,
+    desc: String? = null
 ) {
     Box(
-        modifier.size(size).clip(CircleShape).background(bg).border(1.dp, border, CircleShape)
+        modifier.then(if (size < 44.dp) Modifier.minimumInteractiveComponentSize() else Modifier)
+            .semantics { contentDescription = desc ?: icon.replace('-', ' '); role = androidx.compose.ui.semantics.Role.Button }
+            .size(size).clip(CircleShape).background(bg).border(1.dp, border, CircleShape)
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
@@ -213,7 +224,7 @@ fun WrChip(text: String, selected: Boolean = false, onClick: (() -> Unit)? = nul
         .background(if (selected) WR.accentSoft else WR.surface2)
         .border(1.dp, if (selected) WR.accent else WR.border, shape)
     if (onClick != null) m = m.clickable(onClick = onClick)
-    Row(m.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row((if (onClick != null) Modifier.minimumInteractiveComponentSize() else Modifier).then(m).heightIn(min = 32.dp).padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         if (icon != null) {
             WrIcon(icon, 14.dp, if (selected) WR.accentBright else WR.muted)
             Spacer(Modifier.width(6.dp))
@@ -310,7 +321,7 @@ fun Segmented(options: List<Pair<String, String>>, selected: String, onSelect: (
             val on = key == selected
             Box(
                 Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).background(if (on) WR.accent else Color.Transparent)
-                    .clickable { onSelect(key) }.padding(vertical = 9.dp),
+                    .clickable { onSelect(key) }.padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(label, color = if (on) Color.White else WR.muted, fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1)
@@ -377,7 +388,7 @@ fun Row2(title: String, subtitle: String? = null, icon: String? = null, trailing
             Spacer(Modifier.width(14.dp))
         }
         Column(Modifier.weight(1f)) {
-            Text(title, color = if (danger) WR.danger else WR.text, fontSize = 15.sp)
+            Text(title, color = if (danger) WR.danger else WR.text, fontSize = 15.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
             if (subtitle != null) Muted(subtitle, size = 12)
         }
         if (trailing != null) trailing()
@@ -404,7 +415,7 @@ fun WrSheet(onDismiss: () -> Unit, title: String? = null, fullHeight: Boolean = 
             Box(Modifier.padding(top = 10.dp, bottom = 6.dp).width(36.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(WR.borderStrong))
         }
     ) {
-        Column(Modifier.navigationBarsPadding()) {
+        Column(Modifier.then(if (fullHeight) Modifier else Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())).navigationBarsPadding().imePadding()) {
             if (title != null) {
                 Text(title, color = WR.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
             }

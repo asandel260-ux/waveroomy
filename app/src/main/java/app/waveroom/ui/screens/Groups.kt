@@ -70,6 +70,7 @@ fun NewGroupScreen(nav: Nav) {
     var hue by remember { mutableStateOf(HUES.first()) }
     val picked = remember { mutableStateListOf<String>() }
     var error by remember { mutableStateOf<String?>(null) }
+    var creating by remember { mutableStateOf(false) }
     val people = contacts.values.filter { it.uid != AppCore.profile.uid }.sortedBy { it.displayName.lowercase() }
 
     Column(Modifier.fillMaxSize().background(WR.bg).imePadding()) {
@@ -87,12 +88,12 @@ fun NewGroupScreen(nav: Nav) {
             Spacer(Modifier.height(8.dp))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 for (e in listOf("👥", "🎧", "🔥", "🌙", "🎮", "📚", "🍕", "✈️", "💬", "🎨")) {
-                    Box(Modifier.size(40.dp).clip(CircleShape).background(if (e == emoji) WR.accentSoft else WR.surface2).border(1.dp, if (e == emoji) WR.accent else WR.border, CircleShape).clickable { emoji = e }, contentAlignment = Alignment.Center) { Text(e, fontSize = 20.sp) }
+                    Box(Modifier.size(44.dp).clip(CircleShape).background(if (e == emoji) WR.accentSoft else WR.surface2).border(1.dp, if (e == emoji) WR.accent else WR.border, CircleShape).clickable { emoji = e }, contentAlignment = Alignment.Center) { Text(e, fontSize = 20.sp) }
                 }
             }
             Spacer(Modifier.height(10.dp))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                for (h in HUES) Box(Modifier.size(28.dp).clip(CircleShape).background(WR.hue(h, 0.5f, 0.4f)).border(if (h == hue) 2.dp else 0.dp, WR.text, CircleShape).clickable { hue = h })
+                for (h in HUES) Box(Modifier.size(44.dp).clickable { hue = h }, contentAlignment = Alignment.Center) { Box(Modifier.size(30.dp).clip(CircleShape).background(WR.hue(h, 0.5f, 0.4f)).border(if (h == hue) 2.dp else 0.dp, WR.text, CircleShape)) }
             }
             Spacer(Modifier.height(18.dp))
             Tiny("Add people · ${picked.size} selected")
@@ -112,11 +113,13 @@ fun NewGroupScreen(nav: Nav) {
                     }
                 }
             }
-            if (error != null) Text(error!!, color = WR.danger, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp))
         }
-        Box(Modifier.padding(20.dp).navigationBarsPadding()) {
-            WrButton("Create group", {
-                if (name.trim().length < 2) { error = "Give the group a name."; return@WrButton }
+        Column(Modifier.padding(20.dp).navigationBarsPadding()) {
+            if (error != null) Text(error!!, color = WR.danger, fontSize = 13.sp, modifier = Modifier.padding(bottom = 8.dp))
+            WrButton(if (picked.isEmpty()) "Create group" else "Create with ${picked.size} ${if (picked.size == 1) "person" else "people"}", {
+                if (creating) return@WrButton
+                if (name.trim().length < 2) { error = "Give the group a name first."; return@WrButton }
+                creating = true
                 val id = AppCore.dmHub.createGroup(name, about, picked.toList(), emoji, hue)
                 nav.pop(); nav.push(Route.Chat(id))
             }, Modifier.fillMaxWidth(), icon = "users")
@@ -147,13 +150,13 @@ fun GroupInfoScreen(nav: Nav, gid: String) {
             Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 GroupAvatar(g.emoji, g.hue, 88)
                 Spacer(Modifier.height(12.dp))
-                Text(g.name, color = WR.text, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
-                if (g.about.isNotEmpty()) Muted(g.about, modifier = Modifier.padding(top = 4.dp))
+                Text(g.name, color = WR.text, fontSize = 24.sp, fontWeight = FontWeight.SemiBold, textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 3, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                if (g.about.isNotEmpty()) Muted(g.about, modifier = Modifier.padding(top = 4.dp), align = androidx.compose.ui.text.style.TextAlign.Center)
                 Muted("${g.members.size} members", size = 12, modifier = Modifier.padding(top = 6.dp))
                 Spacer(Modifier.height(14.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    WrButton("Message", { nav.pop() }, kind = BtnKind.Secondary, small = true, icon = "message")
-                    WrButton("Group call", { if (AppCore.dmHub.startCall(chat)) { } }, kind = BtnKind.Secondary, small = true, icon = "phone", enabled = !g.left)
+                    WrButton("Message", { nav.popTo(Route.Chat(chat)); if (nav.top != Route.Chat(chat)) nav.replaceTop(Route.Chat(chat)) }, kind = BtnKind.Secondary, small = true, icon = "message")
+                    WrButton("Group call", { AppCore.dmHub.startCall(chat) }, kind = BtnKind.Secondary, small = true, icon = "phone", enabled = !g.left)
                 }
             }
             if (!g.left) {

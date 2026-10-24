@@ -14,6 +14,9 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -134,7 +137,7 @@ private class YtBridge(
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun WatchPanel(modifier: Modifier = Modifier) {
+fun WatchPanel(modifier: Modifier = Modifier, land: Boolean = false) {
     val session = AppCore.session
     val tick by session.tick.collectAsState()
     tick.let { }
@@ -250,9 +253,8 @@ fun WatchPanel(modifier: Modifier = Modifier) {
         }
     }
 
-    Column(modifier.background(WR.bg)) {
-        // player
-        Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f).background(Color.Black)) {
+    val playerBox: @Composable (Modifier) -> Unit = { pm ->
+        Box(pm.background(Color.Black)) {
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
                 factory = { ctx ->
@@ -288,7 +290,9 @@ fun WatchPanel(modifier: Modifier = Modifier) {
                     Text(err, color = Color.White, fontSize = 13.sp)
                 }
             }
-        }
+                }
+    }
+    val lowerPart: @Composable (Boolean) -> Unit = { scroll ->
         // transport
         val v = w.video
         if (v != null) {
@@ -331,7 +335,17 @@ fun WatchPanel(modifier: Modifier = Modifier) {
         }
         if (w.queue.isNotEmpty()) {
             Tiny("Up next · ${w.queue.size}", Modifier.padding(horizontal = 14.dp, vertical = 6.dp))
-            LazyColumn(Modifier.weight(1f)) {
+            if (scroll) {
+                for (q in w.queue) { androidx.compose.runtime.key(q.qid.ifEmpty { q.id }) {
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(q.title, color = WR.text, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Muted("added by ${q.by}", size = 12)
+                        }
+                        if (canControl) WrIconButton("x", { session.watchQueueRemove(q.qid) }, size = 36.dp, iconSize = 16.dp, tint = WR.muted)
+                    }
+                } }
+            } else LazyColumn(Modifier.weight(1f)) {
                 items(w.queue, key = { it.qid.ifEmpty { it.id } }) { q ->
                     Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
@@ -342,6 +356,19 @@ fun WatchPanel(modifier: Modifier = Modifier) {
                     }
                 }
             }
+        }
+        }
+    if (land) {
+        Row(modifier.background(WR.bg)) {
+            Box(Modifier.weight(1.4f).fillMaxHeight().background(Color.Black), contentAlignment = Alignment.Center) {
+                playerBox(Modifier.fillMaxWidth().aspectRatio(16f / 9f))
+            }
+            Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())) { lowerPart(true) }
+        }
+    } else {
+        Column(modifier.background(WR.bg)) {
+            playerBox(Modifier.fillMaxWidth().aspectRatio(16f / 9f))
+            lowerPart(false)
         }
     }
 

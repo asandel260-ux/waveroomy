@@ -58,7 +58,7 @@ object WR {
     val borderStrong: Color get() = if (bgArgb == 0) Color(0xFF37373F) else tint(0.24f)
     val text: Color get() = if (isLight) Color(0xFF111114) else Color(0xFFEDEDEF)
     val muted: Color get() = if (isLight) Color(0xFF55555E) else Color(0xFF9A9AA3)
-    val faint: Color get() = if (isLight) Color(0xFF8A8A93) else Color(0xFF616169)
+    val faint: Color get() = if (isLight) Color(0xFF6E6E78) else Color(0xFF7C7C86)
     val accent: Color get() = if (accentArgb == 0) Color(0xFF6E56CF) else Color(accentArgb or (0xFF shl 24))
     val accentBright: Color get() = if (accentArgb == 0) Color(0xFF9B84EE) else (if (isLight) lerp(accent, Color.Black, 0.25f) else lerp(accent, Color.White, 0.3f))
     val accentSoft: Color get() = accent.copy(alpha = 0.2f)

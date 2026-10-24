@@ -70,12 +70,19 @@ private fun MainShell() {
     val joinError by session.joinError.collectAsState()
     val pending by AppCore.pendingCode.collectAsState()
 
+    var lastPhase by remember { mutableStateOf("idle") }
     LaunchedEffect(phase) {
-        if (phase != "idle") {
+        val was = lastPhase
+        lastPhase = phase
+        if (phase != "idle" && was == "idle") {
             nav.resetTo(Route.Home)
             nav.push(Route.Room)
-        } else if (nav.top == Route.Room) {
-            nav.pop()
+        } else if (phase == "idle") {
+            // the room is over: take it out of the stack wherever it is
+            if (nav.stack.contains(Route.Room)) {
+                nav.stack.removeAll { it == Route.Room }
+                if (nav.stack.isEmpty()) nav.stack.add(Route.Home)
+            }
         }
     }
     val adding by AppCore.pendingAdd.collectAsState()
@@ -96,11 +103,11 @@ private fun MainShell() {
     val top = nav.top
     BackHandler(enabled = nav.stack.size > 1 && top != Route.Room) { nav.pop() }
 
+    val d = nav.stack.size - nav.prevSize
+    androidx.compose.runtime.SideEffect { nav.prevSize = nav.stack.size }
     AnimatedContent(
         targetState = top,
         transitionSpec = {
-            val d = nav.stack.size - nav.prevSize
-            nav.prevSize = nav.stack.size
             if (!WR.animations) EnterTransition.None togetherWith ExitTransition.None
             else if (d >= 0) (slideInHorizontally(tween(260)) { it / 4 } + fadeIn(tween(260))) togetherWith (slideOutHorizontally(tween(260)) { -it / 6 } + fadeOut(tween(160)))
             else (slideInHorizontally(tween(260)) { -it / 6 } + fadeIn(tween(260))) togetherWith (slideOutHorizontally(tween(260)) { it / 4 } + fadeOut(tween(160)))

@@ -1,5 +1,8 @@
 package app.waveroom.ui.screens
 
+import app.waveroom.ui.components.EmptyState
+import kotlinx.coroutines.launch
+import androidx.compose.foundation.lazy.itemsIndexed
 import android.os.Build
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -147,10 +150,18 @@ fun ChatScreen(nav: Nav, chat: String) {
         AppCore.dms.markRead(chat)
         onDispose { hub.openChat.value = null }
     }
-    LaunchedEffect(msgs.size) {
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var firstLoad by remember { mutableStateOf(true) }
+    var newBelow by remember { mutableStateOf(0) }
+    val atBottom by remember { androidx.compose.runtime.derivedStateOf { val li = list.layoutInfo; li.totalItemsCount == 0 || (li.visibleItemsInfo.lastOrNull()?.index ?: 0) >= li.totalItemsCount - 2 } }
+    LaunchedEffect(msgs.lastOrNull()?.id, msgs.size) {
         AppCore.dms.markRead(chat)
-        if (msgs.isNotEmpty()) list.animateScrollToItem(msgs.size - 1)
+        if (msgs.isEmpty()) return@LaunchedEffect
+        if (firstLoad) { list.scrollToItem(msgs.size - 1); firstLoad = false }
+        else if (atBottom || msgs.last().from == me) list.animateScrollToItem(msgs.size - 1)
+        else newBelow++
     }
+    LaunchedEffect(atBottom) { if (atBottom) newBelow = 0 }
 
     val title = hub.titleOf(chat)
     val online = if (isGroup || isSaved) false else connected.contains(chat)
@@ -201,37 +212,50 @@ fun ChatScreen(nav: Nav, chat: String) {
         val pinned = conv?.pinned?.let { id -> msgs.firstOrNull { it.id == id } }
         if (pinned != null) {
             Row(
-                Modifier.fillMaxWidth().background(WR.surface).clickable { val i = msgs.indexOf(pinned); if (i >= 0) { /* scroll handled below */ } }
+                Modifier.fillMaxWidth().background(WR.surface).clickable { val i = msgs.indexOf(pinned); if (i >= 0) scope.launch { list.animateScrollToItem(i) } }
                     .padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically
             ) {
                 WrIcon("pin", 14.dp, WR.accentBright)
                 Spacer(Modifier.width(8.dp))
                 Text(hub.preview(pinned), color = WR.muted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                WrIconButton("x", { hub.togglePin(chat, pinned.id) }, size = 28.dp, iconSize = 14.dp, tint = WR.faint)
+                WrIconButton("x", { hub.togglePin(chat, pinned.id) }, size = 36.dp, iconSize = 16.dp, tint = WR.muted, desc = "Unpin")
             }
         }
         if (!isGroup && !isSaved && !online) {
             Row(Modifier.fillMaxWidth().background(WR.surface).padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Muted("Not connected right now. Messages wait until you are.", size = 12, modifier = Modifier.weight(1f))
-                WrButton("Reconnect", { nav.push(Route.Invite("dm")) }, small = true, kind = BtnKind.Secondary)
+                Muted("$title isn't connected. They'll get your messages as soon as you're both online.", size = 12, modifier = Modifier.weight(1f))
+                Spacer(Modifier.width(8.dp))
+                WrButton("Try now", { app.waveroom.Rendezvous.kick(); AppCore.toast("Looking for $title…") }, small = true, kind = BtnKind.Secondary)
             }
         }
 
         /* ---------- messages ---------- */
         if (msgs.isEmpty()) {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Muted(if (isSaved) "Save notes, links, photos and files here.\nForward any message to keep it." else "Say hello 👋", align = TextAlign.Center)
+                EmptyState(
+                    if (isSaved) "bookmark" else if (isGroup) "users" else "message",
+                    if (isSaved) "Your notes" else "No messages yet",
+                    if (isSaved) "Save notes, links, photos and files here. Forward any message to keep it." else "Say hello 👋"
+                )
             }
         } else {
-            LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = list, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                items(msgs, key = { it.id }) { m ->
+          Box(Modifier.weight(1f).fillMaxWidth()) {
+            LazyColumn(Modifier.fillMaxSize(), state = list, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                itemsIndexed(msgs, key = { _, m -> m.id }) { idx, m ->
+                    val before = msgs.getOrNull(idx - 1)
+                    if (before == null || dayKey(before.at) != dayKey(m.at)) {
+                        Box(Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
+                            Text(dayLabel(m.at), color = WR.muted, fontSize = 12.sp, fontWeight = FontWeight.Medium,
+                                modifier = Modifier.clip(RoundedCornerShape(50)).background(WR.surface2).padding(horizontal = 12.dp, vertical = 4.dp))
+                        }
+                    }
                     if (m.kind == "call") {
                         Box(Modifier.fillMaxWidth().padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
                             Muted(m.text, size = 12, align = TextAlign.Center)
                         }
                     } else {
-                        val prev = msgs.getOrNull(msgs.indexOf(m) - 1)
-                        val showAuthor = isGroup && m.from != me && (prev == null || prev.from != m.from || prev.kind == "call")
+                        val prev = before
+                        val showAuthor = isGroup && m.from != me && (prev == null || prev.from != m.from || prev.kind == "call" || dayKey(prev.at) != dayKey(m.at))
                         Bubble(
                             chat, m, msgs, showAuthor, isGroup, loader,
                             onLong = { actionOn = m },
@@ -241,6 +265,18 @@ fun ChatScreen(nav: Nav, chat: String) {
                     }
                 }
             }
+            if (newBelow > 0 || !atBottom) {
+                Row(
+                    Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp).clip(RoundedCornerShape(50)).background(WR.accent)
+                        .clickable { scope.launch { list.animateScrollToItem(msgs.size - 1) } }.padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    WrIcon("arrow-down", 14.dp, Color.White)
+                    Spacer(Modifier.width(6.dp))
+                    Text(if (newBelow > 0) "$newBelow new" else "Latest", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                }
+            }
+          }
         }
 
         /* ---------- composer ---------- */
@@ -387,9 +423,10 @@ private fun Bubble(
     val fg = if (mine) Color.White else WR.text
     val link = if (mine) Color.White else WR.accentBright
     val shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = if (mine) 16.dp else 4.dp, bottomEnd = if (mine) 4.dp else 16.dp)
+    val maxW = (androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp * 0.8f).dp.coerceIn(220.dp, 440.dp)
     Column(Modifier.fillMaxWidth(), horizontalAlignment = if (mine) Alignment.End else Alignment.Start) {
         Column(
-            Modifier.widthIn(max = 300.dp).clip(shape).background(bg)
+            Modifier.widthIn(max = maxW).clip(shape).background(bg)
                 .combinedClickable(onClick = { if (m.status == "failed") onRetry() else if (m.kind == "image" || m.kind == "gif") onView() }, onLongClick = onLong)
                 .padding(horizontal = 10.dp, vertical = 7.dp)
         ) {
@@ -412,12 +449,12 @@ private fun Bubble(
             }
             if (!m.deleted && m.text.isNotEmpty()) RichText(m.text, fg, link, Modifier.padding(top = if (m.kind == "text") 0.dp else 4.dp))
             Row(Modifier.align(Alignment.End).padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (m.edited && !m.deleted) Text("edited ", color = fg.copy(alpha = 0.6f), fontSize = 10.sp)
-                Text(fmtClock(m.at), color = fg.copy(alpha = 0.6f), fontSize = 10.sp)
+                if (m.edited && !m.deleted) Text("edited ", color = fg.copy(alpha = 0.8f), fontSize = 11.sp)
+                Text(fmtClock(m.at), color = fg.copy(alpha = 0.8f), fontSize = 11.sp)
                 if (mine) {
                     Spacer(Modifier.width(4.dp))
                     when (m.status) {
-                        "pending" -> Text("· waiting", color = fg.copy(alpha = 0.6f), fontSize = 10.sp)
+                        "pending" -> Text("· waiting", color = fg.copy(alpha = 0.8f), fontSize = 11.sp)
                         "failed" -> Text("· ${m.error.ifEmpty { "not delivered" }} · tap to retry", color = if (mine) Color(0xFFFFD0D0) else WR.danger, fontSize = 10.sp)
                         else -> WrIcon("check", 11.dp, fg.copy(alpha = 0.75f))
                     }
@@ -527,5 +564,18 @@ fun ChatPicker(title: String, onDismiss: () -> Unit, onPick: (String) -> Unit) {
                 }
             }
         }
+    }
+}
+
+
+private fun dayKey(ts: Long): Long = java.util.Calendar.getInstance().apply { timeInMillis = ts; set(java.util.Calendar.HOUR_OF_DAY, 0); set(java.util.Calendar.MINUTE, 0); set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0) }.timeInMillis
+
+private fun dayLabel(ts: Long): String {
+    val d = dayKey(ts)
+    val today = dayKey(System.currentTimeMillis())
+    return when {
+        d == today -> "Today"
+        d == today - 86_400_000L || d == dayKey(today - 1) -> "Yesterday"
+        else -> java.text.SimpleDateFormat("EEE, d MMM", java.util.Locale.getDefault()).format(java.util.Date(ts))
     }
 }
