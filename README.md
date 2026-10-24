@@ -39,3 +39,10 @@ Voice rooms with stage and audience, hand-raise, mute, deafen and push-to-talk; 
 
 ## Layout
 `core/` models and storage. `net/` SDP, peer links, mesh, LAN. `room/` engine, session, DMs. `media/` audio, screen share, service. `ui/` Compose screens. `tools/gen_icons.py` regenerates icons.
+
+
+## Connecting people
+
+* **Add by @username or link** – search a username, or paste a `waveroom://add?...` link, and send a request. Requests and public cards travel through a public message board (ntfy.sh by default; configurable in Settings → Network). Only signed public cards pass through it.
+* **Friends reconnect automatically** – accepting a request derives a shared secret from both identity keys (ECDH). From then on the phones find each other again via encrypted notes on the board, or directly on the same Wi-Fi, with no codes.
+* **Fallbacks** – QR / text codes and the "On this Wi-Fi" list still work with no internet at all.

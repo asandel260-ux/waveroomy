@@ -80,9 +80,16 @@ class ScreenShare(private val core: AppCore) {
         }
     }
 
+    /** Room membership changed: start sending to newcomers. */
+    fun refresh() {
+        if (active.value) for (l in core.mesh.authedLinks()) attach(l)
+    }
+
     fun attach(link: PeerLink) {
         val t = track ?: return
         if (!active.value || !link.authed) return
+        // only people in the room get to see the screen, not DM friends who happen to be linked
+        if (core.session.room?.participants?.containsKey(link.remoteSid) != true) return
         link.setSendVideo(t)
         link.tuneVideo(bitrate(res, fps), fps)
     }

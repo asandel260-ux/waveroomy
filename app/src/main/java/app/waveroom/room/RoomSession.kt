@@ -240,7 +240,12 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
             return
         }
         if (sid == s.engineSid()) {
-            takeover(sid)
+            // one dropped link is not proof the host is gone: try to reach them again before taking over
+            core.mesh.connectTo(sid)
+            later(7000) {
+                val cur = st
+                if (cur != null && phase.value == "live" && cur.engineSid() == sid && cur.participants.containsKey(sid) && core.mesh.link(sid)?.authed != true) takeover(sid)
+            }
             return
         }
         // someone else's link dropped; the host will announce it if they really left.
@@ -487,6 +492,7 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
                 speaking.value = speaking.value.filter { s.participants.containsKey(it) }.toSet()
                 ensureLinks()
                 core.audio.refresh()
+                core.screen.refresh()
             }
             "room:peer-joined" -> {
                 val p = d.obj("participant")?.let { Participant.from(it) }
@@ -494,6 +500,7 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
                     toast("${p.displayName} joined")
                     core.sfx.play("join")
                     if (core.mesh.link(p.sid) == null) core.mesh.connectTo(p.sid)
+                    later(1500) { core.screen.refresh() }
                 }
             }
             "room:peer-left" -> {
