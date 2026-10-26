@@ -79,9 +79,79 @@ fun DrawScope.drawSilk(d: Float, k: Float) {
 }
 
 /** The ground every full screen stands on: violet at the top fading to the base colour, with quiet silk. */
-fun Modifier.screenBackdrop(): Modifier = this
+fun Modifier.screenBackdrop(style: Int = 0): Modifier = this
     .background(Brush.verticalGradient(listOf(lerp(WR.bg, WR.accent, 0.22f), lerp(WR.bg, WR.accent, 0.07f), WR.bg)))
-    .drawBehind { drawSilk(0f, 0.34f) }
+    .drawBehind {
+        when (style) {
+            1 -> drawOrbits()
+            2 -> drawBeams()
+            3 -> drawContours()
+            4 -> drawGlows()
+            else -> drawSilk(0f, 0.34f)
+        }
+    }
+
+/** Room: quiet rings around a lit centre, like a sound spreading out from the stage. */
+private fun DrawScope.drawOrbits() {
+    val w = size.width; val h = size.height
+    val c = Offset(w * 0.5f, h * 0.30f)
+    drawRect(Brush.radialGradient(listOf(WR.accent.copy(alpha = 0.30f), Color.Transparent), c, w * 0.9f))
+    for (i in 1..6) {
+        val r = w * (0.20f + 0.17f * i)
+        drawCircle(WR.accentBright.copy(alpha = 0.16f - i * 0.02f), r, c, style = Stroke(width = 1.dp.toPx()))
+    }
+    val r3 = w * (0.20f + 0.17f * 3)
+    drawCircle(WR.neon.copy(alpha = 0.55f), 3.5.dp.toPx(), Offset(c.x + r3 * 0.866f, c.y - r3 * 0.5f))
+    drawCircle(WR.neon.copy(alpha = 0.16f), 9.dp.toPx(), Offset(c.x + r3 * 0.866f, c.y - r3 * 0.5f))
+    drawRect(Brush.verticalGradient(listOf(Color.Transparent, WR.bg.copy(alpha = 0.55f)), startY = h * 0.55f))
+}
+
+/** Settings: slanted shafts of light with a faint dotted corner. */
+private fun DrawScope.drawBeams() {
+    val w = size.width; val h = size.height
+    for ((i, x0) in listOf(0.35f, 0.58f, 0.82f).withIndex()) {
+        val p = Path()
+        p.moveTo(w * x0, 0f); p.lineTo(w * (x0 + 0.16f), 0f)
+        p.lineTo(w * (x0 - 0.45f), h * 0.75f); p.lineTo(w * (x0 - 0.62f), h * 0.75f); p.close()
+        drawPath(p, Brush.verticalGradient(listOf(WR.accentBright.copy(alpha = 0.13f - i * 0.03f), Color.Transparent), endY = h * 0.75f))
+    }
+    val step = 14.dp.toPx()
+    for (ix in 0 until 7) for (iy in 0 until 7) {
+        val a = 0.22f - (ix + (6 - iy)) * 0.012f
+        if (a > 0f) drawCircle(WR.neon.copy(alpha = a), 1.3.dp.toPx(), Offset(w - 22.dp.toPx() - ix * step, h - 120.dp.toPx() - iy * step))
+    }
+}
+
+/** Chat and people: flowing contour lines, like a map of a calm landscape. */
+private fun DrawScope.drawContours() {
+    val w = size.width; val h = size.height
+    drawRect(Brush.radialGradient(listOf(WR.accent.copy(alpha = 0.22f), Color.Transparent), Offset(0f, 0f), w * 0.9f))
+    for (i in 0 until 9) {
+        val base = h * (0.04f + i * 0.045f)
+        val path = Path()
+        var x = 0f
+        while (x <= w + 8f) {
+            val u = x / w
+            val y = base + h * 0.03f * sin(u * 2.4f * PI.toFloat() + i * 0.55f) + h * 0.012f * i * u
+            if (x == 0f) path.moveTo(x, y) else path.lineTo(x, y)
+            x += 8f
+        }
+        drawPath(path, (if (i == 4) WR.neon else WR.accentBright).copy(alpha = if (i == 4) 0.20f else 0.12f - i * 0.008f), style = Stroke(width = 1.dp.toPx()))
+    }
+    drawRect(Brush.radialGradient(listOf(WR.neon.copy(alpha = 0.05f), Color.Transparent), Offset(w, h), w * 0.8f))
+}
+
+/** Forms and info: two soft lights and one thin arc. */
+private fun DrawScope.drawGlows() {
+    val w = size.width; val h = size.height
+    drawRect(Brush.radialGradient(listOf(WR.accent.copy(alpha = 0.34f), Color.Transparent), Offset(w * 1.0f, h * 0.10f), w * 0.85f))
+    drawRect(Brush.radialGradient(listOf(WR.neon.copy(alpha = 0.07f), Color.Transparent), Offset(0f, h * 0.88f), w * 0.8f))
+    val arc = Path()
+    arc.moveTo(-0.05f * w, h * 0.30f)
+    arc.cubicTo(w * 0.35f, h * 0.18f, w * 0.65f, h * 0.55f, w * 1.05f, h * 0.38f)
+    drawPath(arc, WR.accentBright.copy(alpha = 0.16f), style = Stroke(width = 1.dp.toPx(), cap = StrokeCap.Round))
+    drawPath(arc, WR.neon.copy(alpha = 0.10f), style = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round))
+}
 
 /** A hand-drawn-feeling neon sine, like the waveform of a voice. */
 @Composable
@@ -96,12 +166,13 @@ fun NeonWave(modifier: Modifier = Modifier, amplitude: Dp = 26.dp, stroke: Dp = 
         val cy = size.height / 2f
         val amp = amplitude.toPx().coerceAtMost(size.height / 2f - stroke.toPx())
         val path = Path()
-        var x = 0f
-        while (x <= w) {
-            val u = x / w
-            val env = (sin(u * PI) * (0.55 + 0.45 * sin(u * 3.0 * PI + phase * 0.5))).toFloat()
-            val y = cy + amp * env * sin(u * 5.0 * PI + phase).toFloat()
-            if (x == 0f) path.moveTo(x, y) else path.lineTo(x, y)
+        var x = -6f
+        while (x <= w + 6f) {
+            val u = (x / w).toDouble()
+            // every phase term is an integer multiple of `phase`, so the loop at 2π is seamless
+            val env = (0.62 + 0.38 * sin(u * 3.0 * PI + phase)).toFloat()
+            val y = cy + amp * env * sin(u * 5.0 * PI - phase).toFloat()
+            if (x == -6f) path.moveTo(x, y) else path.lineTo(x, y)
             x += 3f
         }
         drawPath(path, WR.neon.copy(alpha = 0.10f), style = Stroke(width = stroke.toPx() * 5f, cap = StrokeCap.Round, join = StrokeJoin.Round))

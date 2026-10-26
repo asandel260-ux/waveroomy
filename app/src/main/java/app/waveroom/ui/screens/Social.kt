@@ -86,7 +86,7 @@ fun ProfileScreen(nav: Nav, uid: String) {
     val c: Contact? = contacts[uid]
     var confirmBlock by remember { mutableStateOf(false) }
 
-    Column(Modifier.fillMaxSize().screenBackdrop()) {
+    Column(Modifier.fillMaxSize().screenBackdrop(3)) {
         ScreenHeader("Profile", { nav.pop() })
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             val av = if (mine) me?.avatar else c?.avatar
@@ -148,7 +148,7 @@ fun PeopleScreen(nav: Nav) {
         "blocked" -> blocked.toList()
         else -> contacts.values.sortedByDescending { it.lastSeen }.map { it.uid }
     }
-    Column(Modifier.fillMaxSize().screenBackdrop()) {
+    Column(Modifier.fillMaxSize().screenBackdrop(3)) {
         ScreenHeader("People", { nav.pop() })
         Box(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
             Segmented(listOf("met" to "Met", "following" to "Following", "followers" to "Followers", "blocked" to "Blocked"), tab, { tab = it })
@@ -192,7 +192,7 @@ fun EditProfileScreen(nav: Nav) {
     var error by remember { mutableStateOf<String?>(null) }
     val photoVer by AppCore.profile.photoVersion.collectAsState()
 
-    Column(Modifier.fillMaxSize().screenBackdrop().imePadding()) {
+    Column(Modifier.fillMaxSize().screenBackdrop(3).imePadding()) {
         ScreenHeader("Edit profile", { nav.pop() })
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

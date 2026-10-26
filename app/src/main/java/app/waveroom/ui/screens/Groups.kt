@@ -74,7 +74,7 @@ fun NewGroupScreen(nav: Nav) {
     var creating by remember { mutableStateOf(false) }
     val people = contacts.values.filter { it.uid != AppCore.profile.uid }.sortedBy { it.displayName.lowercase() }
 
-    Column(Modifier.fillMaxSize().screenBackdrop().imePadding()) {
+    Column(Modifier.fillMaxSize().screenBackdrop(4).imePadding()) {
         ScreenHeader("New group", { nav.pop() })
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

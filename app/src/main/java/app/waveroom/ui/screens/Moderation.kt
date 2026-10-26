@@ -50,7 +50,7 @@ import app.waveroom.ui.components.screenBackdrop
 @Composable
 fun ModerationScreen(nav: Nav) {
     var tab by remember { mutableStateOf("reports") }
-    Column(Modifier.fillMaxSize().screenBackdrop()) {
+    Column(Modifier.fillMaxSize().screenBackdrop(2)) {
         ScreenHeader("Moderation desk", { nav.pop() }, subtitle = "For rooms you host")
         Box(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
             Segmented(listOf("reports" to "Reports", "audit" to "Audit", "stats" to "Activity"), tab, { tab = it })

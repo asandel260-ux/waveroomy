@@ -22,7 +22,7 @@ import app.waveroom.ui.components.screenBackdrop
 
 @Composable
 private fun Page(title: String, nav: Nav, content: @Composable () -> Unit) {
-    Column(Modifier.fillMaxSize().screenBackdrop()) {
+    Column(Modifier.fillMaxSize().screenBackdrop(4)) {
         ScreenHeader(title, { nav.pop() })
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp)) {
             content()

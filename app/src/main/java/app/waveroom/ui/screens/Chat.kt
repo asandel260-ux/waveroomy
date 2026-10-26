@@ -169,7 +169,7 @@ fun ChatScreen(nav: Nav, chat: String) {
     val readOnly = group?.left == true
     val dmAvatar = contacts[chat]?.avatar
 
-    Column(Modifier.fillMaxSize().screenBackdrop().imePadding()) {
+    Column(Modifier.fillMaxSize().screenBackdrop(3).imePadding()) {
         /* ---------- header ---------- */
         Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 4.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             WrIconButton("chevron-left", { nav.pop() })

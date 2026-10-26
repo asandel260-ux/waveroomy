@@ -83,6 +83,7 @@ import app.waveroom.ui.components.WrSheet
 import app.waveroom.ui.components.Hairline
 import app.waveroom.ui.theme.WR
 import app.waveroom.ui.components.screenBackdrop
+import app.waveroom.ui.components.gloss
 import kotlin.math.roundToInt
 
 private data class Floating(val id: Long, val emoji: String, val name: String, val x: Float)
@@ -168,7 +169,7 @@ fun RoomScreen(nav: Nav) {
     val titleBlock: @Composable (Modifier) -> Unit = { mod ->
         Column(mod) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(s.meta.title, color = WR.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                Text(s.meta.title, color = WR.text, fontFamily = WR.display, fontSize = 20.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                 if (s.meta.locked) {
                     Spacer(Modifier.width(6.dp))
                     WrIcon("lock", 14.dp, WR.warn)
@@ -255,7 +256,7 @@ fun RoomScreen(nav: Nav) {
                         }
                         Tiny("In the room · ${participants.size}")
                         Spacer(Modifier.height(12.dp))
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(if (land) 10.dp else 16.dp), modifier = Modifier.fillMaxWidth()) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(if (land) 8.dp else 14.dp), modifier = Modifier.fillMaxWidth()) {
                             for (p in speakers) StageTile(p, speaking.contains(p.sid), p.sid == session.mySid || connected.contains(p.uid)) { person = p.sid }
                         }
                         if (participants.size == 1) {
@@ -280,27 +281,28 @@ fun RoomScreen(nav: Nav) {
     }
     val controls: @Composable (Boolean) -> Unit = { vertical ->
         val items: @Composable () -> Unit = {
-            WrIconButton(if (deaf) "volume-x" else "headphones", { session.toggleDeafen() }, size = 48.dp, tint = if (deaf) WR.danger else WR.text, bg = if (deaf) WR.dangerSoft else WR.surface2, border = WR.border)
-            WrIconButton("smile-plus", { reactOpen = true }, size = 48.dp, bg = WR.surface2, border = WR.border)
+            CtlButton(if (deaf) "volume-x" else "headphones", { session.toggleDeafen() }, danger = deaf)
+            CtlButton("smile-plus", { reactOpen = true })
             MicButton(muted = me?.muted != false, ptt = settings.ptt, compact = vertical)
-            WrIconButton("monitor", { if (sharing) AppCore.screen.stop(true) else shareSheet = true }, size = 48.dp, tint = if (sharing) WR.accentBright else WR.text, bg = if (sharing) WR.accentSoft else WR.surface2, border = if (sharing) WR.neon else WR.border)
-            WrIconButton("chess", { if (s.chess.current != null && s.chess.active != null) mode = "chess" else chessCreate = true }, size = 48.dp, tint = if (mode == "chess" || s.chess.active != null) WR.accentBright else WR.text, bg = if (mode == "chess") WR.accentSoft else WR.surface2, border = if (mode == "chess") WR.neon else WR.border, desc = "Chess")
-            WrIconButton("message", { chatOpen = true; session.unreadChat.value = 0 }, size = 48.dp, bg = WR.surface2, border = WR.border, badge = unread)
+            CtlButton("monitor", { if (sharing) AppCore.screen.stop(true) else shareSheet = true }, on = sharing)
+            CtlButton("message", { chatOpen = true; session.unreadChat.value = 0 }, badge = unread)
         }
         if (vertical) {
             Column(
-                Modifier.fillMaxHeight().background(WR.surface).statusBarsPadding().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 8.dp),
+                Modifier.fillMaxHeight().statusBarsPadding().navigationBarsPadding().padding(8.dp).clip(RoundedCornerShape(32.dp)).background(WR.dockBrush).border(1.dp, WR.rimBrush, RoundedCornerShape(32.dp)).verticalScroll(rememberScrollState()).padding(horizontal = 10.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.CenterHorizontally
             ) { items() }
         } else {
             Row(
-                Modifier.fillMaxWidth().background(WR.surface).navigationBarsPadding().padding(horizontal = 10.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically
+                Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 14.dp, vertical = 10.dp)
+                    .clip(RoundedCornerShape(36.dp)).background(WR.dockBrush).border(1.dp, WR.rimBrush, RoundedCornerShape(36.dp))
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically
             ) { items() }
         }
     }
 
-    Box(Modifier.fillMaxSize().screenBackdrop().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))) {
+    Box(Modifier.fillMaxSize().screenBackdrop(1).windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))) {
         if (land) {
             Row(Modifier.fillMaxSize()) {
                 Column(Modifier.weight(1f).fillMaxHeight()) {
@@ -372,30 +374,65 @@ private fun Tab(label: String, icon: String, on: Boolean, live: Boolean, onClick
 }
 
 @Composable
+private fun CtlButton(icon: String, onClick: () -> Unit, on: Boolean = false, danger: Boolean = false, badge: Int = 0) {
+    val shape = CircleShape
+    val bg = when {
+        danger -> Brush.verticalGradient(listOf(WR.dangerSoft, WR.dangerSoft))
+        on -> WR.primaryBrush
+        else -> Brush.verticalGradient(listOf(WR.surface3, WR.surface2))
+    }
+    Box(
+        Modifier.size(50.dp).clip(shape).background(bg)
+            .border(1.dp, if (on) WR.neon.copy(alpha = 0.8f) else if (danger) WR.danger.copy(alpha = 0.4f) else WR.border, shape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(Modifier.matchParentSize().gloss(0.10f))
+        WrIcon(icon, 21.dp, if (danger) WR.danger else if (on) WR.neon else WR.text)
+        if (badge > 0) {
+            Box(Modifier.align(Alignment.TopEnd).padding(top = 3.dp, end = 3.dp).size(17.dp).clip(CircleShape).background(WR.neonBrush), contentAlignment = Alignment.Center) {
+                Text(if (badge > 9) "9+" else badge.toString(), color = Color(0xFF052200), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
 private fun StageTile(p: Participant, speaking: Boolean, online: Boolean, onClick: () -> Unit) {
     val mine = p.sid == AppCore.session.mySid
-    Column(Modifier.width(96.dp).clickable(onClick = onClick), horizontalAlignment = Alignment.CenterHorizontally) {
-        Box {
-            AvatarView(p.avatar, 76.dp, uid = p.uid, mine = mine, ring = if (speaking) WR.neon else if (!online) WR.borderStrong else Color.Transparent)
+    val pulse = androidx.compose.animation.core.rememberInfiniteTransition(label = "tile")
+    val glow by pulse.animateFloat(0.35f, 1f, androidx.compose.animation.core.infiniteRepeatable(tween(900), androidx.compose.animation.core.RepeatMode.Reverse), label = "g")
+    Column(Modifier.width(100.dp).clip(RoundedCornerShape(18.dp)).clickable(onClick = onClick).padding(vertical = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(Modifier.size(92.dp), contentAlignment = Alignment.Center) {
+            if (speaking) Box(Modifier.matchParentSize().clip(CircleShape).background(Brush.radialGradient(listOf(WR.neon.copy(alpha = 0.40f * glow), Color.Transparent))))
+            Box(
+                Modifier.size(82.dp).clip(CircleShape)
+                    .border(if (speaking) 3.dp else 1.5.dp, if (speaking) Brush.sweepGradient(listOf(WR.neon, WR.neonSoft, WR.accentBright, WR.neon)) else WR.rimBrush, CircleShape)
+                    .padding(4.dp), contentAlignment = Alignment.Center
+            ) {
+                AvatarView(p.avatar, 74.dp, uid = p.uid, mine = mine, modifier = Modifier.alpha(if (online) 1f else 0.55f))
+            }
             if (p.muted) {
-                Box(Modifier.align(Alignment.BottomEnd).size(24.dp).clip(CircleShape).background(WR.surface3).border(1.dp, WR.border, CircleShape), contentAlignment = Alignment.Center) {
-                    WrIcon("mic-off", 13.dp, WR.danger)
+                Box(Modifier.align(Alignment.BottomEnd).padding(4.dp).size(26.dp).clip(CircleShape).background(WR.surface3).border(1.dp, WR.danger.copy(alpha = 0.5f), CircleShape), contentAlignment = Alignment.Center) {
+                    WrIcon("mic-off", 14.dp, WR.danger)
                 }
             }
             if (p.sharing != null) {
-                Box(Modifier.align(Alignment.TopEnd).size(22.dp).clip(CircleShape).background(WR.surface3), contentAlignment = Alignment.Center) {
-                    WrIcon("monitor", 12.dp, WR.accentBright)
+                Box(Modifier.align(Alignment.TopEnd).padding(4.dp).size(24.dp).clip(CircleShape).background(WR.primaryBrush).border(1.dp, WR.neon.copy(alpha = 0.7f), CircleShape), contentAlignment = Alignment.Center) {
+                    WrIcon("monitor", 13.dp, WR.neon)
                 }
             }
-            if (!online) {
-                Box(Modifier.align(Alignment.Center).alpha(0.9f)) { CircularProgressIndicator(color = WR.muted, strokeWidth = 2.dp, modifier = Modifier.size(22.dp)) }
-            }
+            if (!online) CircularProgressIndicator(color = WR.neon, strokeWidth = 2.dp, modifier = Modifier.size(24.dp))
         }
-        Spacer(Modifier.height(6.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Spacer(Modifier.height(4.dp))
+        Row(
+            Modifier.clip(RoundedCornerShape(50)).background(if (speaking) WR.accent.copy(alpha = 0.35f) else WR.surface2.copy(alpha = 0.7f))
+                .padding(horizontal = 10.dp, vertical = 3.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             if (p.role == "host") {
                 WrIcon("crown", 12.dp, WR.warn)
-                Spacer(Modifier.width(3.dp))
+                Spacer(Modifier.width(4.dp))
             }
             Text(if (mine) "You" else p.displayName, color = WR.text, fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }

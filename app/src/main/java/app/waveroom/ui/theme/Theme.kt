@@ -79,6 +79,7 @@ object WR {
     /** Dark at the top, glowing at the bottom, like the stat cards in the design reference. */
     val heroBrush: Brush get() = Brush.verticalGradient(listOf(lerp(accent, Color.Black, 0.86f), lerp(accent, Color.Black, 0.62f), lerp(accent, ink, 0.12f)))
     /** A thin lit edge: violet on one corner, a breath of green on the other. */
+    val dockBrush: Brush get() = Brush.verticalGradient(listOf(Color(0xFF2A1D4A).copy(alpha = 0.92f), Color(0xFF150E26).copy(alpha = 0.95f)))
     val rimBrush: Brush get() = Brush.linearGradient(listOf(accentBright.copy(alpha = 0.75f), neon.copy(alpha = 0.42f), accent.copy(alpha = 0.25f)))
     val warn = Color(0xFFF5B544)
     val danger = Color(0xFFE5484D)

@@ -121,7 +121,7 @@ fun SettingsScreen(nav: Nav) {
     var wipe by remember { mutableStateOf(false) }
     var dmSheet by remember { mutableStateOf(false) }
 
-    Column(Modifier.fillMaxSize().screenBackdrop().imePadding()) {
+    Column(Modifier.fillMaxSize().screenBackdrop(2).imePadding()) {
         ScreenHeader("Settings", { nav.pop() })
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
             SectionTitle("Appearance")
