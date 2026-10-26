@@ -70,8 +70,8 @@ import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.sin
 
-private const val BG = 0xFF0D0D0F.toInt()
-private const val ACCENT = 0xFF6E56CF.toInt()
+private const val BG = 0xFF0B0812.toInt()
+private const val ACCENT = 0xFF7C3AED.toInt()
 
 private val TOOL_HINTS = mapOf(
     "select" to "Tap to select · drag to move · drag empty space to box-select",

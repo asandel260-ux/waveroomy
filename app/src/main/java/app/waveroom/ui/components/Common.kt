@@ -64,6 +64,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -157,30 +158,36 @@ fun WrButton(
     enabled: Boolean = true,
     small: Boolean = false
 ) {
-    val (bg, fg, bd) = when (kind) {
-        BtnKind.Primary -> Triple(WR.accent, Color.White, WR.accent)
-        BtnKind.Secondary -> Triple(WR.surface2, WR.text, WR.borderStrong)
-        BtnKind.Danger -> Triple(WR.dangerSoft, WR.danger, WR.danger.copy(alpha = 0.5f))
-        BtnKind.Ghost -> Triple(Color.Transparent, WR.muted, Color.Transparent)
-        BtnKind.Ok -> Triple(WR.ok, Color(0xFF04140B), WR.ok)
+    val shape = RoundedCornerShape(50)
+    val fg = when (kind) {
+        BtnKind.Primary -> Color.White
+        BtnKind.Secondary -> WR.text
+        BtnKind.Danger -> WR.danger
+        BtnKind.Ghost -> WR.muted
+        BtnKind.Ok -> Color(0xFF052200)
     }
     val a = if (enabled) 1f else 0.4f
+    var m = modifier.alpha(a).clip(shape)
+    m = when (kind) {
+        BtnKind.Primary -> m.background(WR.primaryBrush).gloss(0.22f).border(1.dp, WR.rimBrush, shape)
+        BtnKind.Ok -> m.background(WR.neonBrush).gloss(0.30f).border(1.dp, WR.neonSoft.copy(alpha = 0.6f), shape)
+        BtnKind.Secondary -> m.background(Brush.verticalGradient(listOf(WR.surface3, WR.surface2))).gloss(0.06f).border(1.dp, WR.borderStrong, shape)
+        BtnKind.Danger -> m.background(WR.dangerSoft).border(1.dp, WR.danger.copy(alpha = 0.5f), shape)
+        BtnKind.Ghost -> m
+    }
     Row(
-        modifier
-            .clip(RoundedCornerShape(10.dp))
-            .background(bg.copy(alpha = bg.alpha * a))
-            .border(1.dp, bd.copy(alpha = bd.alpha * a), RoundedCornerShape(10.dp))
+        m
             .clickable(enabled = enabled, onClick = onClick)
             .heightIn(min = if (small) 40.dp else 48.dp)
-            .padding(horizontal = if (small) 14.dp else 18.dp, vertical = if (small) 8.dp else 13.dp),
+            .padding(horizontal = if (small) 16.dp else 22.dp, vertical = if (small) 8.dp else 13.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (icon != null) {
-            WrIcon(icon, if (small) 15.dp else 18.dp, fg.copy(alpha = a))
+            WrIcon(icon, if (small) 15.dp else 18.dp, fg)
             Spacer(Modifier.width(8.dp))
         }
-        Text(text, color = fg.copy(alpha = a), fontSize = if (small) 13.sp else 15.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(text, color = fg, fontSize = if (small) 13.sp else 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -305,7 +312,7 @@ fun SwitchRow(title: String, subtitle: String? = null, checked: Boolean, onChang
         Switch(
             checked = checked, onCheckedChange = onChange, enabled = enabled,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White, checkedTrackColor = WR.accent,
+                checkedThumbColor = Color.White, checkedTrackColor = WR.neonDeep, checkedBorderColor = WR.neon.copy(alpha = 0.6f),
                 uncheckedThumbColor = WR.muted, uncheckedTrackColor = WR.surface3, uncheckedBorderColor = WR.borderStrong
             )
         )
@@ -320,7 +327,7 @@ fun Segmented(options: List<Pair<String, String>>, selected: String, onSelect: (
         for ((key, label) in options) {
             val on = key == selected
             Box(
-                Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).background(if (on) WR.accent else Color.Transparent)
+                Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).then(if (on) Modifier.background(WR.primaryBrush).gloss(0.2f) else Modifier)
                     .clickable { onSelect(key) }.padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center
             ) {

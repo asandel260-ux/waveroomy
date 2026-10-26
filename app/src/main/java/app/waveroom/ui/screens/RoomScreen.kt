@@ -54,6 +54,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -374,7 +375,7 @@ private fun StageTile(p: Participant, speaking: Boolean, online: Boolean, onClic
     val mine = p.sid == AppCore.session.mySid
     Column(Modifier.width(96.dp).clickable(onClick = onClick), horizontalAlignment = Alignment.CenterHorizontally) {
         Box {
-            AvatarView(p.avatar, 76.dp, uid = p.uid, mine = mine, ring = if (speaking) WR.accentBright else if (!online) WR.borderStrong else Color.Transparent)
+            AvatarView(p.avatar, 76.dp, uid = p.uid, mine = mine, ring = if (speaking) WR.neon else if (!online) WR.borderStrong else Color.Transparent)
             if (p.muted) {
                 Box(Modifier.align(Alignment.BottomEnd).size(24.dp).clip(CircleShape).background(WR.surface3).border(1.dp, WR.border, CircleShape), contentAlignment = Alignment.Center) {
                     WrIcon("mic-off", 13.dp, WR.danger)
@@ -464,8 +465,8 @@ private fun MicButton(muted: Boolean, ptt: Boolean, compact: Boolean = false) {
         else p.requestMic { ok -> if (ok) session.setMuted(false) else AppCore.toast("Microphone access is off. Allow it in Android settings → Apps → HoMit → Permissions.") }
     }
     val base = Modifier.size(d.dp).clip(CircleShape)
-        .background(if (muted) WR.surface3 else WR.accent)
-        .border(3.dp, WR.accentBright, CircleShape)
+        .background(if (muted) Brush.verticalGradient(listOf(WR.surface3, WR.surface2)) else WR.neonBrush)
+        .border(3.dp, if (muted) WR.accentBright else WR.neonSoft, CircleShape)
     val m = if (ptt) {
         base.pointerInput(Unit) {
             detectTapGestures(onPress = {
@@ -476,10 +477,10 @@ private fun MicButton(muted: Boolean, ptt: Boolean, compact: Boolean = false) {
         }
     } else base.clickable { if (muted) unmute() else session.setMuted(true) }
     Box(Modifier.size((d + 16).dp), contentAlignment = Alignment.Center) {
-        if (muted) Box(Modifier.size((d + 16 * halo).dp).clip(CircleShape).border(2.dp, WR.accent.copy(alpha = 0.55f * (1f - halo)), CircleShape))
-        else Box(Modifier.size((d + 14).dp).graphicsLayer { scaleX = 0.92f + ring * 0.12f; scaleY = 0.92f + ring * 0.12f; alpha = 0.25f + ring * 0.6f }.clip(CircleShape).background(WR.accent.copy(alpha = 0.5f)))
+        if (muted) Box(Modifier.size((d + 16 * halo).dp).clip(CircleShape).border(2.dp, WR.accentBright.copy(alpha = 0.55f * (1f - halo)), CircleShape))
+        else Box(Modifier.size((d + 14).dp).graphicsLayer { scaleX = 0.92f + ring * 0.12f; scaleY = 0.92f + ring * 0.12f; alpha = 0.25f + ring * 0.6f }.clip(CircleShape).background(WR.neon.copy(alpha = 0.45f)))
         Box(m, contentAlignment = Alignment.Center) {
-            WrIcon(if (muted) "mic-off" else "mic", if (compact) 28.dp else 32.dp, if (muted) WR.accentBright else Color.White)
+            WrIcon(if (muted) "mic-off" else "mic", if (compact) 28.dp else 32.dp, if (muted) WR.accentBright else Color(0xFF052200))
         }
     }
 }

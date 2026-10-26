@@ -16,6 +16,8 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -65,20 +67,14 @@ fun WelcomeScreen(onStart: () -> Unit) {
     val phase by t.animateFloat(0f, 1f, infiniteRepeatable(tween(WR.ms(3600).coerceAtLeast(1), easing = LinearEasing), RepeatMode.Restart), label = "p")
     val accent = WR.accent
 
-    var iconCenter by remember { mutableStateOf(Offset.Unspecified) }
-    Box(Modifier.fillMaxSize().background(WR.bg)) {
-        Canvas(Modifier.fillMaxSize()) {
-            val c = if (iconCenter == Offset.Unspecified) Offset(size.width / 2f, size.height * 0.18f) else iconCenter
-            for (i in 0 until 4) {
-                val p = ((phase + i / 4f) % 1f)
-                drawCircle(accent.copy(alpha = (1f - p) * 0.35f), radius = 60f + p * size.width * 0.55f, center = c, style = Stroke(width = 2.5f))
-            }
-        }
+    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF260B63), Color(0xFF14072E), WR.bg)))) {
+        app.waveroom.ui.components.SilkBackground(Modifier.fillMaxSize(), animated = true)
+        app.waveroom.ui.components.NeonWave(Modifier.fillMaxWidth().height(160.dp).align(Alignment.TopCenter).padding(top = 40.dp), amplitude = 42.dp, stroke = 4.dp)
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(Modifier.height(36.dp))
-            Box(Modifier.height(120.dp).onGloballyPositioned { val b = it.boundsInRoot(); iconCenter = Offset(b.center.x, b.center.y) }, contentAlignment = Alignment.Center) {
+            Box(Modifier.height(120.dp), contentAlignment = Alignment.Center) {
                 AnimatedContent(page, transitionSpec = { (fadeIn(tween(WR.ms(350))) + slideInVertically(tween(WR.ms(350))) { it / 3 }) togetherWith fadeOut(tween(WR.ms(200))) }, label = "icon") { p ->
-                    Box(Modifier.size(84.dp).clip(CircleShape).background(WR.accent), contentAlignment = Alignment.Center) { WrIcon(SLIDES[p].icon, 38.dp, Color.White) }
+                    Box(Modifier.size(84.dp).clip(CircleShape).background(WR.primaryBrush).border(1.5.dp, WR.rimBrush, CircleShape), contentAlignment = Alignment.Center) { WrIcon(SLIDES[p].icon, 38.dp, Color.White) }
                 }
             }
             Spacer(Modifier.height(130.dp))
@@ -93,7 +89,7 @@ fun WelcomeScreen(onStart: () -> Unit) {
             }
             Spacer(Modifier.weight(1f))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                for (i in SLIDES.indices) Box(Modifier.size(if (i == page) 22.dp else 8.dp, 8.dp).clip(CircleShape).background(if (i == page) WR.accentBright else WR.borderStrong))
+                for (i in SLIDES.indices) Box(Modifier.size(if (i == page) 22.dp else 8.dp, 8.dp).clip(CircleShape).background(if (i == page) WR.neon else WR.borderStrong))
             }
             Spacer(Modifier.height(22.dp))
             WrButton(if (page == SLIDES.lastIndex) "Get started" else "Next", { if (page == SLIDES.lastIndex) onStart() else page++ }, Modifier.fillMaxWidth())

@@ -22,6 +22,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.animation.togetherWith
 import androidx.compose.ui.input.pointer.pointerInput
@@ -105,7 +108,7 @@ fun HomeScreen(nav: Nav) {
             }
         }
         Hairline()
-        Row(Modifier.fillMaxWidth().background(WR.surface).navigationBarsPadding().padding(vertical = 6.dp)) {
+        Row(Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(WR.surface2, WR.surface))).navigationBarsPadding().padding(vertical = 6.dp)) {
             TabItem("Rooms", "waveform", tab == 0, 0, Modifier.weight(1f)) { tab = 0; nav.homeTab = 0 }
             TabItem("Messages", "message", tab == 1, unread, Modifier.weight(1f)) { tab = 1; nav.homeTab = 1 }
             TabItem("You", "user", tab == 2, 0, Modifier.weight(1f)) { tab = 2; nav.homeTab = 2 }
@@ -115,14 +118,18 @@ fun HomeScreen(nav: Nav) {
 
 @Composable
 private fun TabItem(label: String, icon: String, on: Boolean, badge: Int, modifier: Modifier, onClick: () -> Unit) {
-    Column(modifier.clickable(onClick = onClick).padding(vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Box {
-            WrIcon(icon, 22.dp, if (on) WR.accentBright else WR.faint)
+    Column(modifier.clickable(onClick = onClick).padding(vertical = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            Modifier.height(30.dp).width(58.dp).clip(RoundedCornerShape(50))
+                .then(if (on) Modifier.background(Brush.horizontalGradient(listOf(WR.accent.copy(alpha = 0.55f), WR.accentBright.copy(alpha = 0.28f)))).border(1.dp, WR.accentBright.copy(alpha = 0.35f), RoundedCornerShape(50)) else Modifier),
+            contentAlignment = Alignment.Center
+        ) {
+            WrIcon(icon, 22.dp, if (on) Color.White else WR.faint)
             if (badge > 0) {
-                Box(Modifier.align(Alignment.TopEnd).padding(start = 14.dp).size(8.dp).clip(CircleShape).background(WR.accent))
+                Box(Modifier.align(Alignment.TopEnd).padding(top = 3.dp, end = 10.dp).size(9.dp).clip(CircleShape).background(WR.neon))
             }
         }
-        Spacer(Modifier.height(3.dp))
+        Spacer(Modifier.height(2.dp))
         Text(label, color = if (on) WR.text else WR.faint, fontSize = 11.sp, fontWeight = FontWeight.Medium)
     }
 }
@@ -156,14 +163,20 @@ private fun RoomsTab(nav: Nav) {
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)) {
         item {
-            Column(Modifier.statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = 20.dp)) {
-                Text("Rooms", color = WR.text, fontSize = 32.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1).sp)
-                Spacer(Modifier.height(4.dp))
-                Muted("Start a room, or connect to one with a QR code or on the same Wi-Fi.")
-                Spacer(Modifier.height(18.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    WrButton("New room", { nav.push(Route.Create) }, Modifier.weight(1f), icon = "plus")
-                    WrButton("Join", { nav.push(Route.Join("")) }, Modifier.weight(1f), kind = BtnKind.Secondary, icon = "scan")
+            Column(Modifier.statusBarsPadding().padding(start = 16.dp, end = 16.dp, top = 20.dp)) {
+                Text("Rooms", color = WR.text, fontSize = 32.sp, fontWeight = FontWeight.SemiBold, fontFamily = WR.display, letterSpacing = (-0.5).sp, modifier = Modifier.padding(start = 4.dp))
+                Spacer(Modifier.height(12.dp))
+                app.waveroom.ui.components.HeroCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(20.dp)) {
+                        Text("Talk. Just talk.", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, fontFamily = WR.display)
+                        Spacer(Modifier.height(4.dp))
+                        Text("Start a room, or connect to one with a QR code or on the same Wi-Fi.", color = Color.White.copy(alpha = 0.72f), fontSize = 14.sp, lineHeight = 20.sp)
+                        app.waveroom.ui.components.NeonWave(Modifier.fillMaxWidth().height(56.dp).padding(vertical = 6.dp), amplitude = 16.dp, stroke = 2.5.dp)
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            WrButton("New room", { nav.push(Route.Create) }, Modifier.weight(1f), icon = "plus")
+                            WrButton("Join", { nav.push(Route.Join("")) }, Modifier.weight(1f), kind = BtnKind.Secondary, icon = "scan")
+                        }
+                    }
                 }
             }
         }

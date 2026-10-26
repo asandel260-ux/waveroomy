@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -46,23 +47,39 @@ object WR {
         if (bgArgb != bgc) bgArgb = bgc
     }
 
-    private val baseBg: Color get() = if (bgArgb == 0) Color(0xFF0A0A0B) else Color(bgArgb or (0xFF shl 24))
+    private val baseBg: Color get() = if (bgArgb == 0) Color(0xFF0A0710) else Color(bgArgb or (0xFF shl 24))
     val isLight: Boolean get() = baseBg.luminance() > 0.5f
     private fun tint(f: Float): Color = lerp(baseBg, if (isLight) Color.Black else Color.White, f)
 
     val bg: Color get() = baseBg
-    val surface: Color get() = if (bgArgb == 0) Color(0xFF101012) else tint(0.03f)
-    val surface2: Color get() = if (bgArgb == 0) Color(0xFF16161A) else tint(0.06f)
-    val surface3: Color get() = if (bgArgb == 0) Color(0xFF1D1D22) else tint(0.10f)
-    val border: Color get() = if (bgArgb == 0) Color(0xFF232328) else tint(0.14f)
-    val borderStrong: Color get() = if (bgArgb == 0) Color(0xFF37373F) else tint(0.24f)
-    val text: Color get() = if (isLight) Color(0xFF111114) else Color(0xFFEDEDEF)
-    val muted: Color get() = if (isLight) Color(0xFF55555E) else Color(0xFF9A9AA3)
-    val faint: Color get() = if (isLight) Color(0xFF6E6E78) else Color(0xFF7C7C86)
-    val accent: Color get() = if (accentArgb == 0) Color(0xFF6E56CF) else Color(accentArgb or (0xFF shl 24))
-    val accentBright: Color get() = if (accentArgb == 0) Color(0xFF9B84EE) else (if (isLight) lerp(accent, Color.Black, 0.25f) else lerp(accent, Color.White, 0.3f))
+    val surface: Color get() = if (bgArgb == 0) Color(0xFF110B1C) else tint(0.03f)
+    val surface2: Color get() = if (bgArgb == 0) Color(0xFF181026) else tint(0.06f)
+    val surface3: Color get() = if (bgArgb == 0) Color(0xFF21173A) else tint(0.10f)
+    val border: Color get() = if (bgArgb == 0) Color(0xFF2A1D45) else tint(0.14f)
+    val borderStrong: Color get() = if (bgArgb == 0) Color(0xFF402E69) else tint(0.24f)
+    val text: Color get() = if (isLight) Color(0xFF111114) else Color(0xFFF2EFF9)
+    val muted: Color get() = if (isLight) Color(0xFF55555E) else Color(0xFFABA3C2)
+    val faint: Color get() = if (isLight) Color(0xFF6E6E78) else Color(0xFF8A81A3)
+    val accent: Color get() = if (accentArgb == 0) Color(0xFF7C3AED) else Color(accentArgb or (0xFF shl 24))
+    val accentBright: Color get() = if (accentArgb == 0) Color(0xFFB690FF) else (if (isLight) lerp(accent, Color.Black, 0.25f) else lerp(accent, Color.White, 0.3f))
     val accentSoft: Color get() = accent.copy(alpha = 0.2f)
-    val ok = Color(0xFF3DD68C)
+    val ok = Color(0xFF4BEA3A)
+    /** The green of the waveform: used sparingly, for "live", "on" and "speaking". */
+    val neon = Color(0xFF52FF1F)
+    val neonSoft = Color(0xFFB8FF93)
+    val neonDeep = Color(0xFF2BBE10)
+
+    private val ink = Color(0xFF12032B)
+    val gradTop: Color get() = lerp(accent, Color.White, 0.20f)
+    val gradBottom: Color get() = lerp(accent, ink, 0.58f)
+    /** Glossy violet used on primary buttons, selected pills and my chat bubbles. */
+    val primaryBrush: Brush get() = Brush.verticalGradient(listOf(gradTop, gradBottom))
+    val neonBrush: Brush get() = Brush.verticalGradient(listOf(Color(0xFF9CFF6B), neon, neonDeep))
+    val bubbleBrush: Brush get() = Brush.linearGradient(listOf(lerp(accent, Color.White, 0.06f), lerp(accent, ink, 0.5f)))
+    /** Dark at the top, glowing at the bottom, like the stat cards in the design reference. */
+    val heroBrush: Brush get() = Brush.verticalGradient(listOf(lerp(accent, Color.Black, 0.86f), lerp(accent, Color.Black, 0.62f), lerp(accent, ink, 0.12f)))
+    /** A thin lit edge: violet on one corner, a breath of green on the other. */
+    val rimBrush: Brush get() = Brush.linearGradient(listOf(accentBright.copy(alpha = 0.75f), neon.copy(alpha = 0.42f), accent.copy(alpha = 0.25f)))
     val warn = Color(0xFFF5B544)
     val danger = Color(0xFFE5484D)
     val dangerSoft = Color(0x26E5484D)

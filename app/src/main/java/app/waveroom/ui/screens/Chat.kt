@@ -426,7 +426,7 @@ private fun Bubble(
     val maxW = (androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp * 0.8f).dp.coerceIn(220.dp, 440.dp)
     Column(Modifier.fillMaxWidth(), horizontalAlignment = if (mine) Alignment.End else Alignment.Start) {
         Column(
-            Modifier.widthIn(max = maxW).clip(shape).background(bg)
+            Modifier.widthIn(max = maxW).clip(shape).then(if (mine) Modifier.background(WR.bubbleBrush) else Modifier.background(bg))
                 .combinedClickable(onClick = { if (m.status == "failed") onRetry() else if (m.kind == "image" || m.kind == "gif") onView() }, onLongClick = onLong)
                 .padding(horizontal = 10.dp, vertical = 7.dp)
         ) {

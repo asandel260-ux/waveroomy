@@ -134,8 +134,8 @@ private val ART: Map<Int, Art> by lazy {
 
 val PIECE_LIGHT = Color(0xFFEFEDE6)
 val PIECE_DARK = Color(0xFF16181D)
-val SQ_LIGHT = Color(0xFFD7D4CC)
-val SQ_DARK = Color(0xFF727C88)
+val SQ_LIGHT = Color(0xFFDDD8EC)
+val SQ_DARK = Color(0xFF6E5F96)
 
 fun DrawScope.drawPiece(type: Int, color: Int, x: Float, y: Float, size: Float, alpha: Float = 1f) {
     val art = ART[type] ?: return
@@ -275,9 +275,9 @@ fun ChessBoardView(
                 drawRect(if ((f + r) % 2 == 1) SQ_LIGHT else SQ_DARK, o, Size(cell, cell))
             }
             // last move + selection
-            if (lastFrom >= 0) drawRect(WR.accent.copy(alpha = 0.34f), px(lastFrom), Size(cell, cell))
-            if (lastTo >= 0) drawRect(WR.accent.copy(alpha = 0.44f), px(lastTo), Size(cell, cell))
-            if (selected >= 0) drawRect(WR.accent.copy(alpha = 0.55f), px(selected), Size(cell, cell))
+            if (lastFrom >= 0) drawRect(WR.neon.copy(alpha = 0.26f), px(lastFrom), Size(cell, cell))
+            if (lastTo >= 0) drawRect(WR.neon.copy(alpha = 0.36f), px(lastTo), Size(cell, cell))
+            if (selected >= 0) drawRect(WR.neon.copy(alpha = 0.5f), px(selected), Size(cell, cell))
             if (checkSq >= 0) {
                 val o = px(checkSq)
                 drawCircle(androidx.compose.ui.graphics.Brush.radialGradient(listOf(WR.danger.copy(alpha = 0.85f), Color.Transparent), center = o + Offset(cell / 2, cell / 2), radius = cell * 0.75f), cell * 0.75f, o + Offset(cell / 2, cell / 2))
