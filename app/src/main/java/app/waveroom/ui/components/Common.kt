@@ -64,6 +64,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -228,15 +229,15 @@ fun WrIconButton(
 fun WrChip(text: String, selected: Boolean = false, onClick: (() -> Unit)? = null, icon: String? = null, modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(50)
     var m = modifier.clip(shape)
-        .background(if (selected) WR.accentSoft else WR.surface2)
-        .border(1.dp, if (selected) WR.accent else WR.border, shape)
+        .then(if (selected) Modifier.background(Brush.horizontalGradient(listOf(WR.accent.copy(alpha = 0.55f), WR.accentBright.copy(alpha = 0.26f)))) else Modifier.background(WR.surface2))
+        .border(1.dp, if (selected) WR.accentBright.copy(alpha = 0.7f) else WR.border, shape)
     if (onClick != null) m = m.clickable(onClick = onClick)
     Row((if (onClick != null) Modifier.minimumInteractiveComponentSize() else Modifier).then(m).heightIn(min = 32.dp).padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         if (icon != null) {
             WrIcon(icon, 14.dp, if (selected) WR.accentBright else WR.muted)
             Spacer(Modifier.width(6.dp))
         }
-        Text(text, color = if (selected) WR.accentBright else WR.muted, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+        Text(text, color = if (selected) Color.White else WR.muted, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1)
     }
 }
 
@@ -262,14 +263,16 @@ fun WrField(
     leadingIcon: String? = null,
     maxLength: Int = Int.MAX_VALUE
 ) {
+    var focused by remember { mutableStateOf(false) }
     Column(modifier) {
         if (label != null) {
             Tiny(label)
             Spacer(Modifier.height(6.dp))
         }
         Row(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(WR.surface2)
-                .border(1.dp, WR.border, RoundedCornerShape(10.dp)).padding(horizontal = 14.dp, vertical = 12.dp),
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(WR.surface2)
+                .then(if (focused) Modifier.border(1.5.dp, WR.rimBrush, RoundedCornerShape(14.dp)) else Modifier.border(1.dp, WR.border, RoundedCornerShape(14.dp)))
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (leadingIcon != null) {
@@ -291,7 +294,7 @@ fun WrField(
                     keyboardOptions = KeyboardOptions(keyboardType = if (password) KeyboardType.Password else keyboard, imeAction = ime),
                     keyboardActions = KeyboardActions(onDone = { onDone?.invoke() }, onSend = { onDone?.invoke() }, onGo = { onDone?.invoke() }, onSearch = { onDone?.invoke() }),
                     visualTransformation = if (password) androidx.compose.ui.text.input.PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused }
                 )
             }
         }
@@ -343,27 +346,34 @@ fun Segmented(options: List<Pair<String, String>>, selected: String, onSelect: (
 
 @Composable
 fun ScreenHeader(title: String, onBack: (() -> Unit)? = null, subtitle: String? = null, actions: @Composable () -> Unit = {}) {
-    Row(
-        Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 8.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (onBack != null) WrIconButton("chevron-left", onBack) else Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f).padding(horizontal = 4.dp)) {
-            Text(title, color = WR.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (subtitle != null) Muted(subtitle, size = 12, maxLines = 1)
+    Column(Modifier.fillMaxWidth().statusBarsPadding()) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (onBack != null) WrIconButton("chevron-left", onBack) else Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f).padding(horizontal = 4.dp)) {
+                Text(title, color = WR.text, fontSize = 21.sp, fontWeight = FontWeight.Bold, fontFamily = WR.display, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (subtitle != null) Muted(subtitle, size = 12, maxLines = 1)
+            }
+            actions()
         }
-        actions()
+        Box(Modifier.fillMaxWidth().height(1.dp).background(Brush.horizontalGradient(listOf(Color.Transparent, WR.accent.copy(alpha = 0.55f), WR.neon.copy(alpha = 0.35f), Color.Transparent))))
     }
 }
 
 @Composable
 fun SectionTitle(text: String, modifier: Modifier = Modifier) {
-    Tiny(text, modifier.padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 8.dp))
+    Row(modifier.padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.width(14.dp).height(3.dp).clip(RoundedCornerShape(2.dp)).background(Brush.horizontalGradient(listOf(WR.accentBright, WR.neon))))
+        Spacer(Modifier.width(8.dp))
+        Tiny(text)
+    }
 }
 
 @Composable
 fun Card(modifier: Modifier = Modifier, onClick: (() -> Unit)? = null, content: @Composable () -> Unit) {
-    var m = modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(WR.surface).border(1.dp, WR.border, RoundedCornerShape(14.dp))
+    var m = modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Brush.verticalGradient(listOf(WR.surface2, WR.surface))).border(1.dp, WR.border, RoundedCornerShape(16.dp))
     if (onClick != null) m = m.clickable(onClick = onClick)
     Box(m) { content() }
 }
@@ -391,11 +401,15 @@ fun Row2(title: String, subtitle: String? = null, icon: String? = null, trailing
     if (onClick != null) m = m.clickable(onClick = onClick)
     Row(m.padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         if (icon != null) {
-            WrIcon(icon, 20.dp, if (danger) WR.danger else WR.muted)
+            Box(
+                Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(Brush.linearGradient(if (danger) listOf(WR.dangerSoft, WR.dangerSoft) else listOf(WR.accent.copy(alpha = 0.30f), WR.accent.copy(alpha = 0.10f))))
+                    .border(1.dp, if (danger) WR.danger.copy(alpha = 0.3f) else WR.accentBright.copy(alpha = 0.22f), RoundedCornerShape(12.dp)),
+                contentAlignment = Alignment.Center
+            ) { WrIcon(icon, 19.dp, if (danger) WR.danger else WR.accentBright) }
             Spacer(Modifier.width(14.dp))
         }
         Column(Modifier.weight(1f)) {
-            Text(title, color = if (danger) WR.danger else WR.text, fontSize = 15.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(title, color = if (danger) WR.danger else WR.text, fontSize = 15.sp, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
             if (subtitle != null) Muted(subtitle, size = 12)
         }
         if (trailing != null) trailing()
@@ -419,7 +433,7 @@ fun WrSheet(onDismiss: () -> Unit, title: String? = null, fullHeight: Boolean = 
         scrimColor = Color(0xAA000000),
         shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         dragHandle = {
-            Box(Modifier.padding(top = 10.dp, bottom = 6.dp).width(36.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(WR.borderStrong))
+            Box(Modifier.padding(top = 10.dp, bottom = 6.dp).width(40.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(Brush.horizontalGradient(listOf(WR.accentBright, WR.neon))))
         }
     ) {
         Column(Modifier.then(if (fullHeight) Modifier else Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())).navigationBarsPadding().imePadding()) {
@@ -520,8 +534,8 @@ fun ToastHost(modifier: Modifier = Modifier) {
                 }
                 AnimatedVisibility(shown, enter = fadeIn() + slideInVertically { -it / 2 }, exit = fadeOut() + slideOutVertically { -it / 2 }) {
                     Box(
-                        Modifier.padding(bottom = 6.dp).clip(RoundedCornerShape(12.dp)).background(WR.surface3)
-                            .border(1.dp, WR.borderStrong, RoundedCornerShape(12.dp)).padding(horizontal = 16.dp, vertical = 10.dp)
+                        Modifier.padding(bottom = 6.dp).clip(RoundedCornerShape(50)).background(Brush.horizontalGradient(listOf(WR.surface3, WR.surface2)))
+                            .border(1.dp, WR.rimBrush, RoundedCornerShape(50)).padding(horizontal = 18.dp, vertical = 10.dp)
                     ) {
                         Text(text, color = WR.text, fontSize = 13.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
                     }

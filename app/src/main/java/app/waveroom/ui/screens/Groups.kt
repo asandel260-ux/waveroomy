@@ -59,6 +59,7 @@ import app.waveroom.ui.components.WrField
 import app.waveroom.ui.components.WrIcon
 import app.waveroom.ui.components.WrSheet
 import app.waveroom.ui.theme.WR
+import app.waveroom.ui.components.screenBackdrop
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -73,7 +74,7 @@ fun NewGroupScreen(nav: Nav) {
     var creating by remember { mutableStateOf(false) }
     val people = contacts.values.filter { it.uid != AppCore.profile.uid }.sortedBy { it.displayName.lowercase() }
 
-    Column(Modifier.fillMaxSize().background(WR.bg).imePadding()) {
+    Column(Modifier.fillMaxSize().screenBackdrop().imePadding()) {
         ScreenHeader("New group", { nav.pop() })
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -144,7 +145,7 @@ fun GroupInfoScreen(nav: Nav, gid: String) {
     var memberMenu by remember { mutableStateOf<String?>(null) }
     val chat = g.chatId
 
-    Column(Modifier.fillMaxSize().background(WR.bg)) {
+    Column(Modifier.fillMaxSize().screenBackdrop()) {
         ScreenHeader("Group info", { nav.pop() })
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 30.dp)) {
             Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {

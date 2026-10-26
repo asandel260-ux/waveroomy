@@ -300,11 +300,15 @@ private fun ChessLobby(g: ChessGame, onNew: () -> Unit) {
     val mySeat = g.seatOf(me)
     val owner = g.creatorUid == me || session.isHost
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        WrIcon("chess", 30.dp, WR.accentBright)
-        Spacer(Modifier.height(10.dp))
-        Text("${g.label} · ${g.timeLabel}", color = WR.text, fontSize = 22.sp, fontWeight = FontWeight.Bold, fontFamily = WR.display)
-        Spacer(Modifier.height(2.dp))
-        Muted(if (g.filled()) "FULL" else "WAITING FOR PLAYERS", size = 11)
+        app.waveroom.ui.components.HeroCard(Modifier.widthIn(max = 420.dp).fillMaxWidth()) {
+            Column(Modifier.fillMaxWidth().padding(top = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                WrIcon("chess", 30.dp, WR.neon)
+                Spacer(Modifier.height(8.dp))
+                Text("${g.label} · ${g.timeLabel}", color = WR.text, fontSize = 22.sp, fontWeight = FontWeight.Bold, fontFamily = WR.display)
+                Muted(if (g.filled()) "FULL" else "WAITING FOR PLAYERS", size = 11)
+                app.waveroom.ui.components.NeonWave(Modifier.fillMaxWidth().height(36.dp), amplitude = 9.dp, stroke = 2.5.dp)
+            }
+        }
         Spacer(Modifier.height(18.dp))
         Column(Modifier.widthIn(max = 420.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (g.bughouse) {

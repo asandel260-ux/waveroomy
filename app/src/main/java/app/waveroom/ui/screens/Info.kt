@@ -18,10 +18,11 @@ import androidx.compose.ui.unit.sp
 import app.waveroom.ui.Nav
 import app.waveroom.ui.components.ScreenHeader
 import app.waveroom.ui.theme.WR
+import app.waveroom.ui.components.screenBackdrop
 
 @Composable
 private fun Page(title: String, nav: Nav, content: @Composable () -> Unit) {
-    Column(Modifier.fillMaxSize().background(WR.bg)) {
+    Column(Modifier.fillMaxSize().screenBackdrop()) {
         ScreenHeader(title, { nav.pop() })
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp)) {
             content()

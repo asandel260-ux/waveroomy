@@ -82,6 +82,7 @@ import app.waveroom.ui.components.WrMenu
 import app.waveroom.ui.components.WrSheet
 import app.waveroom.ui.components.Hairline
 import app.waveroom.ui.theme.WR
+import app.waveroom.ui.components.screenBackdrop
 import kotlin.math.roundToInt
 
 private data class Floating(val id: Long, val emoji: String, val name: String, val x: Float)
@@ -282,8 +283,8 @@ fun RoomScreen(nav: Nav) {
             WrIconButton(if (deaf) "volume-x" else "headphones", { session.toggleDeafen() }, size = 48.dp, tint = if (deaf) WR.danger else WR.text, bg = if (deaf) WR.dangerSoft else WR.surface2, border = WR.border)
             WrIconButton("smile-plus", { reactOpen = true }, size = 48.dp, bg = WR.surface2, border = WR.border)
             MicButton(muted = me?.muted != false, ptt = settings.ptt, compact = vertical)
-            WrIconButton("monitor", { if (sharing) AppCore.screen.stop(true) else shareSheet = true }, size = 48.dp, tint = if (sharing) WR.accentBright else WR.text, bg = if (sharing) WR.accentSoft else WR.surface2, border = if (sharing) WR.accent else WR.border)
-            WrIconButton("chess", { if (s.chess.current != null && s.chess.active != null) mode = "chess" else chessCreate = true }, size = 48.dp, tint = if (mode == "chess" || s.chess.active != null) WR.accentBright else WR.text, bg = if (mode == "chess") WR.accentSoft else WR.surface2, border = if (mode == "chess") WR.accent else WR.border, desc = "Chess")
+            WrIconButton("monitor", { if (sharing) AppCore.screen.stop(true) else shareSheet = true }, size = 48.dp, tint = if (sharing) WR.accentBright else WR.text, bg = if (sharing) WR.accentSoft else WR.surface2, border = if (sharing) WR.neon else WR.border)
+            WrIconButton("chess", { if (s.chess.current != null && s.chess.active != null) mode = "chess" else chessCreate = true }, size = 48.dp, tint = if (mode == "chess" || s.chess.active != null) WR.accentBright else WR.text, bg = if (mode == "chess") WR.accentSoft else WR.surface2, border = if (mode == "chess") WR.neon else WR.border, desc = "Chess")
             WrIconButton("message", { chatOpen = true; session.unreadChat.value = 0 }, size = 48.dp, bg = WR.surface2, border = WR.border, badge = unread)
         }
         if (vertical) {
@@ -299,7 +300,7 @@ fun RoomScreen(nav: Nav) {
         }
     }
 
-    Box(Modifier.fillMaxSize().background(WR.bg).windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))) {
+    Box(Modifier.fillMaxSize().screenBackdrop().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))) {
         if (land) {
             Row(Modifier.fillMaxSize()) {
                 Column(Modifier.weight(1f).fillMaxHeight()) {
@@ -359,14 +360,14 @@ fun RoomScreen(nav: Nav) {
 @Composable
 private fun Tab(label: String, icon: String, on: Boolean, live: Boolean, onClick: () -> Unit) {
     Row(
-        Modifier.clip(RoundedCornerShape(50)).background(if (on) WR.accentSoft else Color.Transparent)
-            .border(1.dp, if (on) WR.accent else WR.border, RoundedCornerShape(50)).clickable(onClick = onClick)
+        Modifier.clip(RoundedCornerShape(50)).background(if (on) WR.primaryBrush else Brush.verticalGradient(listOf(Color.Transparent, Color.Transparent)))
+            .border(1.dp, if (on) WR.rimBrush else Brush.verticalGradient(listOf(WR.border, WR.border)), RoundedCornerShape(50)).clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        WrIcon(icon, 15.dp, if (on) WR.accentBright else WR.muted)
+        WrIcon(icon, 15.dp, if (on) WR.neon else WR.muted)
         Spacer(Modifier.width(6.dp))
-        Text(label, color = if (on) WR.accentBright else WR.muted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+        Text(label, color = if (on) Color.White else WR.muted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
     }
 }
 

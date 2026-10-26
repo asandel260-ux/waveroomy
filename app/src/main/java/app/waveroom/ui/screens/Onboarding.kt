@@ -46,6 +46,9 @@ import app.waveroom.ui.components.WrButton
 import app.waveroom.ui.components.WrField
 import app.waveroom.ui.components.WrIcon
 import app.waveroom.ui.theme.WR
+import app.waveroom.ui.components.screenBackdrop
+import app.waveroom.ui.components.HeroCard
+import app.waveroom.ui.components.NeonWave
 
 fun cleanHandle(s: String): String = s.lowercase().filter { it.isLetterOrDigit() && it.code < 128 || it == '_' }.take(20)
 
@@ -62,20 +65,25 @@ fun Onboarding() {
     var error by remember { mutableStateOf<String?>(null) }
 
     Column(
-        Modifier.fillMaxSize().background(WR.bg).statusBarsPadding().navigationBarsPadding().imePadding()
+        Modifier.fillMaxSize().screenBackdrop().statusBarsPadding().navigationBarsPadding().imePadding()
             .verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 24.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(36.dp).clip(CircleShape).background(WR.accent), contentAlignment = Alignment.Center) {
-                WrIcon("waveform", 20.dp, androidx.compose.ui.graphics.Color.White)
+        HeroCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(22.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(38.dp).clip(CircleShape).background(WR.primaryBrush).border(1.dp, WR.rimBrush, CircleShape), contentAlignment = Alignment.Center) {
+                        WrIcon("waveform", 20.dp, androidx.compose.ui.graphics.Color.White)
+                    }
+                    Spacer(Modifier.size(10.dp))
+                    Text("HoMit", color = WR.text, fontFamily = WR.display, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                }
+                Spacer(Modifier.height(22.dp))
+                Text("Voice rooms\nwith no server.", color = WR.text, fontFamily = WR.display, fontSize = 34.sp, lineHeight = 38.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(4.dp))
+                NeonWave(Modifier.fillMaxWidth().height(40.dp), amplitude = 12.dp, stroke = 3.dp)
+                Muted("Talk, chat, share your screen, watch together and draw — device to device. Your identity is a key that lives only on this phone.", size = 14)
             }
-            Spacer(Modifier.size(10.dp))
-            Text("HoMit", color = WR.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
         }
-        Spacer(Modifier.height(36.dp))
-        Text("Voice rooms\nwith no server.", color = WR.text, fontSize = 38.sp, lineHeight = 40.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1.4).sp)
-        Spacer(Modifier.height(12.dp))
-        Muted("Talk, chat, share your screen, watch together and draw — device to device. Your identity is a key that lives only on this phone.", size = 15)
         Spacer(Modifier.height(32.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -88,7 +96,7 @@ fun Onboarding() {
                     for (h in HUES) {
                         Box(
                             Modifier.size(22.dp).clip(CircleShape).background(WR.hue(h, 0.55f, 0.42f))
-                                .border(if (h == hue) 2.dp else 0.dp, WR.text, CircleShape).clickable { hue = h }
+                                .border(if (h == hue) 2.dp else 0.dp, WR.neon, CircleShape).clickable { hue = h }
                         )
                     }
                 }
@@ -99,7 +107,7 @@ fun Onboarding() {
             for (e in AVATAR_EMOJIS) {
                 Box(
                     Modifier.size(42.dp).clip(CircleShape).background(if (e == emoji) WR.accentSoft else WR.surface2)
-                        .border(1.dp, if (e == emoji) WR.accent else WR.border, CircleShape).clickable { emoji = e },
+                        .border(if (e == emoji) 1.5.dp else 1.dp, if (e == emoji) WR.neon else WR.border, CircleShape).clickable { emoji = e },
                     contentAlignment = Alignment.Center
                 ) { Text(e, fontSize = 20.sp) }
             }

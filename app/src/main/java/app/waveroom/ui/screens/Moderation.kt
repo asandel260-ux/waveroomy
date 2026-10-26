@@ -45,11 +45,12 @@ import app.waveroom.ui.components.Tiny
 import app.waveroom.ui.components.WrButton
 import app.waveroom.ui.components.WrChip
 import app.waveroom.ui.theme.WR
+import app.waveroom.ui.components.screenBackdrop
 
 @Composable
 fun ModerationScreen(nav: Nav) {
     var tab by remember { mutableStateOf("reports") }
-    Column(Modifier.fillMaxSize().background(WR.bg)) {
+    Column(Modifier.fillMaxSize().screenBackdrop()) {
         ScreenHeader("Moderation desk", { nav.pop() }, subtitle = "For rooms you host")
         Box(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
             Segmented(listOf("reports" to "Reports", "audit" to "Audit", "stats" to "Activity"), tab, { tab = it })

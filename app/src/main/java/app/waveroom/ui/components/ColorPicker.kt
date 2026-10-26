@@ -122,5 +122,5 @@ private fun Swatch(c: Color, selected: Boolean, onClick: () -> Unit) {
     ) { if (selected) WrIcon("check", 16.dp, if (c.red * 0.3f + c.green * 0.6f + c.blue * 0.1f > 0.55f) Color.Black else Color.White) }
 }
 
-val ACCENT_PRESETS = listOf(0xFF3B82F6.toInt(), 0xFF06B6D4.toInt(), 0xFF10B981.toInt(), 0xFFF59E0B.toInt(), 0xFFEF4444.toInt(), 0xFFEC4899.toInt(), 0xFFA855F7.toInt(), 0xFFFAFAFA.toInt())
-val BG_PRESETS = listOf(0xFF000000.toInt(), 0xFF0B1220.toInt(), 0xFF0A1A14.toInt(), 0xFF1A0B14.toInt(), 0xFF1B1B1F.toInt(), 0xFF2B2B33.toInt(), 0xFFF4F4F6.toInt())
+val ACCENT_PRESETS = listOf(0xFF7C3AED.toInt(), 0xFF3B82F6.toInt(), 0xFF06B6D4.toInt(), 0xFF10B981.toInt(), 0xFFF59E0B.toInt(), 0xFFEF4444.toInt(), 0xFFEC4899.toInt(), 0xFFA855F7.toInt(), 0xFFFAFAFA.toInt())
+val BG_PRESETS = listOf(0xFF0A0710.toInt(), 0xFF000000.toInt(), 0xFF0B1220.toInt(), 0xFF0A1A14.toInt(), 0xFF1A0B14.toInt(), 0xFF1B1B1F.toInt(), 0xFF2B2B33.toInt(), 0xFFF4F4F6.toInt())

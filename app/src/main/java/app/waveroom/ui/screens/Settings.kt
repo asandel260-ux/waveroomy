@@ -55,6 +55,7 @@ import app.waveroom.ui.components.WrButton
 import app.waveroom.ui.components.WrField
 import app.waveroom.ui.components.WrSheet
 import app.waveroom.ui.theme.WR
+import app.waveroom.ui.components.screenBackdrop
 
 private fun deviceLabel(d: AudioDeviceInfo): String {
     val kind = when (d.type) {
@@ -120,7 +121,7 @@ fun SettingsScreen(nav: Nav) {
     var wipe by remember { mutableStateOf(false) }
     var dmSheet by remember { mutableStateOf(false) }
 
-    Column(Modifier.fillMaxSize().background(WR.bg).imePadding()) {
+    Column(Modifier.fillMaxSize().screenBackdrop().imePadding()) {
         ScreenHeader("Settings", { nav.pop() })
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
             SectionTitle("Appearance")
@@ -128,11 +129,11 @@ fun SettingsScreen(nav: Nav) {
                 SwitchRow("Animations", "Screen transitions, pulses and other motion. Turn off for a calmer, faster app.", s.animations, { AppCore.settings.update { st -> st.copy(animations = it) } })
                 ColorPickerCard(
                     "Buttons & accents", "Buttons, highlights, switches and sliders.",
-                    s.accentColor, androidx.compose.ui.graphics.Color(0xFF6E56CF), ACCENT_PRESETS
+                    s.accentColor, androidx.compose.ui.graphics.Color(0xFF7C3AED), ACCENT_PRESETS
                 ) { c -> AppCore.settings.update { st -> st.copy(accentColor = c) } }
                 ColorPickerCard(
                     "Background", "The dark base of the app. Panels and borders follow it automatically.",
-                    s.bgColor, androidx.compose.ui.graphics.Color(0xFF0A0A0B), BG_PRESETS
+                    s.bgColor, androidx.compose.ui.graphics.Color(0xFF0A0710), BG_PRESETS
                 ) { c -> AppCore.settings.update { st -> st.copy(bgColor = c) } }
             }
             SectionTitle("Voice")

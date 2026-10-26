@@ -64,6 +64,7 @@ import app.waveroom.ui.components.WrField
 import app.waveroom.ui.components.WrIcon
 import app.waveroom.ui.components.WrIconButton
 import app.waveroom.ui.theme.WR
+import app.waveroom.ui.components.screenBackdrop
 import kotlinx.coroutines.delay
 
 fun readClipboard(): String {
@@ -86,7 +87,7 @@ fun CreateRoomScreen(nav: Nav) {
     var seats by remember { mutableStateOf("8") }
     var error by remember { mutableStateOf<String?>(null) }
 
-    Column(Modifier.fillMaxSize().background(WR.bg).imePadding()) {
+    Column(Modifier.fillMaxSize().screenBackdrop().imePadding()) {
         ScreenHeader("New room", { nav.pop() })
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp)) {
             WrField(title, { title = it; error = null }, label = "Title", placeholder = "Friday night jam", maxLength = 60)
@@ -195,7 +196,7 @@ fun InviteScreen(nav: Nav, purpose: String) {
         }
     }
 
-    Box(Modifier.fillMaxSize().background(WR.bg)) {
+    Box(Modifier.fillMaxSize().screenBackdrop()) {
         Column(Modifier.fillMaxSize().imePadding()) {
             ScreenHeader(
                 if (purpose == "room") "Invite to room" else if (purpose.startsWith("group:")) "Add to group" else "Add a friend", { nav.pop() },
@@ -325,7 +326,7 @@ fun JoinScreen(nav: Nav, initial: String) {
         }
     }
 
-    Box(Modifier.fillMaxSize().background(WR.bg)) {
+    Box(Modifier.fillMaxSize().screenBackdrop()) {
         Column(Modifier.fillMaxSize().imePadding()) {
             ScreenHeader("Join with a code", { nav.pop() })
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {

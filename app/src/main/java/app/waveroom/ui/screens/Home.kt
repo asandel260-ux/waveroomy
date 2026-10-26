@@ -68,6 +68,7 @@ import app.waveroom.ui.components.WrMenu
 import app.waveroom.ui.components.WrSheet
 import app.waveroom.ui.components.Hairline
 import app.waveroom.ui.theme.WR
+import app.waveroom.ui.components.screenBackdrop
 
 @Composable
 fun HomeScreen(nav: Nav) {
@@ -78,7 +79,7 @@ fun HomeScreen(nav: Nav) {
     androidx.compose.runtime.LaunchedEffect(st.nearby) {
         if (st.nearby) AppCore.lan.startListening() else AppCore.lan.stopListening()
     }
-    Column(Modifier.fillMaxSize().background(WR.bg)) {
+    Column(Modifier.fillMaxSize().screenBackdrop()) {
         var drag by remember { mutableStateOf(0f) }
         Box(
             Modifier.weight(1f).tabSwipe(
@@ -426,16 +427,20 @@ private fun YouTab(nav: Nav) {
     val open = reports.count { it.status == "open" && !it.outgoing }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         val me = p
-        Row(Modifier.statusBarsPadding().padding(20.dp).clickable { nav.push(Route.EditProfile) }, verticalAlignment = Alignment.CenterVertically) {
-            if (me != null) AvatarView(me.avatar, 64.dp, mine = true)
-            Spacer(Modifier.width(16.dp))
-            Column(Modifier.weight(1f)) {
-                Text(me?.displayName ?: "", color = WR.text, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
-                Muted("@${me?.username ?: ""}")
+        app.waveroom.ui.components.HeroCard(Modifier.statusBarsPadding().padding(16.dp).fillMaxWidth().clickable { nav.push(Route.EditProfile) }) {
+            Column {
+                Row(Modifier.padding(start = 20.dp, end = 16.dp, top = 22.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (me != null) AvatarView(me.avatar, 68.dp, mine = true)
+                    Spacer(Modifier.width(16.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(me?.displayName ?: "", color = WR.text, fontFamily = WR.display, fontSize = 24.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        Text("@${me?.username ?: ""}", color = WR.neon, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    }
+                    WrIcon("chevron-right", 20.dp, WR.text.copy(alpha = 0.6f))
+                }
+                app.waveroom.ui.components.NeonWave(Modifier.fillMaxWidth().height(46.dp), amplitude = 12.dp, stroke = 3.dp)
             }
-            WrIcon("chevron-right", 20.dp, WR.faint)
         }
-        Hairline()
         Row2("Edit profile", null, "pencil", onClick = { nav.push(Route.EditProfile) })
         Row2("People", "Following, followers, blocked", "users", onClick = { nav.push(Route.People) })
         Row2("Moderation desk", if (open > 0) "$open open report(s)" else "Reports and audit trail for your rooms", "shield-alert", onClick = { nav.push(Route.Moderation) })

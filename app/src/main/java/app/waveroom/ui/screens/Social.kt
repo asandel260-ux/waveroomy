@@ -68,6 +68,7 @@ import app.waveroom.ui.components.WrIcon
 import app.waveroom.ui.components.WrIconButton
 import app.waveroom.ui.components.WrMenu
 import app.waveroom.ui.theme.WR
+import app.waveroom.ui.components.screenBackdrop
 
 /* ============================== Direct messages ============================== */
 
@@ -85,14 +86,20 @@ fun ProfileScreen(nav: Nav, uid: String) {
     val c: Contact? = contacts[uid]
     var confirmBlock by remember { mutableStateOf(false) }
 
-    Column(Modifier.fillMaxSize().background(WR.bg)) {
+    Column(Modifier.fillMaxSize().screenBackdrop()) {
         ScreenHeader("Profile", { nav.pop() })
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             val av = if (mine) me?.avatar else c?.avatar
-            AvatarView(av ?: Avatar(), 96.dp, uid = uid, mine = mine)
-            Spacer(Modifier.height(14.dp))
-            Text((if (mine) me?.displayName else c?.displayName) ?: "Unknown", color = WR.text, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
-            Muted("@" + ((if (mine) me?.username else c?.username) ?: ""))
+            app.waveroom.ui.components.HeroCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth().padding(top = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    AvatarView(av ?: Avatar(), 96.dp, uid = uid, mine = mine)
+                    Spacer(Modifier.height(12.dp))
+                    Text((if (mine) me?.displayName else c?.displayName) ?: "Unknown", color = WR.text, fontFamily = WR.display, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                    Text("@" + ((if (mine) me?.username else c?.username) ?: ""), color = WR.neon, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    app.waveroom.ui.components.NeonWave(Modifier.fillMaxWidth().height(40.dp), amplitude = 10.dp, stroke = 3.dp)
+                }
+            }
+            Spacer(Modifier.height(10.dp))
             val pron = if (mine) me?.pronouns else c?.pronouns
             if (!pron.isNullOrEmpty()) Muted(pron, size = 12)
             Spacer(Modifier.height(10.dp))
@@ -141,7 +148,7 @@ fun PeopleScreen(nav: Nav) {
         "blocked" -> blocked.toList()
         else -> contacts.values.sortedByDescending { it.lastSeen }.map { it.uid }
     }
-    Column(Modifier.fillMaxSize().background(WR.bg)) {
+    Column(Modifier.fillMaxSize().screenBackdrop()) {
         ScreenHeader("People", { nav.pop() })
         Box(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
             Segmented(listOf("met" to "Met", "following" to "Following", "followers" to "Followers", "blocked" to "Blocked"), tab, { tab = it })
@@ -185,7 +192,7 @@ fun EditProfileScreen(nav: Nav) {
     var error by remember { mutableStateOf<String?>(null) }
     val photoVer by AppCore.profile.photoVersion.collectAsState()
 
-    Column(Modifier.fillMaxSize().background(WR.bg).imePadding()) {
+    Column(Modifier.fillMaxSize().screenBackdrop().imePadding()) {
         ScreenHeader("Edit profile", { nav.pop() })
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

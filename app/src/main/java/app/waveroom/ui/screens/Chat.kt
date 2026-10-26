@@ -90,6 +90,7 @@ import app.waveroom.ui.components.WrSheet
 import app.waveroom.ui.components.firstUrl
 import app.waveroom.ui.components.wrapSelection
 import app.waveroom.ui.theme.WR
+import app.waveroom.ui.components.screenBackdrop
 import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.decode.GifDecoder
@@ -168,7 +169,7 @@ fun ChatScreen(nav: Nav, chat: String) {
     val readOnly = group?.left == true
     val dmAvatar = contacts[chat]?.avatar
 
-    Column(Modifier.fillMaxSize().background(WR.bg).imePadding()) {
+    Column(Modifier.fillMaxSize().screenBackdrop().imePadding()) {
         /* ---------- header ---------- */
         Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 4.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             WrIconButton("chevron-left", { nav.pop() })

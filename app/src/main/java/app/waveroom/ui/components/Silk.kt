@@ -21,6 +21,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -57,22 +58,30 @@ fun SilkBackground(modifier: Modifier = Modifier, animated: Boolean = false) {
         val phase by t.animateFloat(0f, 1f, infiniteRepeatable(tween(9000, easing = LinearEasing), RepeatMode.Reverse), label = "p")
         phase - 0.5f
     } else 0f
-    Canvas(modifier) {
-        val a = WR.accentBright
-        val b = WR.accent
-        ribbon(0.30f, 0.30f, 0.34f, d, Brush.linearGradient(listOf(a.copy(alpha = 0.00f), b.copy(alpha = 0.30f), a.copy(alpha = 0.06f)), Offset(0f, 0f), Offset(size.width, size.height)))
-        ribbon(0.62f, 0.26f, 0.22f, -d, Brush.linearGradient(listOf(b.copy(alpha = 0.34f), a.copy(alpha = 0.10f), Color.Transparent), Offset(size.width, 0f), Offset(0f, size.height)))
-        ribbon(0.82f, 0.18f, 0.16f, d * 0.7f, Brush.linearGradient(listOf(Color.Transparent, WR.neon.copy(alpha = 0.10f), b.copy(alpha = 0.22f)), Offset(0f, size.height), Offset(size.width, 0f)))
-        // the one bright thread
-        val w = size.width
-        val h = size.height
-        val line = Path()
-        line.moveTo(-0.1f * w, 0.62f * h + d * 0.26f * h * 0.5f)
-        line.cubicTo(0.25f * w, 0.36f * h, 0.6f * w, 0.88f * h, 1.1f * w, 0.52f * h)
-        drawPath(line, WR.neon.copy(alpha = 0.22f), style = Stroke(width = 5.dp.toPx(), cap = StrokeCap.Round))
-        drawPath(line, WR.neonSoft.copy(alpha = 0.55f), style = Stroke(width = 1.2.dp.toPx(), cap = StrokeCap.Round))
-    }
+    Canvas(modifier) { drawSilk(d, 1f) }
 }
+
+/** The ribbons themselves; [k] scales their strength so the same art can sit quietly behind whole screens. */
+fun DrawScope.drawSilk(d: Float, k: Float) {
+    val a = WR.accentBright
+    val b = WR.accent
+    ribbon(0.30f, 0.30f, 0.34f, d, Brush.linearGradient(listOf(a.copy(alpha = 0.00f), b.copy(alpha = 0.30f * k), a.copy(alpha = 0.06f * k)), Offset(0f, 0f), Offset(size.width, size.height)))
+    ribbon(0.62f, 0.26f, 0.22f, -d, Brush.linearGradient(listOf(b.copy(alpha = 0.34f * k), a.copy(alpha = 0.10f * k), Color.Transparent), Offset(size.width, 0f), Offset(0f, size.height)))
+    ribbon(0.82f, 0.18f, 0.16f, d * 0.7f, Brush.linearGradient(listOf(Color.Transparent, WR.neon.copy(alpha = 0.10f * k), b.copy(alpha = 0.22f * k)), Offset(0f, size.height), Offset(size.width, 0f)))
+    // the one bright thread
+    val w = size.width
+    val h = size.height
+    val line = Path()
+    line.moveTo(-0.1f * w, 0.62f * h + d * 0.26f * h * 0.5f)
+    line.cubicTo(0.25f * w, 0.36f * h, 0.6f * w, 0.88f * h, 1.1f * w, 0.52f * h)
+    drawPath(line, WR.neon.copy(alpha = 0.22f * k), style = Stroke(width = 5.dp.toPx(), cap = StrokeCap.Round))
+    drawPath(line, WR.neonSoft.copy(alpha = 0.55f * k), style = Stroke(width = 1.2.dp.toPx(), cap = StrokeCap.Round))
+}
+
+/** The ground every full screen stands on: violet at the top fading to the base colour, with quiet silk. */
+fun Modifier.screenBackdrop(): Modifier = this
+    .background(Brush.verticalGradient(listOf(lerp(WR.bg, WR.accent, 0.22f), lerp(WR.bg, WR.accent, 0.07f), WR.bg)))
+    .drawBehind { drawSilk(0f, 0.34f) }
 
 /** A hand-drawn-feeling neon sine, like the waveform of a voice. */
 @Composable
