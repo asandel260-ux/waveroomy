@@ -74,7 +74,7 @@ import app.waveroom.ui.theme.WR
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ChatSheet(nav: Nav, onDismiss: () -> Unit) {
+fun ChatSheet(nav: Nav, onOpenChess: () -> Unit = {}, onDismiss: () -> Unit) {
     val session = AppCore.session
     val tick by session.tick.collectAsState()
     tick.let { }
@@ -106,7 +106,7 @@ fun ChatSheet(nav: Nav, onDismiss: () -> Unit) {
                     items(msgs, key = { it.id }) { m ->
                         val mine = m.uid == session.myUid
                         val hidden = blocked.contains(m.uid) && !mine
-                        Row(Modifier.fillMaxWidth().clickable(enabled = !m.deleted && !hidden) { actionFor = m }) {
+                        Row(Modifier.fillMaxWidth().clickable(enabled = !m.deleted && !hidden && !m.text.startsWith(app.waveroom.chess.CHESS_MARK)) { actionFor = m }) {
                             AvatarView(m.avatar, 34.dp, uid = m.uid, mine = mine)
                             Spacer(Modifier.width(10.dp))
                             Column(Modifier.weight(1f)) {
@@ -118,6 +118,10 @@ fun ChatSheet(nav: Nav, onDismiss: () -> Unit) {
                                 when {
                                     m.deleted -> Text("message removed", color = WR.faint, fontSize = 13.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
                                     hidden -> Text("message from a blocked person", color = WR.faint, fontSize = 13.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                                    m.text.startsWith(app.waveroom.chess.CHESS_MARK) -> {
+                                        val rest = m.text.removePrefix(app.waveroom.chess.CHESS_MARK)
+                                        ChessChallengeCard(rest.substringBefore('\u001F'), rest.substringAfter('\u001F', ""), onOpenChess)
+                                    }
                                     else -> RichText(m.text, WR.text, WR.accentBright)
                                 }
                                 if (!m.deleted && m.reactions.isNotEmpty()) {

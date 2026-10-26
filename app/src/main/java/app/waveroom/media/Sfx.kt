@@ -34,12 +34,19 @@ class Sfx(private val settings: SettingsStore) {
             "hand" -> tone(listOf(698.0 to 0.05, 698.0 to 0.05, 932.0 to 0.08))
             "mute" -> tone(listOf(330.0 to 0.07))
             "unmute" -> tone(listOf(494.0 to 0.07))
+            "c_move" -> tone(listOf(300.0 to 0.035))
+            "c_cap" -> tone(listOf(220.0 to 0.03, 150.0 to 0.06))
+            "c_check" -> tone(listOf(740.0 to 0.05, 988.0 to 0.07))
+            "c_end" -> tone(listOf(523.0 to 0.09, 392.0 to 0.09, 262.0 to 0.16))
+            "c_low" -> tone(listOf(880.0 to 0.03))
             else -> tone(listOf(600.0 to 0.05))
         }
     }
 
     fun play(name: String) {
-        if (!settings.state.value.sounds) return
+        val cfg = settings.state.value
+        if (!cfg.sounds) return
+        if (name.startsWith("c_") && !cfg.chessSounds) return
         Thread {
             try {
                 val d = data(name)

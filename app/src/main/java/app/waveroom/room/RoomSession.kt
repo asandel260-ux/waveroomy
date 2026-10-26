@@ -141,6 +141,7 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
         cancelLater(joinTimeout)
         phase.value = "live"
         val s = st ?: return
+        startChessLoop()
         core.mesh.hintProvider = { sid -> s.participants[sid]?.via?.takeIf { it.isNotEmpty() } }
         core.startService()
         core.audio.start()
@@ -178,6 +179,7 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
 
     private fun resetLocal(reason: String? = null) {
         cancelLater(joinTimeout)
+        cancelLater(chessLoop)
         val s = st
         core.dmHub.onRoomClosed(s?.meta?.id)
         if (s != null && s.meta.ownerUid == myUid && phase.value == "live") core.rooms.saveData(s)
@@ -531,6 +533,10 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
                 core.sfx.play("message")
             }
             "screen:started", "screen:stopped" -> core.audio.refresh()
+            "chess:game" -> if (d.str("status") == "waiting" && d.str("creator") != myUid && chessSeen.add(d.str("id"))) {
+                val g = app.waveroom.chess.ChessGame.from(d)
+                if (g != null) { toast("${g.seats[0]?.name ?: "Someone"} created a ${g.timeLabel} ${g.label} game"); core.sfx.play("message") }
+            }
             "notify" -> toast(d.str("text"))
         }
     }
@@ -672,6 +678,32 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
     fun watchPerm(mode: String) = request("watch:perm", jsonOf("mode" to mode), this::err)
     fun watchMod(uid: String, on: Boolean) = request("watch:mod", jsonOf("uid" to uid, "on" to on), this::err)
     fun watchEnd() = request("watch:end", JSONObject(), this::err)
+
+    /* ---- chess ---- */
+
+    fun chessCreate(mode: String, base: Int, inc: Int, cb: (Boolean) -> Unit) =
+        request("chess:create", jsonOf("mode" to mode, "base" to base, "inc" to inc)) { err(it); cb(it.bool("ok")) }
+
+    fun chessAct(kind: String, id: String, vararg extra: Pair<String, Any?>, cb: ((Boolean) -> Unit)? = null) {
+        val d = jsonOf("id" to id)
+        for ((k, v) in extra) d.put(k, v)
+        request(kind, d) { err(it); cb?.invoke(it.bool("ok")) }
+    }
+
+    private var chessLoop: Runnable? = null
+    private val chessSeen = HashSet<String>()
+
+    private fun startChessLoop() {
+        cancelLater(chessLoop)
+        chessLoop = later(250) {
+            if (st != null && phase.value == "live") {
+                if (isEngine) {
+                    try { engine?.tick() } catch (e: Exception) { }
+                }
+                startChessLoop()
+            }
+        }
+    }
 
     /* ---- blackboard ---- */
 

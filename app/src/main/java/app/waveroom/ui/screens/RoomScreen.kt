@@ -111,6 +111,8 @@ fun RoomScreen(nav: Nav) {
     var person by remember { mutableStateOf<String?>(null) }
     var shareSheet by remember { mutableStateOf(false) }
     var reportRoom by remember { mutableStateOf(false) }
+    var chessCreate by remember { mutableStateOf(false) }
+    var chessFocus by remember { mutableStateOf(false) }
     val floats = remember { mutableStateListOf<Floating>() }
 
     LaunchedEffect(Unit) {
@@ -120,7 +122,7 @@ fun RoomScreen(nav: Nav) {
         }
     }
     BackHandler(enabled = phase != "idle") {
-        if (phase == "joining") session.leave() else if (mode != "stage") mode = "stage" else leaveConfirm = true
+        if (phase == "joining") session.leave() else if (mode != "stage") { mode = "stage"; chessFocus = false } else leaveConfirm = true
     }
 
     if (s == null || phase == "idle") {
@@ -193,6 +195,7 @@ fun RoomScreen(nav: Nav) {
         Tab("Watch", "youtube", mode == "watch", watching) { mode = "watch" }
         Tab("Board", "board", mode == "board", s.board.objects.isNotEmpty()) { mode = "board" }
         Tab("Browser", "globe", mode == "browse", browsing) { mode = "browse" }
+        Tab("Chess", "chess", mode == "chess", s.chess.active != null) { mode = "chess" }
     }
     val modeAction: @Composable () -> Unit = {
         val iShare = sharer?.sid == session.mySid
@@ -240,6 +243,7 @@ fun RoomScreen(nav: Nav) {
                 "watch" -> WatchPanel(Modifier.fillMaxSize(), land)
                 "board" -> BoardPanel(Modifier.fillMaxSize())
                 "browse" -> BrowsePanel(Modifier.fillMaxSize())
+                "chess" -> ChessPanel(Modifier.fillMaxSize(), land, chessFocus, { chessFocus = it }, { mode = "stage"; chessFocus = false }, { chessCreate = true })
                 else -> {
                     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = if (land) 8.dp else 14.dp)) {
                         if (sharer != null) {
@@ -276,12 +280,13 @@ fun RoomScreen(nav: Nav) {
             WrIconButton("smile-plus", { reactOpen = true }, size = 48.dp, bg = WR.surface2, border = WR.border)
             MicButton(muted = me?.muted != false, ptt = settings.ptt, compact = vertical)
             WrIconButton("monitor", { if (sharing) AppCore.screen.stop(true) else shareSheet = true }, size = 48.dp, tint = if (sharing) WR.accentBright else WR.text, bg = if (sharing) WR.accentSoft else WR.surface2, border = if (sharing) WR.accent else WR.border)
+            WrIconButton("chess", { if (s.chess.current != null && s.chess.active != null) mode = "chess" else chessCreate = true }, size = 48.dp, tint = if (mode == "chess" || s.chess.active != null) WR.accentBright else WR.text, bg = if (mode == "chess") WR.accentSoft else WR.surface2, border = if (mode == "chess") WR.accent else WR.border, desc = "Chess")
             WrIconButton("message", { chatOpen = true; session.unreadChat.value = 0 }, size = 48.dp, bg = WR.surface2, border = WR.border, badge = unread)
         }
         if (vertical) {
             Column(
-                Modifier.fillMaxHeight().background(WR.surface).statusBarsPadding().navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.SpaceEvenly, horizontalAlignment = Alignment.CenterHorizontally
+                Modifier.fillMaxHeight().background(WR.surface).statusBarsPadding().navigationBarsPadding().verticalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.CenterHorizontally
             ) { items() }
         } else {
             Row(
@@ -295,14 +300,14 @@ fun RoomScreen(nav: Nav) {
         if (land) {
             Row(Modifier.fillMaxSize()) {
                 Column(Modifier.weight(1f).fillMaxHeight()) {
-                    Box(Modifier.statusBarsPadding()) { landHeader() }
+                    Box(Modifier.statusBarsPadding()) { if (!(mode == "chess" && chessFocus)) landHeader() }
                     mainArea(Modifier.weight(1f))
                 }
                 Box(Modifier.fillMaxHeight()) { Row { Box(Modifier.width(1.dp).fillMaxHeight().background(WR.border)); controls(true) } }
             }
         } else {
             Column(Modifier.fillMaxSize()) {
-                Box(Modifier.statusBarsPadding()) { Column { topBar(); tabsRow() } }
+                Box(Modifier.statusBarsPadding()) { if (!(mode == "chess" && chessFocus)) Column { topBar(); tabsRow() } }
                 mainArea(Modifier.weight(1f))
                 Hairline()
                 controls(false)
@@ -322,7 +327,8 @@ fun RoomScreen(nav: Nav) {
             }
         }
     }
-    if (chatOpen) ChatSheet(nav) { chatOpen = false }
+    if (chatOpen) ChatSheet(nav, onOpenChess = { chatOpen = false; mode = "chess" }) { chatOpen = false }
+    if (chessCreate) ChessCreateSheet({ chessCreate = false }) { mode = "chess" }
     if (settingsOpen) RoomSettingsSheet { settingsOpen = false }
     if (fxOpen) WrSheet({ fxOpen = false }, "Voice effects") { Column(Modifier.padding(horizontal = 20.dp)) { VoiceFxPanel() } }
     if (shareSheet) ShareSheet { shareSheet = false }

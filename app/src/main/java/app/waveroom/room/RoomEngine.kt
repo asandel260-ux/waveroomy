@@ -1,5 +1,9 @@
 package app.waveroom.room
 
+import app.waveroom.chess.CHESS_MARK
+import app.waveroom.chess.ChessGame
+import app.waveroom.chess.ChessModes
+import app.waveroom.chess.ChessSeat
 import app.waveroom.core.Avatar
 import app.waveroom.core.BOARD_TYPES
 import app.waveroom.core.BoardObj
@@ -120,6 +124,7 @@ class RoomEngine(private val io: EngineIO) {
         st.participants = m
         if (p.sharing != null) io.emit("screen:stopped", JSONObject().put("sid", sid))
         if (m.isEmpty()) return
+        chessLeft(p)
         if (p.role == "host" && m.values.none { it.role == "host" }) {
             val next = m.values.sortedWith(compareBy<Participant> { it.joinedAt }.thenBy { it.sid }).first()
             m[next.sid] = next.copy(role = "host")
@@ -234,6 +239,7 @@ class RoomEngine(private val io: EngineIO) {
                 kind.startsWith("watch:") -> watch(from, me, kind, d)
                 kind.startsWith("board:") -> board(from, me, kind, d)
                 kind.startsWith("browse:") -> browse(from, me, kind, d)
+                kind.startsWith("chess:") -> chess(me, kind, d)
                 else -> err("Unknown request.")
             }
         }
@@ -294,7 +300,7 @@ class RoomEngine(private val io: EngineIO) {
 
     private fun chatSend(from: String, me: Participant, text0: String): JSONObject {
         if (!limiter.allow("chat:" + me.uid, 15, 10_000)) return err("Slow down a little.")
-        val t = text0.trim().take(500)
+        val t = text0.replace("\u001F", "").trim().take(500)
         if (t.isEmpty()) return err("Empty message.")
         val msg = ChatMsg(Ids.id("m_"), me.uid, me.username, me.displayName, me.avatar, t, nowMs())
         io.emit("chat:new", msg.toJson())
@@ -475,6 +481,138 @@ class RoomEngine(private val io: EngineIO) {
             "watch:end" -> {
                 if (me.role != "host") return err("Only the host can end Watch Together.")
                 io.emit("watch:ended", JSONObject())
+                return ok()
+            }
+        }
+        return err("Unknown request.")
+    }
+
+    /* ---------------- chess ---------------- */
+
+    private fun pushGame(g: ChessGame) = io.emit("chess:game", g.toJson())
+
+    /** Called a few times a second by the acting host: clocks, expiry, abandoned starts. */
+    fun tick() {
+        val g = st.chess.current ?: return
+        if (g.finished) return
+        if (g.tick(nowMs())) pushGame(g)
+    }
+
+    private fun chessLeft(p: Participant) {
+        if (st.participants.values.any { it.uid == p.uid }) return
+        val g = st.chess.active ?: return
+        if (g.status != "waiting") return
+        val seat = g.seatOf(p.uid)
+        if (seat < 0) return
+        if (g.creatorUid == p.uid) g.cancel(nowMs(), false) else g.seats[seat] = null
+        pushGame(g)
+    }
+
+    private fun chess(me: Participant, kind: String, d: JSONObject): JSONObject {
+        val now = nowMs()
+        if (!limiter.allow("chess:" + me.uid, 60, 10_000)) return err("Slow down a little.")
+        if (kind == "chess:create") {
+            val mode = d.str("mode")
+            if (!ChessModes.valid(mode)) return err("Unknown game mode.")
+            val base = d.int("base")
+            val inc = d.int("inc")
+            if (base !in 30..10800 || inc !in 0..180) return err("That time control is not available.")
+            if (st.chess.active != null) return err("A game is already open — finish or cancel it first.")
+            val g = ChessGame(Ids.id("g_"), mode, base, inc, me.uid, now)
+            g.seats[0] = ChessSeat(me.uid, me.displayName)
+            pushGame(g)
+            val text = CHESS_MARK + g.id + "\u001F" + "${me.displayName} created a ${g.timeLabel} ${g.label} game."
+            io.emit("chat:new", ChatMsg(Ids.id("m_"), me.uid, me.username, me.displayName, me.avatar, text, now).toJson())
+            return ok("id" to g.id)
+        }
+        val g = st.chess.games[d.str("id")] ?: return err("That game is gone.")
+        val seat = g.seatOf(me.uid)
+        val isCreatorOrHost = g.creatorUid == me.uid || me.role == "host"
+        when (kind) {
+            "chess:join" -> {
+                if (g.status != "waiting") return err("This game is no longer open.")
+                if (seat >= 0) return ok()
+                var want = d.int("seat", -1)
+                if (g.bughouse) {
+                    if (want !in 0..3) want = g.seats.indexOfFirst { it == null }
+                    else if (g.seats[want] != null) return err("That seat is taken.")
+                } else want = g.seats.indexOfFirst { it == null }
+                if (want < 0) return err("This game is full.")
+                g.seats[want] = ChessSeat(me.uid, me.displayName)
+                if (!g.bughouse && g.filled()) g.begin(now, true)
+                pushGame(g)
+                return ok()
+            }
+            "chess:leave" -> {
+                if (g.status != "waiting") return err("Resign to leave a running game.")
+                if (seat < 0) return ok()
+                if (g.creatorUid == me.uid) g.cancel(now, false) else g.seats[seat] = null
+                pushGame(g)
+                return ok()
+            }
+            "chess:cancel" -> {
+                if (g.status != "waiting") return err("This game already started.")
+                if (!isCreatorOrHost) return err("Only the person who made the game can cancel it.")
+                g.cancel(now, false)
+                pushGame(g)
+                return ok()
+            }
+            "chess:start" -> {
+                if (g.status != "waiting") return ok()
+                if (!isCreatorOrHost) return err("Only the person who made the game can start it.")
+                if (!g.filled()) return err("Waiting for all four players.")
+                g.begin(now, false)
+                pushGame(g)
+                return ok()
+            }
+            "chess:move" -> {
+                if (seat < 0) return err("You are not playing.")
+                val e = g.applyMove(seat, d.str("m"), d.int("ply", -1), now)
+                if (e != null) return err(e)
+                pushGame(g)
+                return ok()
+            }
+            "chess:resign" -> {
+                if (seat < 0 || !g.live) return err("You are not playing.")
+                g.resign(seat, now)
+                pushGame(g)
+                return ok()
+            }
+            "chess:draw" -> {
+                if (seat < 0 || !g.live) return err("You are not playing.")
+                when (d.str("act")) {
+                    "offer" -> g.drawOffer(seat)?.let { return err(it) }
+                    "accept" -> {
+                        if (g.drawBy < 0 || g.drawBy == seat) return ok()
+                        g.finish(2, "Agreement", now)
+                    }
+                    "decline" -> { if (g.drawBy < 0 || g.drawBy == seat) return ok(); g.drawBy = -1 }
+                    else -> return err("Unknown request.")
+                }
+                pushGame(g)
+                return ok()
+            }
+            "chess:rematch" -> {
+                if (seat < 0 || !g.over) return err("There is nothing to rematch.")
+                if (g.next.isNotEmpty() || st.chess.active != null) return ok()
+                g.rematch.add(me.uid)
+                val ids = g.seats.mapNotNull { it?.uid }
+                if (ids.any { id -> st.participants.values.none { it.uid == id } }) {
+                    pushGame(g)
+                    return err("Someone left the room.")
+                }
+                if (ids.all { g.rematch.contains(it) }) {
+                    val ng = ChessGame(Ids.id("g_"), g.mode, g.baseSec, g.incSec, g.creatorUid, now)
+                    for (i in 0 until g.n) {
+                        val src = g.seats[i xor 1] ?: continue
+                        val name = st.participants.values.firstOrNull { it.uid == src.uid }?.displayName ?: src.name
+                        ng.seats[i] = ChessSeat(src.uid, name)
+                    }
+                    ng.begin(now, false)
+                    g.next = ng.id
+                    pushGame(g)
+                    pushGame(ng)
+                } else pushGame(g)
                 return ok()
             }
         }

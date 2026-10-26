@@ -323,6 +323,8 @@ data class Settings(
     ,val reconnect: Boolean = true
     ,val findMe: String = "everyone"   // everyone | link | nobody
     ,val rvUrl: String = ""
+    ,val chessSounds: Boolean = true
+    ,val chessLegal: Boolean = true
 ) {
     fun toJson(): JSONObject = JSONObject()
         .put("ptt", ptt).put("sounds", sounds).put("dmPolicy", dmPolicy).put("showOnline", showOnline)
@@ -332,7 +334,7 @@ data class Settings(
         .put("shareRes", shareRes).put("shareFps", shareFps)
         .put("micDeviceId", micDeviceId).put("outputDeviceId", outputDeviceId)
         .put("chatSlidesOpen", chatSlidesOpen)
-        .put("accentColor", accentColor).put("bgColor", bgColor).put("animations", animations).put("useRelay", useRelay).put("reconnect", reconnect).put("findMe", findMe).put("rvUrl", rvUrl)
+        .put("accentColor", accentColor).put("bgColor", bgColor).put("animations", animations).put("useRelay", useRelay).put("reconnect", reconnect).put("findMe", findMe).put("rvUrl", rvUrl).put("chessSounds", chessSounds).put("chessLegal", chessLegal)
 
     companion object {
         fun from(j: JSONObject): Settings {
@@ -347,7 +349,7 @@ data class Settings(
                 shareRes = j.int("shareRes", d.shareRes), shareFps = j.int("shareFps", d.shareFps),
                 micDeviceId = j.int("micDeviceId", -1), outputDeviceId = j.int("outputDeviceId", -1),
                 chatSlidesOpen = j.bool("chatSlidesOpen", d.chatSlidesOpen),
-                accentColor = j.int("accentColor", 0), bgColor = j.int("bgColor", 0), animations = j.bool("animations", true), useRelay = j.bool("useRelay", true), reconnect = j.bool("reconnect", true), findMe = j.str("findMe", "everyone"), rvUrl = j.str("rvUrl")
+                accentColor = j.int("accentColor", 0), bgColor = j.int("bgColor", 0), animations = j.bool("animations", true), useRelay = j.bool("useRelay", true), reconnect = j.bool("reconnect", true), findMe = j.str("findMe", "everyone"), rvUrl = j.str("rvUrl"), chessSounds = j.bool("chessSounds", true), chessLegal = j.bool("chessLegal", true)
             )
         }
     }

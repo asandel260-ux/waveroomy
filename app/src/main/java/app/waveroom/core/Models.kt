@@ -478,6 +478,7 @@ class RoomState(var meta: RoomMeta) {
     val board = BoardState()
     var watch = WatchState()
     var browse = BrowseState()
+    val chess = app.waveroom.chess.ChessState()
 
     /** The member who runs the room logic: earliest-joined participant holding the host role. */
     fun engineSid(): String? =
@@ -492,7 +493,7 @@ class RoomState(var meta: RoomMeta) {
         for (m in chat.takeLast(300)) ch.put(m.toJson())
         return JSONObject()
             .put("meta", meta.toJson()).put("participants", ps).put("chat", ch)
-            .put("board", board.toJson()).put("watch", watch.toSnapshot()).put("browse", browse.toJson())
+            .put("board", board.toJson()).put("watch", watch.toSnapshot()).put("browse", browse.toJson()).put("chess", chess.toJson())
     }
 
     fun loadSnapshot(j: JSONObject) {
@@ -505,6 +506,7 @@ class RoomState(var meta: RoomMeta) {
         board.load(j.arr("board"))
         watch = j.obj("watch")?.let { WatchState.fromSnapshot(it) } ?: WatchState()
         browse = j.obj("browse")?.let { BrowseState.from(it) } ?: BrowseState()
+        chess.load(j.arr("chess"))
     }
 
     /** Persistable form: no participants (a saved room starts empty). */
@@ -559,6 +561,7 @@ class RoomState(var meta: RoomMeta) {
             "watch:ended" -> watch = WatchState(perm = watch.perm, mods = watch.mods)
             "browse:load", "browse:state", "browse:reload" -> browse = BrowseState.from(d)
             "browse:ended" -> browse = BrowseState(perm = browse.perm, mods = browse.mods)
+            "chess:game" -> app.waveroom.chess.ChessGame.from(d)?.let { chess.put(it) }
         }
     }
 }
