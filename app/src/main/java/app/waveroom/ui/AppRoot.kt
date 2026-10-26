@@ -131,8 +131,6 @@ private fun MainShell() {
 
     val d = nav.stack.size - nav.prevSize
     androidx.compose.runtime.SideEffect { nav.prevSize = nav.stack.size }
-    val d = nav.stack.size - nav.prevSize
-    androidx.compose.runtime.SideEffect { nav.prevSize = nav.stack.size }
     val scope = rememberCoroutineScope()
     val swipe = remember { Animatable(0f) }
     val haptic = LocalHapticFeedback.current

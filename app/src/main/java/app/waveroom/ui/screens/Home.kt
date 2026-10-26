@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.animation.togetherWith
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.DisposableEffect
@@ -483,7 +484,7 @@ fun NearbyPeople(nav: Nav, compact: Boolean = false) {
 /** Horizontal swipe between the home tabs; ignored when a child (a scrolling row, a slider) takes the drag. */
 private fun Modifier.tabSwipe(onStart: () -> Unit, onDrag: (Float) -> Unit, onEnd: () -> Unit): Modifier =
     this.pointerInput(Unit) {
-        androidx.compose.foundation.gestures.detectHorizontalDragGestures(
+        detectHorizontalDragGestures(
             onDragStart = { onStart() },
             onDragEnd = { onEnd() },
             onDragCancel = { },
