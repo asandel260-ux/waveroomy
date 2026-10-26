@@ -238,7 +238,8 @@ fun RoomScreen(nav: Nav) {
     }
     val mainArea: @Composable (Modifier) -> Unit = { mod ->
         Box(mod.fillMaxWidth()) {
-            when (mode) {
+            androidx.compose.animation.Crossfade(mode, animationSpec = tween(180), label = "mode") { m ->
+            when (m) {
                 "screen" -> if (sharer != null) StreamPanel(sharer, Modifier.fillMaxSize())
                 "watch" -> WatchPanel(Modifier.fillMaxSize(), land)
                 "board" -> BoardPanel(Modifier.fillMaxSize())
@@ -266,6 +267,7 @@ fun RoomScreen(nav: Nav) {
                         Spacer(Modifier.height(24.dp))
                     }
                 }
+            }
             }
             for (f in floats.toList()) {
                 androidx.compose.runtime.key(f.id) {

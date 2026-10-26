@@ -26,6 +26,8 @@ class Nav {
     val top: Route get() = stack.last()
     var homeTab = 0
     var prevSize = 1
+    /** Set when a swipe already animated the screen away, so the normal transition is skipped once. */
+    var skipAnim = false
 
     fun push(r: Route) {
         if (stack.last() == r) return

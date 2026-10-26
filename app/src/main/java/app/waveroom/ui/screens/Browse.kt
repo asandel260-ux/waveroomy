@@ -7,6 +7,10 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -76,6 +80,7 @@ fun BrowsePanel(modifier: Modifier = Modifier) {
     var requested by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(false) }
     var loadError by remember { mutableStateOf<String?>(null) }
+    var barOpen by remember { mutableStateOf(true) }
 
     LaunchedEffect(b.url) { address = b.url ?: "" }
     LaunchedEffect(b.nonce, b.url, web) {
@@ -111,6 +116,7 @@ fun BrowsePanel(modifier: Modifier = Modifier) {
     }
 
     Column(modifier.background(WR.bg)) {
+        androidx.compose.animation.AnimatedVisibility(barOpen) { Column {
         Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             WrIconButton("arrow-left", { session.browseStep(false) }, enabled = canControl && b.canBack, size = 40.dp, iconSize = 18.dp)
             WrIconButton("arrow-right", { session.browseStep(true) }, enabled = canControl && b.canForward, size = 40.dp, iconSize = 18.dp)
@@ -132,6 +138,7 @@ fun BrowsePanel(modifier: Modifier = Modifier) {
                 WrChip("Release", onClick = { session.browseControl("release") })
             }
         }
+        } }
         Box(Modifier.weight(1f).fillMaxWidth()) {
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
@@ -184,6 +191,23 @@ fun BrowsePanel(modifier: Modifier = Modifier) {
                     }
                 }
             )
+            if (b.url != null) Row(Modifier.align(Alignment.BottomEnd).padding(10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                for ((ic, act) in listOf(
+                    (if (barOpen) "collapse" else "expand") to { barOpen = !barOpen },
+                    "external" to {
+                        try {
+                            val i = android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse(b.url)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                            AppCore.app.startActivity(i)
+                        } catch (e: Exception) { AppCore.toast("No app can open this link") }
+                    }
+                )) {
+                    Box(
+                        Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(WR.surface.copy(alpha = 0.92f))
+                            .border(1.dp, WR.border, androidx.compose.foundation.shape.CircleShape).clickable { act() },
+                        contentAlignment = Alignment.Center
+                    ) { WrIcon(ic, 18.dp, WR.text) }
+                }
+            }
             if (loading) androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth().align(Alignment.TopCenter), color = WR.accentBright, trackColor = Color.Transparent)
             val err = loadError
             if (err != null && b.url != null) {
@@ -207,9 +231,19 @@ fun BrowsePanel(modifier: Modifier = Modifier) {
                     Spacer(Modifier.height(16.dp))
                     Tiny("Quick start")
                     Spacer(Modifier.height(8.dp))
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        for ((n, u) in listOf("Wikipedia" to "https://wikipedia.org", "DuckDuckGo" to "https://duckduckgo.com", "OpenStreetMap" to "https://openstreetmap.org", "Hacker News" to "https://news.ycombinator.com")) {
-                            WrChip(n, onClick = { go(u) })
+                    for ((n, u) in listOf("Wikipedia" to "https://wikipedia.org", "DuckDuckGo" to "https://duckduckgo.com", "OpenStreetMap" to "https://openstreetmap.org", "Hacker News" to "https://news.ycombinator.com")) {
+                        Row(
+                            Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).background(WR.surface)
+                                .border(1.dp, WR.border, androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).clickable { go(u) }.padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            WrIcon("globe", 20.dp, WR.accentBright)
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(n, color = WR.text, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                                Muted(u.removePrefix("https://"), size = 12)
+                            }
+                            WrIcon("chevron-right", 16.dp, WR.faint)
                         }
                     }
                 }

@@ -73,6 +73,21 @@ import kotlin.math.sin
 private const val BG = 0xFF0D0D0F.toInt()
 private const val ACCENT = 0xFF6E56CF.toInt()
 
+private val TOOL_HINTS = mapOf(
+    "select" to "Tap to select · drag to move · drag empty space to box-select",
+    "hand" to "Drag to move around the board",
+    "pencil" to "Draw freely",
+    "pen" to "Draw with the pen",
+    "highlight" to "Highlight with a soft marker",
+    "eraser" to "Drag over drawings to erase them",
+    "line" to "Drag to draw a line",
+    "arrow" to "Drag to draw an arrow",
+    "rect" to "Drag to draw a rectangle",
+    "ellipse" to "Drag to draw an ellipse",
+    "text" to "Tap anywhere to add text",
+    "laser" to "Touch and drag — everyone sees your pointer"
+)
+
 private val TOOLS = listOf(
     "select" to "select", "hand" to "hand", "|" to "",
     "pencil" to "pencil", "pen" to "pen", "highlight" to "highlighter", "eraser" to "eraser", "|" to "",
@@ -95,6 +110,13 @@ fun BoardPanel(modifier: Modifier = Modifier) {
     var anim by remember { mutableIntStateOf(0) }
     var fitted by remember { mutableStateOf(false) }
     var exportOpen by remember { mutableStateOf(false) }
+    var railOpen by remember { mutableStateOf(true) }
+    var hint by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(ctrl.tool) {
+        hint = TOOL_HINTS[ctrl.tool]
+        delay(2400)
+        hint = null
+    }
 
     DisposableEffect(ctrl) { onDispose { ctrl.dispose() } }
     LaunchedEffect(ver) {
@@ -261,11 +283,30 @@ fun BoardPanel(modifier: Modifier = Modifier) {
                 .clickable { ctrl.resetZoom() }.padding(horizontal = 10.dp, vertical = 6.dp)
         )
         // left: vertical tool rail
-        Box(Modifier.align(Alignment.CenterStart).padding(start = 8.dp)) { ToolPalette(ctrl) }
+        Box(Modifier.align(Alignment.CenterStart).padding(start = 8.dp)) { ToolPalette(ctrl, railOpen) { railOpen = it } }
+        // first-use hint and empty-board hint
+        androidx.compose.animation.AnimatedVisibility(
+            visible = hint != null, modifier = Modifier.align(Alignment.TopCenter).padding(top = 14.dp),
+            enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { -it / 2 },
+            exit = androidx.compose.animation.fadeOut()
+        ) {
+            Text(
+                hint ?: "", color = WR.text, fontSize = 12.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 64.dp).clip(RoundedCornerShape(50)).background(WR.surface.copy(alpha = 0.95f)).border(1.dp, WR.border, RoundedCornerShape(50)).padding(horizontal = 14.dp, vertical = 8.dp)
+            )
+        }
+        if (board.objects.isEmpty() && ctrl.draft == null) {
+            Column(Modifier.align(Alignment.Center).padding(horizontal = 72.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                WrIcon("pencil", 26.dp, WR.faint)
+                Spacer(Modifier.height(8.dp))
+                Text("A blank board", color = WR.muted, fontSize = 15.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Medium)
+                Text("Draw, type or drop in an image — everyone in the room sees it live.", color = WR.faint, fontSize = 12.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            }
+        }
         // bottom: contextual bars only
         Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            if (ctrl.selection.isNotEmpty()) SelectionBar(ctrl)
-            if (ctrl.tool in DRAW_TOOLS || ctrl.tool == "text" || ctrl.selection.isNotEmpty()) StyleBar(ctrl)
+            androidx.compose.animation.AnimatedVisibility(ctrl.selection.isNotEmpty(), enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { it / 2 }, exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { it / 2 }) { Column(horizontalAlignment = Alignment.CenterHorizontally) { SelectionBar(ctrl) } }
+            androidx.compose.animation.AnimatedVisibility(ctrl.tool in DRAW_TOOLS || ctrl.tool == "text" || ctrl.selection.isNotEmpty(), enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { it / 2 }, exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { it / 2 }) { Column(horizontalAlignment = Alignment.CenterHorizontally) { StyleBar(ctrl) } }
         }
     }
 
@@ -334,12 +375,22 @@ private fun drawOverlay(c: android.graphics.Canvas, ctrl: BoardController, sel: 
 }
 
 @Composable
-private fun ToolPalette(ctrl: BoardController) {
+private fun ToolPalette(ctrl: BoardController, open: Boolean, onOpen: (Boolean) -> Unit) {
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    if (!open) {
+        val cur = TOOLS.firstOrNull { it.first == ctrl.tool }?.second ?: "pencil"
+        Box(
+            Modifier.size(46.dp).clip(CircleShape).background(WR.accent).border(1.dp, WR.accentBright, CircleShape).clickable { onOpen(true) },
+            contentAlignment = Alignment.Center
+        ) { WrIcon(cur, 22.dp, Color.White) }
+        return
+    }
     Column(
         Modifier.heightIn(max = 380.dp).clip(RoundedCornerShape(24.dp)).background(WR.surface.copy(alpha = 0.92f))
             .border(1.dp, WR.border, RoundedCornerShape(24.dp)).verticalScroll(rememberScrollState()).padding(4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Box(Modifier.size(42.dp).clip(CircleShape).clickable { onOpen(false) }, contentAlignment = Alignment.Center) { WrIcon("chevron-left", 18.dp, WR.faint) }
         for ((id, icon) in TOOLS) {
             if (id == "|") {
                 Box(Modifier.padding(vertical = 4.dp).height(1.dp).width(24.dp).background(WR.border))
@@ -347,7 +398,10 @@ private fun ToolPalette(ctrl: BoardController) {
                 val on = ctrl.tool == id
                 Box(
                     Modifier.size(42.dp).clip(CircleShape).background(if (on) WR.accent else Color.Transparent)
-                        .clickable { ctrl.tool = id; if (id != "select") ctrl.selection = emptySet() },
+                        .clickable {
+                            if (!on) haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                            ctrl.tool = id; if (id != "select") ctrl.selection = emptySet()
+                        },
                     contentAlignment = Alignment.Center
                 ) { WrIcon(icon, 20.dp, if (on) Color.White else WR.muted) }
             }

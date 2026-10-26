@@ -19,6 +19,20 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import kotlinx.coroutines.launch
+import kotlin.math.abs
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import app.waveroom.ui.screens.NewGroupScreen
@@ -117,10 +131,68 @@ private fun MainShell() {
 
     val d = nav.stack.size - nav.prevSize
     androidx.compose.runtime.SideEffect { nav.prevSize = nav.stack.size }
+    val d = nav.stack.size - nav.prevSize
+    androidx.compose.runtime.SideEffect { nav.prevSize = nav.stack.size }
+    val scope = rememberCoroutineScope()
+    val swipe = remember { Animatable(0f) }
+    val haptic = LocalHapticFeedback.current
+    val canSwipe = nav.stack.size > 1 && top != Route.Room
+    var widthPx by remember { mutableStateOf(1f) }
+    androidx.compose.runtime.SideEffect { nav.skipAnim = false }
+    Box(
+        Modifier.fillMaxSize()
+            .onSizeChanged { widthPx = it.width.toFloat().coerceAtLeast(1f) }
+            .pointerInput(canSwipe, nav.stack.size) {
+                if (!canSwipe) return@pointerInput
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    val slop = viewConfiguration.touchSlop
+                    val tracker = VelocityTracker()
+                    tracker.addPosition(down.uptimeMillis, down.position)
+                    var dx = 0f
+                    var dy = 0f
+                    var active = false
+                    while (true) {
+                        val ev = awaitPointerEvent()
+                        val ch = ev.changes.firstOrNull { it.id == down.id } ?: break
+                        if (!ch.pressed) break
+                        if (ev.changes.count { it.pressed } > 1) { if (active) break else return@awaitEachGesture }
+                        val d = ch.positionChange()
+                        if (!active) {
+                            if (ch.isConsumed) return@awaitEachGesture
+                            dx += d.x; dy += d.y
+                            if (abs(dy) > slop && abs(dy) > abs(dx)) return@awaitEachGesture
+                            if (abs(dx) > slop * 2 && abs(dx) > abs(dy) * 1.8f) active = true
+                        } else dx += d.x
+                        if (active) {
+                            ch.consume()
+                            tracker.addPosition(ch.uptimeMillis, ch.position)
+                            val v = dx
+                            scope.launch { swipe.snapTo(v) }
+                        }
+                    }
+                    if (active) {
+                        val vx = tracker.calculateVelocity().x
+                        val w = size.width.toFloat()
+                        val commit = abs(dx) > w * 0.35f || (abs(vx) > 1400f && vx * dx > 0f && abs(dx) > 60f)
+                        scope.launch {
+                            if (commit) {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                swipe.animateTo(if (dx > 0) w else -w, androidx.compose.animation.core.tween(150))
+                                nav.skipAnim = true
+                                nav.pop()
+                                swipe.snapTo(0f)
+                            } else swipe.animateTo(0f, spring(stiffness = 500f))
+                        }
+                    }
+                }
+            }
+    ) {
+    Box(Modifier.fillMaxSize().graphicsLayer { translationX = swipe.value; alpha = 1f - 0.35f * (abs(swipe.value) / widthPx).coerceIn(0f, 1f) }) {
     AnimatedContent(
         targetState = top,
         transitionSpec = {
-            if (!WR.animations) EnterTransition.None togetherWith ExitTransition.None
+            if (!WR.animations || nav.skipAnim) EnterTransition.None togetherWith ExitTransition.None
             else if (d >= 0) (slideInHorizontally(tween(260)) { it / 4 } + fadeIn(tween(260))) togetherWith (slideOutHorizontally(tween(260)) { -it / 6 } + fadeOut(tween(160)))
             else (slideInHorizontally(tween(260)) { -it / 6 } + fadeIn(tween(260))) togetherWith (slideOutHorizontally(tween(260)) { it / 4 } + fadeOut(tween(160)))
         },
@@ -146,6 +218,8 @@ private fun MainShell() {
             is Route.GroupInfo -> GroupInfoScreen(nav, r.gid)
         }
       }
+    }
+    }
     }
 
     if (ended != null) {

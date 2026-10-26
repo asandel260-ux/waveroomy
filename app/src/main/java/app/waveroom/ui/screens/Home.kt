@@ -22,6 +22,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.animation.togetherWith
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -73,11 +75,32 @@ fun HomeScreen(nav: Nav) {
         if (st.nearby) AppCore.lan.startListening() else AppCore.lan.stopListening()
     }
     Column(Modifier.fillMaxSize().background(WR.bg)) {
-        Box(Modifier.weight(1f)) {
-            when (tab) {
-                0 -> RoomsTab(nav)
-                1 -> MessagesTab(nav)
-                else -> YouTab(nav)
+        var drag by remember { mutableStateOf(0f) }
+        Box(
+            Modifier.weight(1f).tabSwipe(
+                onStart = { drag = 0f },
+                onDrag = { drag += it },
+                onEnd = {
+                    val t = if (drag < -110f) minOf(2, tab + 1) else if (drag > 110f) maxOf(0, tab - 1) else tab
+                    if (t != tab) { tab = t; nav.homeTab = t }
+                }
+            )
+        ) {
+            androidx.compose.animation.AnimatedContent(
+                targetState = tab,
+                transitionSpec = {
+                    val dir = if (targetState > initialState) 1 else -1
+                    if (!WR.animations) androidx.compose.animation.EnterTransition.None togetherWith androidx.compose.animation.ExitTransition.None
+                    else (androidx.compose.animation.slideInHorizontally(androidx.compose.animation.core.tween(220)) { it / 8 * dir } + androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(220))) togetherWith
+                        (androidx.compose.animation.slideOutHorizontally(androidx.compose.animation.core.tween(160)) { -it / 8 * dir } + androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(120)))
+                },
+                label = "hometab"
+            ) { t ->
+                when (t) {
+                    0 -> RoomsTab(nav)
+                    1 -> MessagesTab(nav)
+                    else -> YouTab(nav)
+                }
             }
         }
         Hairline()
@@ -456,3 +479,14 @@ fun NearbyPeople(nav: Nav, compact: Boolean = false) {
         }
     }
 }
+
+/** Horizontal swipe between the home tabs; ignored when a child (a scrolling row, a slider) takes the drag. */
+private fun Modifier.tabSwipe(onStart: () -> Unit, onDrag: (Float) -> Unit, onEnd: () -> Unit): Modifier =
+    this.pointerInput(Unit) {
+        androidx.compose.foundation.gestures.detectHorizontalDragGestures(
+            onDragStart = { onStart() },
+            onDragEnd = { onEnd() },
+            onDragCancel = { },
+            onHorizontalDrag = { _, d -> onDrag(d) }
+        )
+    }
