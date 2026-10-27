@@ -152,7 +152,7 @@ class BoardController(private val session: RoomSession, val board: BoardState, p
         flushTimer = null
         val items = HashMap(pending)
         pending.clear()
-        for ((id, p) in items) session.boardUpdate(id, p)
+        for ((id, p) in items) if (board.objects.containsKey(id)) session.boardUpdate(id, p)
     }
 
     private fun applyOps(ops: List<BOp>) {
@@ -164,6 +164,7 @@ class BoardController(private val session: RoomSession, val board: BoardState, p
                 is BOp.Del -> {
                     val ids = op.ids.filter { board.objects.containsKey(it) }
                     if (ids.isNotEmpty()) {
+                        for (i in ids) pending.remove(i)
                         session.boardDelete(ids)
                         images.forget(ids)
                     }
@@ -171,6 +172,7 @@ class BoardController(private val session: RoomSession, val board: BoardState, p
                 }
                 is BOp.Patch -> for ((id, p) in op.patches) {
                     if (board.objects.containsKey(id)) {
+                        pending.remove(id)
                         board.patch(id, p)
                         session.boardUpdate(id, p)
                     }

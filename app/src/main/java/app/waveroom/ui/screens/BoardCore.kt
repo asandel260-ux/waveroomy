@@ -156,7 +156,9 @@ object BoardGeo {
  * ------------------------------------------------------------------------- */
 
 class BoardImages(private val onLoaded: () -> Unit) {
-    private val map = HashMap<String, Bitmap>()
+    private val map = object : LinkedHashMap<String, Bitmap>(16, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Bitmap>?) = size > 12
+    }
     private val pending = HashSet<String>()
 
     fun get(o: BoardObj): Bitmap? {
@@ -170,7 +172,7 @@ class BoardImages(private val onLoaded: () -> Unit) {
                 val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                 BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
                 var sample = 1
-                while (max(opts.outWidth, opts.outHeight) / sample > 2200) sample *= 2
+                while (max(opts.outWidth, opts.outHeight) / sample > 1800) sample *= 2
                 val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = sample })
                 mainHandler.post {
                     if (bmp != null) map[id] = bmp

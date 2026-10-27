@@ -266,6 +266,11 @@ fun WatchPanel(modifier: Modifier = Modifier, land: Boolean = false) {
                         webChromeClient = WebChromeClient()
                         settings.userAgentString = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36"
                         webViewClient = object : android.webkit.WebViewClient() {
+                            override fun shouldOverrideUrlLoading(view: WebView?, request: android.webkit.WebResourceRequest?): Boolean {
+                                val h = request?.url?.host ?: return true
+                                return !(h == "youtube.com" || h.endsWith(".youtube.com") || h.endsWith(".youtube-nocookie.com") || h == "youtube-nocookie.com")
+                            }
+
                             override fun onPageFinished(view: WebView?, url: String?) {
                                 if (url != null && url.contains("youtube.com/watch")) view?.evaluateJavascript(PAGE_JS, null)
                             }

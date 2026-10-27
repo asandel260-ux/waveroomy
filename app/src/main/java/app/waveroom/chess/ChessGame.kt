@@ -323,7 +323,8 @@ class ChessGame(val id: String, val mode: String, val baseSec: Int, val incSec: 
             )
         }
         val ck = JSONArray()
-        for (c in clocks) ck.put(c)
+        val t = nowMs()
+        for (i in 0 until n) ck.put(remaining(i, t))
         return JSONObject()
             .put("id", id).put("mode", mode).put("base", baseSec).put("inc", incSec).put("creator", creatorUid)
             .put("at", createdAt).put("status", status).put("seats", ss).put("boards", bs).put("clocks", ck)

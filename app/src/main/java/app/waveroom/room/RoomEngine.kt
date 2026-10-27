@@ -504,9 +504,10 @@ class RoomEngine(private val io: EngineIO) {
     private fun chessLeft(p: Participant) {
         if (st.participants.values.any { it.uid == p.uid }) return
         val g = st.chess.active ?: return
-        if (g.status != "waiting") return
         val seat = g.seatOf(p.uid)
         if (seat < 0) return
+        if (g.live) { g.resign(seat, nowMs()); pushGame(g); return }
+        if (g.status != "waiting") return
         if (g.creatorUid == p.uid) g.cancel(nowMs(), false) else g.seats[seat] = null
         pushGame(g)
     }
