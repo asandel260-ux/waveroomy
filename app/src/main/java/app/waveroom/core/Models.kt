@@ -249,31 +249,32 @@ class BoardObj(
             val a = p.optJSONArray("points")
             if (a != null) {
                 val f = FloatArray(a.length())
-                for (i in 0 until a.length()) f[i] = a.optDouble(i, 0.0).toFloat()
+                for (i in 0 until a.length()) f[i] = sane(a.optDouble(i, 0.0).toFloat())
                 points = f
             }
         }
-        if (p.has("x")) x = p.flt("x")
-        if (p.has("y")) y = p.flt("y")
-        if (p.has("w")) w = p.flt("w")
-        if (p.has("h")) h = p.flt("h")
-        if (p.has("x1")) x1 = p.flt("x1")
-        if (p.has("y1")) y1 = p.flt("y1")
-        if (p.has("x2")) x2 = p.flt("x2")
-        if (p.has("y2")) y2 = p.flt("y2")
+        if (p.has("x")) x = sane(p.flt("x"))
+        if (p.has("y")) y = sane(p.flt("y"))
+        if (p.has("w")) w = sane(p.flt("w"))
+        if (p.has("h")) h = sane(p.flt("h"))
+        if (p.has("x1")) x1 = sane(p.flt("x1"))
+        if (p.has("y1")) y1 = sane(p.flt("y1"))
+        if (p.has("x2")) x2 = sane(p.flt("x2"))
+        if (p.has("y2")) y2 = sane(p.flt("y2"))
         if (p.has("text")) text = p.str("text").take(2000)
-        if (p.has("size")) size = p.flt("size", 18f)
+        if (p.has("size")) size = sane(p.flt("size", 18f)).coerceIn(4f, 600f)
         if (p.has("color")) color = hexToRgb(p.str("color"))
-        if (p.has("width")) width = p.flt("width", 3f)
-        if (p.has("opacity")) opacity = p.flt("opacity", 1f)
+        if (p.has("width")) width = sane(p.flt("width", 3f)).coerceIn(0.5f, 200f)
+        if (p.has("opacity")) opacity = sane(p.flt("opacity", 1f)).coerceIn(0f, 1f)
         if (p.has("dash")) dash = p.int("dash") != 0
-        if (p.has("rot")) rot = p.flt("rot")
+        if (p.has("rot")) rot = sane(p.flt("rot"))
         if (p.has("z")) z = p.int("z")
         if (p.has("locked")) locked = p.int("locked") != 0
         if (p.has("group")) group = if (p.isNull("group")) null else p.str("group")
     }
 
     companion object {
+        private fun sane(v: Float): Float = if (v.isNaN() || v.isInfinite()) 0f else v.coerceIn(-1_000_000f, 1_000_000f)
         private fun round1(v: Float): Double = Math.round(v * 10.0) / 10.0
 
         fun from(j: JSONObject): BoardObj? {

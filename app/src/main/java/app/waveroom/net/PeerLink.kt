@@ -240,7 +240,7 @@ class PeerLink(
             val id = text.substring(1, p1)
             val i = text.substring(p1 + 1, p2).toIntOrNull() ?: return
             val n = text.substring(p2 + 1, p3).toIntOrNull() ?: return
-            if (n <= 0 || n > 400 || i < 0 || i >= n) return
+            if (n <= 0 || n > 1000 || i < 0 || i >= n) return
             val arr = partial.getOrPut(id) { arrayOfNulls<String>(n) }
             if (arr.size != n) return
             if (partial.size > 64) partial.remove(partial.keys.first())
@@ -294,7 +294,8 @@ class PeerLink(
         if (iceRestart) mc.mandatory.add(MediaConstraints.KeyValuePair("IceRestart", "true"))
         p.createOffer(object : SdpObs() {
             override fun onCreateSuccess(p0: SessionDescription?) {
-                val d = p0 ?: return done(false)
+                val d = p0
+                if (d == null || closed) { onMain { done(false) }; return }
                 val munged = SessionDescription(d.type, Sdp.forOffer(d.description))
                 p.setLocalDescription(object : SdpObs() {
                     override fun onSetSuccess() {
@@ -333,7 +334,8 @@ class PeerLink(
                     flushCandidates()
                     p.createAnswer(object : SdpObs() {
                         override fun onCreateSuccess(p0: SessionDescription?) {
-                            val d = p0 ?: return done(false)
+                            val d = p0
+                            if (d == null || closed) { onMain { done(false) }; return }
                             p.setLocalDescription(object : SdpObs() {
                                 override fun onSetSuccess() {
                                     onMain { if (trickle && !closed) listener.onLocalSdp(this@PeerLink, "answer", d.description); done(true) }

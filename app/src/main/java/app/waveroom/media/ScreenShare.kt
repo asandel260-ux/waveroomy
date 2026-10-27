@@ -25,6 +25,8 @@ class ScreenShare(private val core: AppCore) {
     private var track: VideoTrack? = null
     private var res = 720
     private var fps = 30
+    private var gen = 0
+    private var starting = false
 
     private fun bitrate(res: Int, fps: Int): Int {
         val base = when (res) {
@@ -51,11 +53,15 @@ class ScreenShare(private val core: AppCore) {
 
     /** [data] is the Intent returned by the system's screen capture consent dialog. */
     fun start(data: Intent, res: Int, fps: Int, onFailed: (String) -> Unit) {
-        if (active.value) return
+        if (active.value || starting) return
+        starting = true
+        val myGen = ++gen
         this.res = res; this.fps = fps
         // the foreground service must declare the projection type before the capture begins
         core.startService(projection = true)
         later(350) {
+            starting = false
+            if (myGen != gen || !core.session.live) { onFailed("Screen sharing was cancelled"); return@later }
             try {
                 val rtc = core.rtc
                 val h = SurfaceTextureHelper.create("wr-screen", rtc.egl.eglBaseContext)
@@ -107,6 +113,8 @@ class ScreenShare(private val core: AppCore) {
 
     fun stop(announce: Boolean) {
         val was = active.value
+        gen++
+        starting = false
         active.value = false
         for (l in core.mesh.authedLinks()) l.setSendVideo(null)
         try {

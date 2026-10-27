@@ -31,7 +31,7 @@ object Docs {
         File(dir, "rooms").mkdirs()
     }
 
-    private fun file(name: String) = File(dir, name)
+    private fun file(name: String) = File(dir, name.replace("..", "_").trimStart('/'))
 
     fun readText(name: String): String? = try {
         val f = file(name)
@@ -542,12 +542,12 @@ class DmStore {
     fun addIncoming(uid: String, msg: DmMessage, markUnread: Boolean) {
         mutate(uid) { c ->
             if (c.messages.any { it.id == msg.id }) c
-            else c.copy(messages = c.messages + msg, unread = c.unread + (if (markUnread) 1 else 0), lastAt = msg.at)
+            else c.copy(messages = (c.messages + msg).let { if (it.size > 3000) it.takeLast(3000) else it }, unread = c.unread + (if (markUnread) 1 else 0), lastAt = msg.at)
         }
     }
 
     fun addOutgoing(uid: String, msg: DmMessage) {
-        mutate(uid) { c -> c.copy(messages = c.messages + msg, lastAt = msg.at) }
+        mutate(uid) { c -> c.copy(messages = (c.messages + msg).let { if (it.size > 3000) it.takeLast(3000) else it }, lastAt = msg.at) }
     }
 
     fun setStatus(uid: String, id: String, status: String, error: String = "") {

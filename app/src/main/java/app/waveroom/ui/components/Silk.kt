@@ -91,19 +91,12 @@ fun Modifier.screenBackdrop(style: Int = 0): Modifier = this
         }
     }
 
-/** Room: quiet rings around a lit centre, like a sound spreading out from the stage. */
+/** Room: a calm aurora — two soft lights behind the stage, no lines. */
 private fun DrawScope.drawOrbits() {
     val w = size.width; val h = size.height
-    val c = Offset(w * 0.5f, h * 0.30f)
-    drawRect(Brush.radialGradient(listOf(WR.accent.copy(alpha = 0.30f), Color.Transparent), c, w * 0.9f))
-    for (i in 1..6) {
-        val r = w * (0.20f + 0.17f * i)
-        drawCircle(WR.accentBright.copy(alpha = 0.16f - i * 0.02f), r, c, style = Stroke(width = 1.dp.toPx()))
-    }
-    val r3 = w * (0.20f + 0.17f * 3)
-    drawCircle(WR.neon.copy(alpha = 0.55f), 3.5.dp.toPx(), Offset(c.x + r3 * 0.866f, c.y - r3 * 0.5f))
-    drawCircle(WR.neon.copy(alpha = 0.16f), 9.dp.toPx(), Offset(c.x + r3 * 0.866f, c.y - r3 * 0.5f))
-    drawRect(Brush.verticalGradient(listOf(Color.Transparent, WR.bg.copy(alpha = 0.55f)), startY = h * 0.55f))
+    drawRect(Brush.radialGradient(listOf(WR.accent.copy(alpha = 0.34f), Color.Transparent), Offset(w * 0.15f, h * 0.12f), w * 1.0f))
+    drawRect(Brush.radialGradient(listOf(WR.neon.copy(alpha = 0.075f), Color.Transparent), Offset(w * 0.95f, h * 0.45f), w * 0.8f))
+    drawRect(Brush.radialGradient(listOf(WR.accent.copy(alpha = 0.18f), Color.Transparent), Offset(w * 0.5f, h * 1.0f), w * 0.9f))
 }
 
 /** Settings: slanted shafts of light with a faint dotted corner. */

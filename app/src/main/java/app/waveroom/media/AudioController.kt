@@ -33,9 +33,15 @@ class AudioController(private val ctx: Context, private val core: AppCore) {
     private var focus: AudioFocusRequest? = null
     private var prevMode = AudioManager.MODE_NORMAL
 
+    private val deviceCb = object : android.media.AudioDeviceCallback() {
+        override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>?) { if (running) route() }
+        override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>?) { if (running) route() }
+    }
+
     fun start() {
         if (running) return
         running = true
+        try { am.registerAudioDeviceCallback(deviceCb, android.os.Handler(android.os.Looper.getMainLooper())) } catch (e: Exception) { }
         prevMode = am.mode
         try {
             am.mode = AudioManager.MODE_IN_COMMUNICATION
@@ -49,6 +55,7 @@ class AudioController(private val ctx: Context, private val core: AppCore) {
     fun stop() {
         if (!running) return
         running = false
+        try { am.unregisterAudioDeviceCallback(deviceCb) } catch (e: Exception) { }
         cancelLater(poll); poll = null
         core.rtc.releaseMic()
         for (l in core.mesh.authedLinks()) l.setSendAudio(null)

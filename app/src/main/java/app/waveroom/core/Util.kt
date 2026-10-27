@@ -128,6 +128,7 @@ class RateLimiter {
 
     fun allow(key: String, max: Int, windowMs: Long): Boolean {
         val t = nowMs()
+        if (buckets.size > 400) buckets.entries.removeAll { t - it.value.start > 120_000 }
         val b = buckets[key]
         if (b == null || t - b.start > windowMs) {
             buckets[key] = Bucket(t, 1)

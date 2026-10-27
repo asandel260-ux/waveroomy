@@ -574,7 +574,8 @@ class DmHub(private val core: AppCore) {
     private fun onGroupInfo(link: PeerLink, m: JSONObject) {
         val gj = m.obj("g") ?: return
         val g = Group.from(gj)
-        if (g.id.isEmpty() || !g.members.containsKey(myUid) || !g.members.containsKey(link.uid)) return
+        if (g.id.isEmpty() || g.id.length > 40 || g.members.size > 256 || g.name.length > 60 || g.about.length > 200) return
+        if (!g.members.containsKey(myUid) || !g.members.containsKey(link.uid)) return
         if (core.social.blocked.value.contains(link.uid)) return
         val cur = core.groups.get(g.id)
         if (core.dms.removed.contains("g:${g.id}") || cur?.left == true) return
@@ -751,6 +752,7 @@ class DmHub(private val core: AppCore) {
         val chat = chatFor(link, m.str("c"))
         if (core.social.blocked.value.contains(uid)) return
         if (isGroup(chat) && core.groups.get(gid(chat))?.members?.containsKey(uid) != true) return
+        if (!isGroup(chat) && refuse(link) != null) return
         if (core.session.phase.value != "idle" || incomingCall.value != null) {
             link.send(jsonOf("t" to "callr", "cid" to m.str("cid"), "r" to "busy").toString())
             return

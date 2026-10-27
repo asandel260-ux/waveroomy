@@ -238,7 +238,19 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
         val s = st ?: return
         val gone = s.participants[sid] ?: return
         if (isEngine) {
-            engine?.handleLeave(sid)
+            if (reason == "left") engine?.handleLeave(sid)
+            else {
+                // a dropped link is often a blip; give the peer a few seconds to come back before removing them
+                core.mesh.connectTo(sid)
+                later(6000) {
+                    val cur = st
+                    if (cur != null && phase.value == "live" && isEngine && cur.participants.containsKey(sid) && core.mesh.link(sid)?.authed != true) engine?.handleLeave(sid)
+                }
+            }
+            return
+        }
+        if (reason == "left") {
+            if (sid == s.engineSid()) takeover(sid)
             return
         }
         if (sid == s.engineSid()) {
@@ -328,7 +340,11 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
             core.mesh.sendTo(link.remoteSid, jsonOf("t" to "rjoined", "r" to jsonOf("ok" to false, "error" to "That room is not open on this device any more.")))
             return
         }
-        val who = whoOf(link) ?: return
+        val who = whoOf(link)
+        if (who == null) {
+            core.mesh.sendTo(link.remoteSid, jsonOf("t" to "rjoined", "r" to jsonOf("ok" to false, "error" to "Could not identify you. Try again.")))
+            return
+        }
         if (isEngine) {
             doJoin(who, mySid)
         } else {

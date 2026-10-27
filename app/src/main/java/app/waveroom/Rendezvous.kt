@@ -287,12 +287,12 @@ object Rendezvous {
         val me = AppCore.profile.uid
         when (note.str("t")) {
             "knock" -> if (me < p.uid) offerTo(p)
-            "offer" -> if (me > p.uid && Sdp.unpack(note.str("code"))?.str("p") == "dm" && handled.add(note.str("code").takeLast(40))) {
+            "offer" -> if (me > p.uid && Sdp.unpack(note.str("code"))?.str("p") == "dm" && handled.add(hex(sha(note.str("code"))).take(24))) {
                 AppCore.handleCode(note.str("code"), autoDeliver = false) { res ->
                     if (res is CodeResult.Answer) send(p, jsonOf("t" to "answer", "code" to res.code))
                 }
             }
-            "answer" -> if (me < p.uid && handled.add(note.str("code").takeLast(40))) {
+            "answer" -> if (me < p.uid && handled.add(hex(sha(note.str("code"))).take(24))) {
                 AppCore.handleCode(note.str("code")) { }
             }
         }

@@ -26,7 +26,7 @@ class Sfx(private val settings: SettingsStore) {
         return out.toShortArray()
     }
 
-    private fun data(name: String): ShortArray = cache.getOrPut(name) {
+    @Synchronized private fun data(name: String): ShortArray = cache.getOrPut(name) {
         when (name) {
             "join" -> tone(listOf(523.0 to 0.07, 784.0 to 0.10))
             "leave" -> tone(listOf(659.0 to 0.07, 440.0 to 0.10))

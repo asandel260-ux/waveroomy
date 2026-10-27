@@ -144,6 +144,7 @@ class RoomEngine(private val io: EngineIO) {
         return when (kind) {
             "room:mute" -> {
                 val muted = d.bool("muted")
+                if (!muted && !canSpeak(me.role)) return err("Ask the host for the stage first.")
                 setP(from) { it.copy(muted = muted) }
                 io.emit("room:mute", jsonOf("sid" to from, "muted" to muted))
                 ok()
@@ -226,6 +227,7 @@ class RoomEngine(private val io: EngineIO) {
                 ok()
             }
             "report:file" -> {
+                if (!limiter.allow("report:" + me.uid, 5, 60_000)) return err("Slow down a little.")
                 val r = Report(
                     id = Ids.id("rep_"), reporterUid = me.uid, reporterName = me.displayName,
                     targetType = d.str("targetType"), targetId = d.str("targetId"), targetLabel = d.str("targetLabel"),
@@ -252,6 +254,7 @@ class RoomEngine(private val io: EngineIO) {
         val t = st.participants[sid] ?: return err("Not in the room.")
         val speakers = st.participants.values.count { canSpeak(it.role) }
         if (t.role == "listener") {
+            if (speakers >= st.meta.maxSpeakers) return err("The stage is full (${st.meta.maxSpeakers} speakers).")
             setP(sid) { it.copy(role = "speaker", hand = false) }
             io.emit("room:role", jsonOf("role" to "speaker", "reason" to "You were invited to speak."), sid)
             broadcastState()
@@ -623,6 +626,7 @@ class RoomEngine(private val io: EngineIO) {
 
     private fun board(from: String, me: Participant, kind: String, d: JSONObject): JSONObject {
         val b = st.board
+        if (kind != "board:clear" && !limiter.allow("board:$from", 400, 10_000)) return err("Slow down a little.")
         when (kind) {
             "board:add" -> {
                 val raw = d.obj("obj") ?: return err("Invalid object.")
@@ -642,6 +646,7 @@ class RoomEngine(private val io: EngineIO) {
             "board:update" -> {
                 val id = d.str("id")
                 val patch = d.obj("patch") ?: return err("No patch.")
+                if (patch.toString().length > 300_000) return err("Change too large.")
                 val o = b.objects[id] ?: return err("Object not found.")
                 val clean = JSONObject(patch.toString())
                 clean.remove("id"); clean.remove("type"); clean.remove("src"); clean.remove("by")

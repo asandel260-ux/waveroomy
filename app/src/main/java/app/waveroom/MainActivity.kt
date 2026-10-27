@@ -32,7 +32,7 @@ class MainActivity : ComponentActivity(), Platform {
 
     private val micLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> micCb?.invoke(ok); micCb = null }
     private val camLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> camCb?.invoke(ok); camCb = null }
-    private val notifLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    private val notifLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
     private val projLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
         projCb?.invoke(if (r.resultCode == RESULT_OK) r.data else null); projCb = null
     }
@@ -119,9 +119,11 @@ class MainActivity : ComponentActivity(), Platform {
     }
 
     override fun requestNotifications() {
-        if (Build.VERSION.SDK_INT >= 33 && !has(Manifest.permission.POST_NOTIFICATIONS)) {
-            notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
+        val want = ArrayList<String>()
+        if (Build.VERSION.SDK_INT >= 33 && !has(Manifest.permission.POST_NOTIFICATIONS)) want.add(Manifest.permission.POST_NOTIFICATIONS)
+        // needed to route call audio to a Bluetooth headset on Android 12+
+        if (Build.VERSION.SDK_INT >= 31 && !has(Manifest.permission.BLUETOOTH_CONNECT)) want.add(Manifest.permission.BLUETOOTH_CONNECT)
+        if (want.isNotEmpty()) notifLauncher.launch(want.toTypedArray())
     }
 
     override fun requestProjection(cb: (Intent?) -> Unit) {
@@ -154,7 +156,7 @@ class MainActivity : ComponentActivity(), Platform {
     override fun shareFile(name: String, mime: String, bytes: ByteArray) {
         try {
             val dir = File(cacheDir, "share").apply { mkdirs() }
-            val f = File(dir, name)
+            val f = File(dir, name.replace(Regex("[^A-Za-z0-9._-]"), "_").ifEmpty { "file" })
             f.writeBytes(bytes)
             val uri = FileProvider.getUriForFile(this, "$packageName.files", f)
             val i = Intent(Intent.ACTION_SEND).setType(mime).putExtra(Intent.EXTRA_STREAM, uri)
