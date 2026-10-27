@@ -1,5 +1,6 @@
 package app.waveroom.ui.screens
 
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -85,7 +86,7 @@ private fun ReportsTab() {
     } else {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             items(list, key = { it.id }) { r ->
-                Column(Modifier.fillMaxWidth().background(WR.surface, RoundedCornerShape(14.dp)).border(1.dp, WR.border, RoundedCornerShape(14.dp)).padding(14.dp)) {
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(WR.surface2, WR.surface))).border(1.dp, WR.border, RoundedCornerShape(16.dp)).padding(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Tiny("${r.targetType} · ${r.category}", Modifier.weight(1f))
                         Tiny(timeAgo(r.createdAt))
@@ -161,11 +162,11 @@ private fun StatsTab() {
         Spacer(Modifier.height(18.dp))
         Tiny("Joins per day")
         Spacer(Modifier.height(8.dp))
-        Bars(joins, WR.accent)
+        Bars(joins, WR.accentBright)
         Spacer(Modifier.height(18.dp))
         Tiny("Messages per day")
         Spacer(Modifier.height(8.dp))
-        Bars(msgs, WR.ok)
+        Bars(msgs, WR.neon)
         Spacer(Modifier.height(10.dp))
         Muted("Counted only in rooms you host, stored only on this phone.", size = 12)
     }
@@ -173,8 +174,8 @@ private fun StatsTab() {
 
 @Composable
 private fun StatTile(label: String, value: String, modifier: Modifier) {
-    Column(modifier.background(WR.surface, RoundedCornerShape(12.dp)).border(1.dp, WR.border, RoundedCornerShape(12.dp)).padding(12.dp)) {
-        Text(value, color = WR.text, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
+    Column(modifier.clip(RoundedCornerShape(16.dp)).background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(WR.accent.copy(alpha = 0.28f), WR.surface))).border(1.dp, WR.rimBrush, RoundedCornerShape(16.dp)).padding(12.dp)) {
+        Text(value, color = WR.text, fontFamily = WR.display, fontSize = 26.sp, fontWeight = FontWeight.Bold)
         Tiny(label)
     }
 }
@@ -188,7 +189,7 @@ private fun Bars(values: List<Int>, color: Color) {
         val bw = (size.width - gap * (n - 1)) / n
         for ((i, v) in values.withIndex()) {
             val h = (v.toFloat() / mx) * size.height
-            drawRect(color = if (v == 0) WR.surface3 else color, topLeft = Offset(i * (bw + gap), size.height - maxOf(h, 3f)), size = Size(bw, maxOf(h, 3f)))
+            drawRoundRect(color = if (v == 0) WR.surface3 else color, topLeft = Offset(i * (bw + gap), size.height - maxOf(h, 3f)), size = Size(bw, maxOf(h, 3f)), cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx()))
         }
     }
 }

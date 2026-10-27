@@ -239,8 +239,8 @@ private fun NearbyRow(r: NearbyRoom, busy: Boolean, onJoin: () -> Unit) {
         Modifier.fillMaxWidth().clickable(enabled = !busy, onClick = onJoin).padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(Modifier.size(44.dp).clip(CircleShape).background(WR.accentSoft), contentAlignment = Alignment.Center) {
-            WrIcon("wifi", 20.dp, WR.accentBright)
+        Box(Modifier.size(44.dp).clip(CircleShape).background(Brush.linearGradient(listOf(WR.accent.copy(alpha = 0.45f), WR.neon.copy(alpha = 0.14f)))).border(1.dp, WR.neon.copy(alpha = 0.35f), CircleShape), contentAlignment = Alignment.Center) {
+            WrIcon("wifi", 20.dp, WR.neon)
         }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
@@ -260,8 +260,8 @@ private fun NearbyRow(r: NearbyRoom, busy: Boolean, onJoin: () -> Unit) {
 @Composable
 private fun SavedRow(r: SavedRoom, onClick: () -> Unit, onMore: () -> Unit) {
     Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = 20.dp, end = 8.dp, top = 12.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(44.dp).clip(CircleShape).background(WR.surface2), contentAlignment = Alignment.Center) {
-            WrIcon(if (r.meta.unlisted) "lock" else "waveform", 20.dp, WR.muted)
+        Box(Modifier.size(44.dp).clip(CircleShape).background(Brush.linearGradient(listOf(WR.accent.copy(alpha = 0.30f), WR.surface2))).border(1.dp, WR.border, CircleShape), contentAlignment = Alignment.Center) {
+            WrIcon(if (r.meta.unlisted) "lock" else "waveform", 20.dp, WR.accentBright)
         }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
@@ -296,7 +296,7 @@ private fun MessagesTab(nav: Nav) {
             item(key = "nearby") { NearbyPeople(nav) }
             item(key = "saved") {
                 Row(Modifier.fillMaxWidth().clickable { nav.push(Route.Chat("saved")) }.padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(48.dp).clip(CircleShape).background(WR.accent), contentAlignment = Alignment.Center) { WrIcon("bookmark", 22.dp, Color.White) }
+                    Box(Modifier.size(48.dp).clip(CircleShape).background(WR.primaryBrush).border(1.dp, WR.rimBrush, CircleShape), contentAlignment = Alignment.Center) { WrIcon("bookmark", 22.dp, Color.White) }
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
                         Text("Saved messages", color = WR.text, fontSize = 16.sp, fontWeight = FontWeight.Medium)
@@ -328,7 +328,7 @@ private fun MessagesTab(nav: Nav) {
                             Text(if (isG) (grp?.name ?: "Group") else (ct?.displayName ?: "Unknown"), color = WR.text, fontSize = 16.sp, fontWeight = if (c.unread > 0) FontWeight.SemiBold else FontWeight.Medium, maxLines = 1, modifier = Modifier.weight(1f, fill = false))
                             if (!isG && connected.contains(c.uid)) {
                                 Spacer(Modifier.width(6.dp))
-                                Muted("connected", size = 11)
+                                Box(Modifier.size(7.dp).clip(CircleShape).background(WR.neon))
                             }
                             if (c.muted) { Spacer(Modifier.width(6.dp)); WrIcon("bell-off", 12.dp, WR.faint) }
                         }
@@ -344,8 +344,8 @@ private fun MessagesTab(nav: Nav) {
                         Tiny(timeAgo(c.lastAt))
                         if (c.unread > 0) {
                             Spacer(Modifier.height(4.dp))
-                            Box(Modifier.clip(CircleShape).background(if (c.muted) WR.surface3 else WR.accent).padding(horizontal = 7.dp, vertical = 2.dp)) {
-                                Text(c.unread.toString(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Box(Modifier.clip(CircleShape).background(if (c.muted) Brush.verticalGradient(listOf(WR.surface3, WR.surface3)) else WR.neonBrush).padding(horizontal = 8.dp, vertical = 2.dp)) {
+                                Text(if (c.unread > 99) "99+" else c.unread.toString(), color = if (c.muted) Color.White else Color(0xFF052200), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }

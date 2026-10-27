@@ -218,7 +218,7 @@ fun EditProfileScreen(nav: Nav) {
                 for (h in HUES) {
                     Box(
                         Modifier.size(24.dp).clip(CircleShape).background(WR.hue(h, 0.55f, 0.42f))
-                            .border(if (h == hue) 2.dp else 0.dp, WR.text, CircleShape).clickable { hue = h }
+                            .border(if (h == hue) 2.dp else 0.dp, WR.neon, CircleShape).clickable { hue = h }
                     )
                 }
             }
@@ -227,7 +227,7 @@ fun EditProfileScreen(nav: Nav) {
                 for (e in AVATAR_EMOJIS) {
                     Box(
                         Modifier.size(40.dp).clip(CircleShape).background(if (e == emoji) WR.accentSoft else WR.surface2)
-                            .border(1.dp, if (e == emoji) WR.accent else WR.border, CircleShape).clickable { emoji = e },
+                            .border(if (e == emoji) 1.5.dp else 1.dp, if (e == emoji) WR.neon else WR.border, CircleShape).clickable { emoji = e },
                         contentAlignment = Alignment.Center
                     ) { Text(e, fontSize = 19.sp) }
                 }

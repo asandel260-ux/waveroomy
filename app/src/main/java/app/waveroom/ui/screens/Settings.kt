@@ -93,7 +93,7 @@ fun VoiceFxPanel() {
                 val on = s.fxPreset == p.id
                 Column(
                     Modifier.width(150.dp).clip(RoundedCornerShape(12.dp)).background(if (on) WR.accentSoft else WR.surface2)
-                        .border(1.dp, if (on) WR.accent else WR.border, RoundedCornerShape(12.dp))
+                        .border(1.dp, if (on) WR.neon.copy(alpha = 0.7f) else WR.border, RoundedCornerShape(12.dp))
                         .clickable { AppCore.settings.update { st -> st.copy(fxPreset = p.id, fxEnabled = available) }; AppCore.rtc.applyFx() }
                         .padding(12.dp)
                 ) {
@@ -107,7 +107,7 @@ fun VoiceFxPanel() {
         Slider(
             value = s.fxIntensity, onValueChange = { AppCore.settings.update { st -> st.copy(fxIntensity = it) }; AppCore.rtc.applyFx() },
             valueRange = 0f..1f,
-            colors = SliderDefaults.colors(thumbColor = WR.accentBright, activeTrackColor = WR.accent, inactiveTrackColor = WR.surface3)
+            colors = SliderDefaults.colors(thumbColor = WR.neon, activeTrackColor = WR.accent, inactiveTrackColor = WR.surface3)
         )
         Muted("Tip: use headphones so the processed sound doesn't loop back into your microphone.", size = 12)
     }
@@ -137,10 +137,10 @@ fun SettingsScreen(nav: Nav) {
                 ) { c -> AppCore.settings.update { st -> st.copy(bgColor = c) } }
             }
             SectionTitle("Voice")
-            Column(Modifier.padding(horizontal = 20.dp)) {
+            app.waveroom.ui.components.Card(Modifier.padding(horizontal = 16.dp)) { Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
                 SwitchRow("Push to talk", "Hold the mic button to speak instead of toggling it.", s.ptt, { AppCore.settings.update { st -> st.copy(ptt = it) } })
                 SwitchRow("Interface sounds", "Small tones when people join, leave or message.", s.sounds, { AppCore.settings.update { st -> st.copy(sounds = it) } })
-            }
+            } }
             SectionTitle("Voice effects")
             Column(Modifier.padding(horizontal = 20.dp)) { VoiceFxPanel() }
 
@@ -176,7 +176,7 @@ fun SettingsScreen(nav: Nav) {
             app.waveroom.ui.components.Row2("Send diagnostics", "Share a technical report if something misbehaves", "info", onClick = { AppCore.platform?.shareText(app.waveroom.Diag.report()) })
 
             SectionTitle("Network")
-            Column(Modifier.padding(horizontal = 20.dp)) {
+            app.waveroom.ui.components.Card(Modifier.padding(horizontal = 16.dp)) { Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                 SwitchRow("Show rooms on this Wi-Fi", "Listen for rooms hosted on the same network and list them under Rooms.", s.nearby, { AppCore.settings.update { st -> st.copy(nearby = it) } })
                 SwitchRow(
                     "Use public STUN servers",
@@ -213,7 +213,7 @@ fun SettingsScreen(nav: Nav) {
                 WrField(s.turnPass, { AppCore.settings.update { st -> st.copy(turnPass = it) } }, placeholder = "Password", password = true)
                 Spacer(Modifier.height(6.dp))
                 Muted("Network changes apply to the next connection you make.", size = 12)
-            }
+            } }
 
             SectionTitle("Identity & data")
             Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {

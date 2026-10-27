@@ -62,6 +62,8 @@ import app.waveroom.ui.components.Tiny
 import app.waveroom.ui.components.WrButton
 import app.waveroom.ui.components.WrField
 import app.waveroom.ui.components.WrIcon
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Color
 import app.waveroom.ui.components.WrIconButton
 import app.waveroom.ui.theme.WR
 import app.waveroom.ui.components.screenBackdrop
@@ -90,6 +92,17 @@ fun CreateRoomScreen(nav: Nav) {
     Column(Modifier.fillMaxSize().screenBackdrop(4).imePadding()) {
         ScreenHeader("New room", { nav.pop() })
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp)) {
+            app.waveroom.ui.components.HeroCard(Modifier.fillMaxWidth()) {
+                Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(52.dp).clip(CircleShape).background(WR.primaryBrush).border(1.dp, WR.rimBrush, CircleShape), contentAlignment = Alignment.Center) { WrIcon("mic", 24.dp, WR.neon) }
+                    Spacer(Modifier.size(14.dp))
+                    Column {
+                        Text("Start talking", color = Color.White, fontFamily = WR.display, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        Text("Name it, and invite people with a QR code.", color = Color.White.copy(alpha = 0.72f), fontSize = 13.sp)
+                    }
+                }
+            }
+            Spacer(Modifier.height(18.dp))
             WrField(title, { title = it; error = null }, label = "Title", placeholder = "Friday night jam", maxLength = 60)
             Spacer(Modifier.height(14.dp))
             WrField(topic, { topic = it }, label = "Topic (optional)", placeholder = "What is this about?", singleLine = false, maxLines = 3, maxLength = 140)
@@ -125,7 +138,7 @@ fun ScannerOverlay(title: String, hint: String, onCode: (String) -> Unit, onClos
         QrScanner(onCode, Modifier.fillMaxSize(), onProgress = { a, b -> progress = Pair(a, b) })
         Box(
             Modifier.align(Alignment.Center).heightIn(max = 260.dp).fillMaxHeight(0.55f).aspectRatio(1f).clip(RoundedCornerShape(24.dp))
-                .border(2.dp, WR.accentBright, RoundedCornerShape(24.dp))
+                .border(2.dp, WR.neon, RoundedCornerShape(24.dp))
         )
         Column(Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -264,8 +277,8 @@ fun InviteScreen(nav: Nav, purpose: String) {
 @Composable
 fun Step(n: Int, text: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(24.dp).clip(RoundedCornerShape(12.dp)).background(WR.accentSoft), contentAlignment = Alignment.Center) {
-            Text(n.toString(), color = WR.accentBright, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Box(Modifier.size(26.dp).clip(CircleShape).background(WR.primaryBrush).border(1.dp, WR.rimBrush, CircleShape), contentAlignment = Alignment.Center) {
+            Text(n.toString(), color = WR.neon, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
         Spacer(Modifier.size(10.dp))
         Text(text, color = WR.text, fontSize = 15.sp, fontWeight = FontWeight.Medium)

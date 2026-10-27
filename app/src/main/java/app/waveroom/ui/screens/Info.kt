@@ -34,7 +34,7 @@ private fun Page(title: String, nav: Nav, content: @Composable () -> Unit) {
 @Composable
 private fun H(t: String) {
     Spacer(Modifier.height(18.dp))
-    Text(t, color = WR.text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+    Text(t, color = WR.text, fontSize = 17.sp, fontWeight = FontWeight.Bold, fontFamily = WR.display)
     Spacer(Modifier.height(6.dp))
 }
 

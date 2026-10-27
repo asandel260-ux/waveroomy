@@ -88,13 +88,13 @@ fun NewGroupScreen(nav: Nav) {
             Tiny("Icon")
             Spacer(Modifier.height(8.dp))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                for (e in listOf("💬", "🎧", "🔥", "🌙", "🎮", "📚", "🍕", "✈️", "💬", "🎨")) {
-                    Box(Modifier.size(44.dp).clip(CircleShape).background(if (e == emoji) WR.accentSoft else WR.surface2).border(1.dp, if (e == emoji) WR.accent else WR.border, CircleShape).clickable { emoji = e }, contentAlignment = Alignment.Center) { Text(e, fontSize = 20.sp) }
+                for (e in listOf("💬", "🎧", "🔥", "🌙", "🎮", "📚", "🍕", "✈️", "🌿", "🎨")) {
+                    Box(Modifier.size(44.dp).clip(CircleShape).background(if (e == emoji) WR.accentSoft else WR.surface2).border(if (e == emoji) 1.5.dp else 1.dp, if (e == emoji) WR.neon else WR.border, CircleShape).clickable { emoji = e }, contentAlignment = Alignment.Center) { Text(e, fontSize = 20.sp) }
                 }
             }
             Spacer(Modifier.height(10.dp))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                for (h in HUES) Box(Modifier.size(44.dp).clickable { hue = h }, contentAlignment = Alignment.Center) { Box(Modifier.size(30.dp).clip(CircleShape).background(WR.hue(h, 0.5f, 0.4f)).border(if (h == hue) 2.dp else 0.dp, WR.text, CircleShape)) }
+                for (h in HUES) Box(Modifier.size(44.dp).clickable { hue = h }, contentAlignment = Alignment.Center) { Box(Modifier.size(30.dp).clip(CircleShape).background(WR.hue(h, 0.5f, 0.4f)).border(if (h == hue) 2.dp else 0.dp, WR.neon, CircleShape)) }
             }
             Spacer(Modifier.height(18.dp))
             Tiny("Add people · ${picked.size} selected")
@@ -109,8 +109,8 @@ fun NewGroupScreen(nav: Nav) {
                         Text(c.displayName, color = WR.text, fontSize = 15.sp)
                         Muted("@${c.username}", size = 12)
                     }
-                    Box(Modifier.size(24.dp).clip(CircleShape).background(if (on) WR.accent else Color.Transparent).border(1.5.dp, if (on) WR.accent else WR.borderStrong, CircleShape), contentAlignment = Alignment.Center) {
-                        if (on) WrIcon("check", 14.dp, Color.White)
+                    Box(Modifier.size(24.dp).clip(CircleShape).background(if (on) WR.neon else Color.Transparent).border(1.5.dp, if (on) WR.neon else WR.borderStrong, CircleShape), contentAlignment = Alignment.Center) {
+                        if (on) WrIcon("check", 14.dp, Color(0xFF052200))
                     }
                 }
             }
@@ -148,10 +148,11 @@ fun GroupInfoScreen(nav: Nav, gid: String) {
     Column(Modifier.fillMaxSize().screenBackdrop()) {
         ScreenHeader("Group info", { nav.pop() })
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 30.dp)) {
+            app.waveroom.ui.components.HeroCard(Modifier.fillMaxWidth().padding(16.dp)) {
             Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 GroupAvatar(g.emoji, g.hue, 88)
                 Spacer(Modifier.height(12.dp))
-                Text(g.name, color = WR.text, fontSize = 24.sp, fontWeight = FontWeight.SemiBold, textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 3, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                Text(g.name, color = WR.text, fontFamily = WR.display, fontSize = 26.sp, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 3, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 if (g.about.isNotEmpty()) Muted(g.about, modifier = Modifier.padding(top = 4.dp), align = androidx.compose.ui.text.style.TextAlign.Center)
                 Muted(if (g.members.size == 1) "1 member" else "${g.members.size} members", size = 12, modifier = Modifier.padding(top = 6.dp))
                 Spacer(Modifier.height(14.dp))
@@ -159,6 +160,7 @@ fun GroupInfoScreen(nav: Nav, gid: String) {
                     WrButton("Message", { nav.popTo(Route.Chat(chat)); if (nav.top != Route.Chat(chat)) nav.replaceTop(Route.Chat(chat)) }, kind = BtnKind.Secondary, small = true, icon = "message")
                     WrButton("Group call", { AppCore.dmHub.startCall(chat) }, kind = BtnKind.Secondary, small = true, icon = "phone", enabled = !g.left)
                 }
+            }
             }
             if (!g.left) {
                 if (g.canAdd(me)) {
@@ -200,7 +202,7 @@ fun GroupInfoScreen(nav: Nav, gid: String) {
                 WrField(a, { a = it }, label = "About", maxLength = 200)
                 Spacer(Modifier.height(10.dp))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    for (x in listOf("💬", "🎧", "🔥", "🌙", "🎮", "📚", "🍕", "✈️", "💬", "🎨")) {
+                    for (x in listOf("💬", "🎧", "🔥", "🌙", "🎮", "📚", "🍕", "✈️", "🌿", "🎨")) {
                         Box(Modifier.size(40.dp).clip(CircleShape).background(if (x == e) WR.accentSoft else WR.surface2).clickable { e = x }, contentAlignment = Alignment.Center) { Text(x, fontSize = 20.sp) }
                     }
                 }

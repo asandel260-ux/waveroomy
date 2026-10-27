@@ -179,14 +179,14 @@ fun ChatScreen(nav: Nav, chat: String) {
                 }.padding(4.dp), verticalAlignment = Alignment.CenterVertically
             ) {
                 when {
-                    isSaved -> Box(Modifier.size(40.dp).clip(CircleShape).background(WR.accent), contentAlignment = Alignment.Center) { WrIcon("bookmark", 20.dp, Color.White) }
+                    isSaved -> Box(Modifier.size(40.dp).clip(CircleShape).background(WR.primaryBrush).border(1.dp, WR.rimBrush, CircleShape), contentAlignment = Alignment.Center) { WrIcon("bookmark", 20.dp, Color.White) }
                     isGroup -> GroupAvatar(group?.emoji ?: "💬", group?.hue ?: 265, 40)
                     else -> AvatarView(dmAvatar ?: Avatar(), 40.dp, uid = chat)
                 }
                 Spacer(Modifier.width(10.dp))
                 Column {
-                    Text(title, color = WR.text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Muted(
+                    Text(title, color = WR.text, fontFamily = WR.display, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (online) Text("connected", color = WR.neon, fontSize = 12.sp, fontWeight = FontWeight.Medium) else Muted(
                         when {
                             isSaved -> "Notes, links and files for yourself"
                             isGroup -> (group?.members?.size ?: 0).let { n -> (if (n == 1) "1 member" else "$n members") } + " · ${hub.connectedCount(chat)} connected"
@@ -268,7 +268,7 @@ fun ChatScreen(nav: Nav, chat: String) {
             }
             if (newBelow > 0 || !atBottom) {
                 Row(
-                    Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp).clip(RoundedCornerShape(50)).background(WR.accent)
+                    Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp).clip(RoundedCornerShape(50)).background(WR.primaryBrush).border(1.dp, WR.rimBrush, RoundedCornerShape(50))
                         .clickable { scope.launch { list.animateScrollToItem(msgs.size - 1) } }.padding(horizontal = 14.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -340,7 +340,7 @@ fun ChatScreen(nav: Nav, chat: String) {
                     if (ed2 != null) { hub.edit(chat, ed2.id, tf.text); editing = null }
                     else hub.send(chat, tf.text, replyTo?.id ?: "")
                     tf = TextFieldValue(""); replyTo = null
-                }, bg = if (canSend) WR.accent else WR.surface3, tint = if (canSend) Color.White else WR.faint, enabled = canSend)
+                }, bg = if (canSend) WR.neon else WR.surface3, tint = if (canSend) Color(0xFF052200) else WR.faint, enabled = canSend)
             }
         }
     }
@@ -405,7 +405,7 @@ private fun nameOf(uid: String, snap: String): String =
 
 @Composable
 fun GroupAvatar(emoji: String, hue: Int, size: Int) {
-    Box(Modifier.size(size.dp).clip(CircleShape).background(WR.hue(hue, 0.5f, 0.32f)), contentAlignment = Alignment.Center) {
+    Box(Modifier.size(size.dp).clip(CircleShape).background(Brush.linearGradient(listOf(WR.hue(hue, 0.55f, 0.42f), WR.hue(hue + 40, 0.5f, 0.22f)))).border(1.dp, WR.border, CircleShape), contentAlignment = Alignment.Center) {
         Text(if (emoji == "👥") "💬" else emoji, fontSize = (size * 0.5f).sp)
     }
 }
@@ -467,7 +467,7 @@ private fun Bubble(
                 for ((e, who) in m.reactions) {
                     val on = who.contains(me)
                     Row(
-                        Modifier.clip(RoundedCornerShape(50)).background(if (on) WR.accentSoft else WR.surface2).border(1.dp, if (on) WR.accent else WR.border, RoundedCornerShape(50))
+                        Modifier.clip(RoundedCornerShape(50)).background(if (on) WR.accentSoft else WR.surface2).border(1.dp, if (on) WR.neon.copy(alpha = 0.7f) else WR.border, RoundedCornerShape(50))
                             .clickable { AppCore.dmHub.react(chat, m.id, e) }.padding(horizontal = 8.dp, vertical = 3.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {

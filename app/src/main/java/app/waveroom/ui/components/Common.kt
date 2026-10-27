@@ -65,6 +65,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -108,14 +110,26 @@ fun Hairline(modifier: Modifier = Modifier) {
  * Avatar
  * ------------------------------------------------------------------------- */
 
+private val photoCache = android.util.LruCache<String, androidx.compose.ui.graphics.ImageBitmap>(40)
+
 @Composable
 fun rememberPhoto(uid: String, mine: Boolean = false): androidx.compose.ui.graphics.ImageBitmap? {
     val v1 by AppCore.social.photoVersion.collectAsState()
     val v2 by AppCore.profile.photoVersion.collectAsState()
     return remember(uid, v1, v2, mine) {
         try {
-            val bytes = if (mine) AppCore.profile.photo else AppCore.social.photoOf(uid)
-            if (bytes == null) null else BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+            val key = "$uid|$mine|$v1|$v2"
+            photoCache.get(key) ?: run {
+                val bytes = if (mine) AppCore.profile.photo else AppCore.social.photoOf(uid)
+                if (bytes == null) null else {
+                    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+                    var sample = 1
+                    while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= 384) sample *= 2
+                    val opts = BitmapFactory.Options().apply { inSampleSize = sample }
+                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)?.asImageBitmap()?.also { photoCache.put(key, it) }
+                }
+            }
         } catch (e: Throwable) {
             null
         }
@@ -264,6 +278,7 @@ fun WrField(
     maxLength: Int = Int.MAX_VALUE
 ) {
     var focused by remember { mutableStateOf(false) }
+    val fr = remember { FocusRequester() }
     Column(modifier) {
         if (label != null) {
             Tiny(label)
@@ -272,6 +287,7 @@ fun WrField(
         Row(
             Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(WR.surface2)
                 .then(if (focused) Modifier.border(1.5.dp, WR.rimBrush, RoundedCornerShape(14.dp)) else Modifier.border(1.dp, WR.border, RoundedCornerShape(14.dp)))
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { try { fr.requestFocus() } catch (e: Exception) { } }
                 .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -294,7 +310,7 @@ fun WrField(
                     keyboardOptions = KeyboardOptions(keyboardType = if (password) KeyboardType.Password else keyboard, imeAction = ime),
                     keyboardActions = KeyboardActions(onDone = { onDone?.invoke() }, onSend = { onDone?.invoke() }, onGo = { onDone?.invoke() }, onSearch = { onDone?.invoke() }),
                     visualTransformation = if (password) androidx.compose.ui.text.input.PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
-                    modifier = Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused }
+                    modifier = Modifier.fillMaxWidth().focusRequester(fr).onFocusChanged { focused = it.isFocused }
                 )
             }
         }
@@ -381,11 +397,11 @@ fun Card(modifier: Modifier = Modifier, onClick: (() -> Unit)? = null, content: 
 @Composable
 fun EmptyState(icon: String, title: String, text: String, modifier: Modifier = Modifier, action: (@Composable () -> Unit)? = null) {
     Column(modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(Modifier.size(56.dp).clip(CircleShape).background(WR.surface2), contentAlignment = Alignment.Center) {
-            WrIcon(icon, 24.dp, WR.faint)
+        Box(Modifier.size(64.dp).clip(CircleShape).background(Brush.linearGradient(listOf(WR.accent.copy(alpha = 0.35f), WR.accent.copy(alpha = 0.08f)))).border(1.dp, WR.rimBrush, CircleShape), contentAlignment = Alignment.Center) {
+            WrIcon(icon, 26.dp, WR.accentBright)
         }
         Spacer(Modifier.height(14.dp))
-        Text(title, color = WR.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+        Text(title, color = WR.text, fontFamily = WR.display, fontSize = 19.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
         Spacer(Modifier.height(4.dp))
         Muted(text, align = TextAlign.Center)
         if (action != null) {
@@ -431,14 +447,14 @@ fun WrSheet(onDismiss: () -> Unit, title: String? = null, fullHeight: Boolean = 
         containerColor = WR.surface,
         contentColor = WR.text,
         scrimColor = Color(0xAA000000),
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         dragHandle = {
             Box(Modifier.padding(top = 10.dp, bottom = 6.dp).width(40.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(Brush.horizontalGradient(listOf(WR.accentBright, WR.neon))))
         }
     ) {
         Column(Modifier.then(if (fullHeight) Modifier else Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())).navigationBarsPadding().imePadding()) {
             if (title != null) {
-                Text(title, color = WR.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
+                Text(title, color = WR.text, fontFamily = WR.display, fontSize = 21.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
             }
             content()
             Spacer(Modifier.height(12.dp))
@@ -454,9 +470,10 @@ fun ConfirmDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = WR.surface2,
+        shape = RoundedCornerShape(26.dp),
         titleContentColor = WR.text,
         textContentColor = WR.muted,
-        title = { Text(title, fontWeight = FontWeight.SemiBold) },
+        title = { Text(title, fontFamily = WR.display, fontWeight = FontWeight.Bold) },
         text = { Text(text) },
         confirmButton = {
             TextButton(onClick = { onConfirm(); onDismiss() }) {
@@ -476,7 +493,8 @@ fun InputDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = WR.surface2,
-        title = { Text(title, color = WR.text, fontWeight = FontWeight.SemiBold) },
+        shape = RoundedCornerShape(26.dp),
+        title = { Text(title, color = WR.text, fontFamily = WR.display, fontWeight = FontWeight.Bold) },
         text = { WrField(v, { v = it }, placeholder = placeholder, keyboard = keyboard) },
         confirmButton = { TextButton(onClick = { onConfirm(v.trim()); onDismiss() }) { Text(confirm, color = WR.accentBright, fontWeight = FontWeight.SemiBold) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = WR.muted) } }
@@ -487,7 +505,7 @@ data class MenuEntry(val label: String, val icon: String? = null, val danger: Bo
 
 @Composable
 fun WrMenu(expanded: Boolean, onDismiss: () -> Unit, entries: List<MenuEntry>) {
-    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss, containerColor = WR.surface2, shape = RoundedCornerShape(12.dp)) {
+    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss, containerColor = WR.surface2, shape = RoundedCornerShape(18.dp), border = androidx.compose.foundation.BorderStroke(1.dp, WR.border)) {
         for (e in entries) {
             DropdownMenuItem(
                 text = { Text(e.label, color = if (e.danger) WR.danger else WR.text, fontSize = 14.sp) },

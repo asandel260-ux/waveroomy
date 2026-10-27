@@ -129,18 +129,21 @@ fun RoomScreen(nav: Nav) {
     }
 
     if (s == null || phase == "idle") {
-        Box(Modifier.fillMaxSize().background(WR.bg))
+        Box(Modifier.fillMaxSize().screenBackdrop(1))
         return
     }
     if (phase == "joining") {
-        Column(Modifier.fillMaxSize().background(WR.bg), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-            CircularProgressIndicator(color = WR.accentBright, strokeWidth = 2.dp, modifier = Modifier.size(32.dp))
-            Spacer(Modifier.height(14.dp))
-            Text("Joining room…", color = WR.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(4.dp))
-            Muted("Setting up direct connections")
-            Spacer(Modifier.height(24.dp))
-            WrButton("Cancel", { session.leave() }, kind = BtnKind.Ghost, small = true)
+        Column(Modifier.fillMaxSize().screenBackdrop(1).statusBarsPadding().navigationBarsPadding().padding(32.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(Modifier.size(84.dp).clip(CircleShape).background(WR.primaryBrush).border(1.5.dp, WR.rimBrush, CircleShape), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = WR.neon, strokeWidth = 3.dp, modifier = Modifier.size(40.dp))
+            }
+            Spacer(Modifier.height(22.dp))
+            Text("Joining room…", color = WR.text, fontFamily = WR.display, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(6.dp))
+            Muted("Setting up direct connections", align = TextAlign.Center)
+            app.waveroom.ui.components.NeonWave(Modifier.fillMaxWidth().height(44.dp).padding(vertical = 8.dp), amplitude = 10.dp, stroke = 2.5.dp)
+            Spacer(Modifier.height(16.dp))
+            WrButton("Cancel", { session.leave() }, kind = BtnKind.Secondary, small = true)
         }
         return
     }
@@ -315,7 +318,6 @@ fun RoomScreen(nav: Nav) {
             Column(Modifier.fillMaxSize()) {
                 Box(Modifier.statusBarsPadding()) { if (!(mode == "chess" && chessFocus)) Column { topBar(); tabsRow() } }
                 mainArea(Modifier.weight(1f))
-                Hairline()
                 controls(false)
             }
         }
@@ -347,7 +349,7 @@ fun RoomScreen(nav: Nav) {
         if (isHost) {
             ConfirmDialog(
                 "Leave room?",
-                if (participants.size > 1) "You can hand the room over by leaving — the longest-present member becomes host. Or end it for everyone." else "You're the only one here. The room will be saved on this phone.",
+                if (participants.size > 1) "You can hand the room over by leaving — the longest-present member becomes host. Or end it for everyone from Room settings." else "You're the only one here. The room will be saved on this phone.",
                 "Leave", { session.leave() }, { leaveConfirm = false }
             )
         } else {
@@ -370,6 +372,10 @@ private fun Tab(label: String, icon: String, on: Boolean, live: Boolean, onClick
         WrIcon(icon, 15.dp, if (on) WR.neon else WR.muted)
         Spacer(Modifier.width(6.dp))
         Text(label, color = if (on) Color.White else WR.muted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+        if (live) {
+            Spacer(Modifier.width(6.dp))
+            Box(Modifier.size(7.dp).clip(CircleShape).background(WR.neon))
+        }
     }
 }
 
