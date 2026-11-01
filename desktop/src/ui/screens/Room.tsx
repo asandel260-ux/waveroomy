@@ -1,0 +1,273 @@
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { core } from "../../app/instance";
+import { REACTIONS, canSpeak, type Participant } from "../../core/models";
+import { useEmitter, useFlow, useTick } from "../hooks";
+import { Avatar, Backdrop, Button, ConfirmDialog, Icon, IconButton, Menu, MenuEntry, Muted, NeonWave, Sheet, Tiny, Chip, Spinner } from "../components/kit";
+import { VoiceFxPanel } from "./Settings";
+import { ChatPanel, PersonSheet, ReportDialog, RoomSettingsSheet } from "./RoomPanels";
+import { StreamPanel, ShareSheet } from "../panels/Stream";
+import { WatchPanel } from "../panels/Watch";
+import { BoardPanel } from "../panels/Board";
+import { BrowsePanel } from "../panels/Browse";
+import { ChessCreateSheet, ChessPanel } from "../panels/Chess";
+import type { ScreenProps } from "./registry";
+
+interface Floating { id: number; emoji: string; name: string; x: number }
+
+function TabChip({ label, icon, on, live, onClick }: { label: string; icon: string; on: boolean; live: boolean; onClick: () => void }) {
+  return (
+    <button className="hstack g6" onClick={onClick} style={{ borderRadius: 50, padding: "7px 12px", flex: "none", background: on ? "linear-gradient(180deg, var(--grad-top), var(--grad-bottom))" : "transparent", boxShadow: `inset 0 0 0 1px ${on ? "rgb(182 144 255 / .6)" : "var(--border)"}` }}>
+      <Icon name={icon} size={15} color={on ? "var(--neon)" : "var(--muted)"} />
+      <span style={{ color: on ? "#fff" : "var(--muted)", fontSize: 12, fontWeight: 500 }}>{label}</span>
+      {live && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--neon)" }} />}
+    </button>
+  );
+}
+
+function CtlButton({ icon, onClick, on, danger, badge = 0, title }: { icon: string; onClick: () => void; on?: boolean; danger?: boolean; badge?: number; title: string }) {
+  return (
+    <button onClick={onClick} title={title} style={{ position: "relative", width: 50, height: 50, borderRadius: "50%", display: "grid", placeItems: "center", flex: "none",
+      background: danger ? "var(--danger-soft)" : on ? "linear-gradient(180deg, var(--grad-top), var(--grad-bottom))" : "linear-gradient(180deg, var(--surface3), var(--surface2))",
+      boxShadow: `inset 0 0 0 1px ${on ? "rgb(82 255 31 / .8)" : danger ? "rgb(255 90 90 / .4)" : "var(--border)"}` }}>
+      <Icon name={icon} size={21} color={danger ? "var(--danger)" : on ? "var(--neon)" : "var(--text)"} />
+      {badge > 0 && <span style={{ position: "absolute", top: 3, right: 3, width: 17, height: 17, borderRadius: "50%", background: "var(--neon)", color: "#052200", fontSize: 9, fontWeight: 700, display: "grid", placeItems: "center" }}>{badge > 9 ? "9+" : badge}</span>}
+    </button>
+  );
+}
+
+function MicButton({ muted, ptt }: { muted: boolean; ptt: boolean }) {
+  const session = core.session;
+  const level = useFlow(core.audio.level);
+  const ring = Math.min(1, level * 6);
+  const unmute = () => { core.requestMic(); session.setMuted(false); };
+  const d = 72;
+  const handlers = ptt
+    ? { onMouseDown: unmute, onMouseUp: () => session.setMuted(true), onMouseLeave: () => { if (!session.me?.muted) session.setMuted(true); } }
+    : { onClick: () => (muted ? unmute() : session.setMuted(true)) };
+  return (
+    <div style={{ position: "relative", width: d + 16, height: d + 16, display: "grid", placeItems: "center", flex: "none" }}>
+      {muted ? <span className="halo" style={{ position: "absolute", width: d + 8, height: d + 8, borderRadius: "50%", border: "2px solid rgb(182 144 255 / .5)" }} />
+        : <span style={{ position: "absolute", width: d + 14, height: d + 14, borderRadius: "50%", background: "rgb(82 255 31 / .45)", transform: `scale(${0.92 + ring * 0.12})`, opacity: 0.25 + ring * 0.6, transition: "transform .08s, opacity .08s" }} />}
+      <button {...handlers} title={ptt ? "Hold to talk" : muted ? "Unmute" : "Mute"} style={{ position: "relative", width: d, height: d, borderRadius: "50%", display: "grid", placeItems: "center",
+        background: muted ? "linear-gradient(180deg, var(--surface3), var(--surface2))" : "linear-gradient(180deg, #7dff55, var(--neon))", boxShadow: `inset 0 0 0 3px ${muted ? "var(--accent-bright)" : "rgb(150 255 110)"}` }}>
+        <Icon name={muted ? "mic-off" : "mic"} size={32} color={muted ? "var(--accent-bright)" : "#052200"} />
+      </button>
+    </div>
+  );
+}
+
+function StageTile({ p, speaking, online, onClick }: { p: Participant; speaking: boolean; online: boolean; onClick: () => void }) {
+  const mine = p.sid === core.session.mySid;
+  return (
+    <button onClick={onClick} style={{ width: 108, padding: "4px 0", borderRadius: 18, display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div style={{ position: "relative", width: 92, height: 92, display: "grid", placeItems: "center" }}>
+        {speaking && <span className="glow" style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "radial-gradient(circle, rgb(82 255 31 / .4), transparent 70%)" }} />}
+        <div style={{ width: 82, height: 82, borderRadius: "50%", padding: 4, display: "grid", placeItems: "center", boxShadow: speaking ? "0 0 0 3px var(--neon)" : "0 0 0 1.5px rgb(182 144 255 / .5)" }}>
+          <div style={{ opacity: online ? 1 : 0.55 }}><Avatar avatar={p.avatar} size={74} uid={p.uid} mine={mine} /></div>
+        </div>
+        {p.muted && <span style={{ position: "absolute", right: 4, bottom: 4, width: 26, height: 26, borderRadius: "50%", background: "var(--surface3)", boxShadow: "inset 0 0 0 1px rgb(255 90 90 / .5)", display: "grid", placeItems: "center" }}><Icon name="mic-off" size={14} color="var(--danger)" /></span>}
+        {p.sharing && <span style={{ position: "absolute", right: 4, top: 4, width: 24, height: 24, borderRadius: "50%", background: "linear-gradient(180deg, var(--grad-top), var(--grad-bottom))", display: "grid", placeItems: "center" }}><Icon name="monitor" size={13} color="var(--neon)" /></span>}
+        {!online && <span style={{ position: "absolute" }}><Spinner size={24} /></span>}
+      </div>
+      <div className="hstack g4" style={{ marginTop: 4, borderRadius: 50, padding: "3px 10px", background: speaking ? "rgb(124 58 237 / .35)" : "rgb(33 23 58 / .7)", maxWidth: "100%" }}>
+        {p.role === "host" && <Icon name="crown" size={12} color="var(--warn)" />}
+        <span className="ellipsis" style={{ fontSize: 13, fontWeight: 500 }}>{mine ? "You" : p.displayName}</span>
+      </div>
+    </button>
+  );
+}
+
+function FloatingReaction({ f, onDone }: { f: Floating; onDone: () => void }) {
+  useEffect(() => { const t = setTimeout(onDone, 2300); return () => clearTimeout(t); }, []);
+  return <div className="floatup" style={{ position: "absolute", left: `${f.x * 100}%`, bottom: "8%", textAlign: "center", pointerEvents: "none" }}><div style={{ fontSize: 34 }}>{f.emoji}</div><div style={{ color: "var(--muted)", fontSize: 10 }}>{f.name}</div></div>;
+}
+
+export function RoomScreen({ nav }: ScreenProps) {
+  const session = core.session;
+  useTick(session.tick);
+  const phase = useFlow(session.phase);
+  const speaking = useFlow(session.speaking);
+  const connected = useFlow(core.connected);
+  const unread = useFlow(session.unreadChat);
+  const deaf = useFlow(session.deafened);
+  const settings = useFlow(core.settings.state);
+  const sharing = useFlow(core.screen.active);
+  const s = session.room;
+  const me = session.me;
+
+  const [mode, setMode] = useState("stage");
+  const [chatOpen, setChatOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [fxOpen, setFxOpen] = useState(false);
+  const [reactOpen, setReactOpen] = useState(false);
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const [leaveConfirm, setLeaveConfirm] = useState(false);
+  const [person, setPerson] = useState<string | null>(null);
+  const [shareSheet, setShareSheet] = useState(false);
+  const [reportRoom, setReportRoom] = useState(false);
+  const [chessCreate, setChessCreate] = useState(false);
+  const [chessFocus, setChessFocus] = useState(false);
+  const [floats, setFloats] = useState<Floating[]>([]);
+  const fid = useRef(0);
+
+  useEmitter(session.reactions, (r) => setFloats((f) => [...f.slice(-11), { id: ++fid.current, emoji: r.emoji, name: r.name, x: 0.15 + Math.random() * 0.7 }]));
+  useEffect(() => {
+    if (!chatOpen) return;
+    session.unreadChat.value = 0;
+  }, [chatOpen, unread]);
+
+  // push to talk from the keyboard
+  useEffect(() => {
+    if (!settings.ptt) return;
+    const typing = () => { const a = document.activeElement; return !!a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA"); };
+    const down = (e: KeyboardEvent) => { if (e.code === settings.pttKey && !e.repeat && !typing()) { e.preventDefault(); core.requestMic(); session.setMuted(false); } };
+    const up = (e: KeyboardEvent) => { if (e.code === settings.pttKey && !typing()) session.setMuted(true); };
+    window.addEventListener("keydown", down); window.addEventListener("keyup", up);
+    return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
+  }, [settings.ptt, settings.pttKey]);
+
+  const participants = s ? [...s.participants.values()] : [];
+  const speakers = participants.filter((p) => canSpeak(p.role)).sort((a, b) => a.joinedAt - b.joinedAt);
+  const sharer = participants.find((p) => p.sharing != null);
+  const watching = s?.watch.video != null;
+  const browsing = s?.browse.url != null;
+  const isHost = me?.role === "host";
+  const canTalk = !!me && canSpeak(me.role);
+
+  useEffect(() => { if (mode === "screen" && !sharer) setMode("stage"); }, [sharer?.sid, mode]);
+  useEffect(() => {
+    if (mode !== "browse") return;
+    session.browsePresence(true);
+    return () => session.browsePresence(false);
+  }, [mode]);
+
+  const exitToStage = () => { setMode("stage"); setChessFocus(false); };
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => { if (e.key === "Escape" && phase !== "idle" && !document.querySelector(".dialog, .sheet, .menu")) { if (phase === "joining") session.leave(); else if (mode !== "stage") exitToStage(); } };
+    window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k);
+  }, [phase, mode]);
+
+  if (!s || phase === "idle") return <Backdrop style={1} />;
+  if (phase === "joining") {
+    return (
+      <Backdrop style={1}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, textAlign: "center" }}>
+          <div style={{ width: 84, height: 84, borderRadius: "50%", display: "grid", placeItems: "center", background: "linear-gradient(180deg, var(--grad-top), var(--grad-bottom))", boxShadow: "0 0 0 1.5px rgb(182 144 255 / .6)" }}><Spinner size={40} /></div>
+          <div className="display" style={{ fontSize: 26, marginTop: 22 }}>Joining room…</div>
+          <div style={{ marginTop: 6 }}><Muted>Setting up direct connections</Muted></div>
+          <div style={{ width: 360, maxWidth: "100%", padding: "8px 0" }}><NeonWave height={44} amplitude={10} stroke={2.5} /></div>
+          <div style={{ height: 16 }} />
+          <Button small kind="secondary" text="Cancel" onClick={() => session.leave()} />
+        </div>
+      </Backdrop>
+    );
+  }
+
+  const live = participants.filter((p) => p.sid === session.mySid || connected.has(p.uid)).length;
+  const iShare = sharer?.sid === session.mySid;
+  let main: ReactNode;
+  switch (mode) {
+    case "screen": main = sharer ? <StreamPanel p={sharer} /> : null; break;
+    case "watch": main = <WatchPanel />; break;
+    case "board": main = <BoardPanel />; break;
+    case "browse": main = <BrowsePanel />; break;
+    case "chess": main = <ChessPanel land={false} focus={chessFocus} setFocus={setChessFocus} onExit={exitToStage} onCreate={() => setChessCreate(true)} />; break;
+    default: main = (
+      <div className="scroll"><div style={{ maxWidth: 980, margin: "0 auto", padding: "14px 16px" }}>
+        {sharer && (
+          <button className="hstack g12" onClick={() => setMode("screen")} style={{ width: "100%", textAlign: "left", borderRadius: 14, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 14, marginBottom: 14 }}>
+            <Icon name="monitor" size={22} color="var(--accent-bright)" />
+            <div className="grow"><div style={{ fontSize: 14, fontWeight: 500 }}>{iShare ? "You are" : sharer.displayName + " is"} sharing a screen</div><Muted size={12}>{sharer.sharing?.res}p · {sharer.sharing?.fps} fps</Muted></div>
+            <Chip text={iShare ? "Preview" : "Watch"} selected />
+          </button>
+        )}
+        <Tiny>In the room · {participants.length}</Tiny>
+        <div style={{ height: 12 }} />
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "14px 4px" }}>
+          {speakers.map((p) => <StageTile key={p.sid} p={p} speaking={speaking.has(p.sid)} online={p.sid === session.mySid || connected.has(p.uid)} onClick={() => setPerson(p.sid)} />)}
+        </div>
+        {participants.length === 1 && (
+          <div style={{ marginTop: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+            <Muted size={14}>Nobody else is here yet.</Muted>
+            <Button small icon="user-plus" text="Invite someone" onClick={() => nav.push({ t: "invite", purpose: "room" })} />
+          </div>
+        )}
+        <div style={{ height: 24 }} />
+      </div></div>
+    );
+  }
+
+  const menuEntries: MenuEntry[] = [
+    ...(isHost ? [{ label: "Room settings", icon: "sliders", onClick: () => setSettingsOpen(true) }] : []),
+    ...(canTalk ? [{ label: "Voice effects", icon: "waveform", onClick: () => setFxOpen(true) }] : []),
+    { label: "Report this room", icon: "flag", onClick: () => setReportRoom(true) },
+    { label: "Leave room", icon: "log-out", danger: true, onClick: () => setLeaveConfirm(true) }
+  ];
+  const hideChrome = mode === "chess" && chessFocus;
+
+  return (
+    <Backdrop style={1}>
+      <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", position: "relative" }}>
+          {!hideChrome && <>
+            <div className="hstack" style={{ padding: "6px 4px 4px 16px" }}>
+              <div className="grow" style={{ minWidth: 0 }}>
+                <div className="hstack g6"><span className="display ellipsis" style={{ fontSize: 20 }}>{s.meta.title}</span>{s.meta.locked && <Icon name="lock" size={14} color="var(--warn)" />}</div>
+                <Muted size={12}>{participants.length} in room{live < participants.length ? ` · connecting ${participants.length - live}` : ""}</Muted>
+              </div>
+              <IconButton icon="user-plus" onClick={() => nav.push({ t: "invite", purpose: "room" })} title="Invite" />
+              <IconButton icon="more-v" onClick={(e) => { const b = e.currentTarget.getBoundingClientRect(); setMenu({ x: b.right - 200, y: b.bottom }); }} />
+            </div>
+            <div className="hstack g8" style={{ padding: "6px 12px", overflowX: "auto" }}>
+              <TabChip label="Stage" icon="users" on={mode === "stage"} live={false} onClick={() => setMode("stage")} />
+              {sharer && <TabChip label="Screen" icon="monitor" on={mode === "screen"} live onClick={() => setMode("screen")} />}
+              <TabChip label="Watch" icon="youtube" on={mode === "watch"} live={watching} onClick={() => setMode("watch")} />
+              <TabChip label="Board" icon="board" on={mode === "board"} live={s.board.objects.size > 0} onClick={() => setMode("board")} />
+              <TabChip label="Browser" icon="globe" on={mode === "browse"} live={browsing} onClick={() => setMode("browse")} />
+              <TabChip label="Chess" icon="chess" on={mode === "chess"} live={s.chess.active != null} onClick={() => setMode("chess")} />
+              <div className="grow" />
+              {mode !== "stage" && <Button small kind="ghost" icon="arrow-left" text="Exit to stage" onClick={exitToStage} />}
+              {mode === "screen" && iShare && <Button small kind="danger" text="Stop sharing" onClick={() => { core.screen.stop(true); setMode("stage"); }} />}
+              {mode === "watch" && watching && session.canWatchControl() && <Button small kind="danger" text="End Watch" onClick={() => { session.watchEnd(); setMode("stage"); }} />}
+              {mode === "browse" && browsing && session.canBrowseControl() && <Button small kind="danger" text="Close browser" onClick={() => { session.browseEnd(); setMode("stage"); }} />}
+            </div>
+            <div className="hairline" />
+          </>}
+          <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", position: "relative" }} key={mode}>
+            {main}
+            {floats.map((f) => <FloatingReaction key={f.id} f={f} onDone={() => setFloats((x) => x.filter((y) => y.id !== f.id))} />)}
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", padding: "10px 14px" }}>
+            <div className="hstack" style={{ gap: 14, borderRadius: 36, padding: "8px 14px", background: "linear-gradient(180deg, var(--surface3), var(--surface))", boxShadow: "inset 0 0 0 1px rgb(182 144 255 / .35)" }}>
+              <CtlButton icon={deaf ? "volume-x" : "headphones"} title={deaf ? "Undeafen" : "Deafen"} danger={deaf} onClick={() => session.toggleDeafen()} />
+              <CtlButton icon="smile-plus" title="React" onClick={() => setReactOpen(true)} />
+              <MicButton muted={me?.muted !== false} ptt={settings.ptt} />
+              <CtlButton icon="monitor" title={sharing ? "Stop sharing" : "Share your screen"} on={sharing} onClick={() => { if (sharing) core.screen.stop(true); else setShareSheet(true); }} />
+              <CtlButton icon="message" title="Room chat" on={chatOpen} badge={chatOpen ? 0 : unread} onClick={() => { setChatOpen(!chatOpen); session.unreadChat.value = 0; }} />
+              <CtlButton icon="log-out" title="Leave" danger onClick={() => setLeaveConfirm(true)} />
+            </div>
+          </div>
+        </div>
+        {chatOpen && <ChatPanel nav={nav} onOpenChess={() => setMode("chess")} onClose={() => setChatOpen(false)} />}
+      </div>
+
+      {menu && <Menu at={menu} entries={menuEntries} onDismiss={() => setMenu(null)} />}
+      {reactOpen && (
+        <Sheet title="React" center onDismiss={() => setReactOpen(false)}>
+          <div className="hstack" style={{ flexWrap: "wrap", gap: 10, padding: "0 16px 8px", justifyContent: "center" }}>
+            {REACTIONS.map((e) => <button key={e} style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--surface2)", fontSize: 26 }} onClick={() => { session.react(e); setReactOpen(false); }}>{e}</button>)}
+          </div>
+        </Sheet>
+      )}
+      {chessCreate && <ChessCreateSheet onDismiss={() => setChessCreate(false)} onCreated={() => setMode("chess")} />}
+      {settingsOpen && <RoomSettingsSheet onDismiss={() => setSettingsOpen(false)} />}
+      {fxOpen && <Sheet title="Voice effects" center onDismiss={() => setFxOpen(false)}><div style={{ padding: "0 20px 16px" }}><VoiceFxPanel /></div></Sheet>}
+      {shareSheet && <ShareSheet onDismiss={() => setShareSheet(false)} onStarted={() => setMode("screen")} />}
+      {person && (() => { const p = s.participants.get(person); return p ? <PersonSheet p={p} nav={nav} onDismiss={() => setPerson(null)} /> : null; })()}
+      {leaveConfirm && (isHost
+        ? <ConfirmDialog title="Leave room?" text={participants.length > 1 ? "You can hand the room over by leaving — the longest-present member becomes host. Or end it for everyone from Room settings." : "You're the only one here. The room will be saved on this computer."} confirm="Leave" onDismiss={() => setLeaveConfirm(false)} onConfirm={() => session.leave()} />
+        : <ConfirmDialog danger title="Leave room?" text="You can rejoin with a new invite." confirm="Leave" onDismiss={() => setLeaveConfirm(false)} onConfirm={() => session.leave()} />)}
+      {reportRoom && <ReportDialog type="room" id={s.meta.id} label={s.meta.title} excerpt="" onDismiss={() => setReportRoom(false)} />}
+    </Backdrop>
+  );
+}

@@ -8,8 +8,9 @@ import { EditProfileScreen, PeopleScreen, ProfileScreen } from "./Social";
 import { SettingsScreen } from "./Settings";
 import { ModerationScreen } from "./Moderation";
 import { AboutScreen, HelpScreen, LegalScreen } from "./Info";
+import { RoomScreen } from "./Room";
 import { ChatScreen } from "./Chat";
 import { CreateRoomScreen, InviteScreen, JoinScreen } from "./Connect";
 export const SCREENS: Partial<Record<Route["t"], ComponentType<ScreenProps>>> = {
-  chat: ChatScreen, moderation: ModerationScreen, help: HelpScreen, legal: LegalScreen, about: AboutScreen, settings: SettingsScreen, profile: ProfileScreen, people: PeopleScreen, editProfile: EditProfileScreen, newGroup: NewGroupScreen, groupInfo: GroupInfoScreen, create: CreateRoomScreen, invite: InviteScreen, join: JoinScreen
+  chat: ChatScreen, room: RoomScreen, moderation: ModerationScreen, help: HelpScreen, legal: LegalScreen, about: AboutScreen, settings: SettingsScreen, profile: ProfileScreen, people: PeopleScreen, editProfile: EditProfileScreen, newGroup: NewGroupScreen, groupInfo: GroupInfoScreen, create: CreateRoomScreen, invite: InviteScreen, join: JoinScreen
 };

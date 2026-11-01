@@ -43,6 +43,8 @@ export class ScreenShare {
     }
   }
 
+  previewTrack(): MediaStreamTrack | null { return this.stream?.getVideoTracks()[0] ?? null; }
+
   /** Room membership changed: start sending to newcomers. */
   refresh() { if (this.active.value) for (const l of this.core.mesh.authedLinks()) this.attach(l); }
 

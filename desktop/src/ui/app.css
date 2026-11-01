@@ -196,3 +196,12 @@ button.listrow:hover, .listrow.click:hover { background: var(--surface2); }
 .bubble-more { opacity: 0; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); flex: none; transition: opacity .12s; }
 .bubble-row:hover .bubble-more { opacity: 1; }
 .bubble-more:hover { background: var(--surface2); color: var(--text); }
+
+/* room */
+.chatpanel { width: 340px; flex: none; display: flex; flex-direction: column; background: var(--surface); border-left: 1px solid var(--border); position: relative; }
+.halo { animation: halo 1.6s linear infinite; }
+@keyframes halo { from { transform: scale(1); opacity: .6; } to { transform: scale(1.22); opacity: 0; } }
+.glow { animation: glow .9s ease-in-out infinite alternate; }
+@keyframes glow { from { opacity: .35; } to { opacity: 1; } }
+.floatup { animation: floatup 2.3s linear forwards; }
+@keyframes floatup { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-62vh); opacity: 0; } }
