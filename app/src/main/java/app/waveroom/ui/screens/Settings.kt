@@ -216,7 +216,7 @@ fun SettingsScreen(nav: Nav) {
             } }
 
             SectionTitle("Your devices")
-            Row2("Link another device", "Keep your profile and contacts in step with HoMit on Windows", "qr", onClick = { nav.push(Route.Invite("sync")) })
+            app.waveroom.ui.components.Row2("Link another device", "Keep your profile and contacts in step with HoMit on Windows", "qr", onClick = { nav.push(app.waveroom.ui.Route.Invite("sync")) })
 
             SectionTitle("Identity & data")
             Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
