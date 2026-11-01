@@ -52,7 +52,7 @@ export function Avatar({ avatar, size = 40, uid = "", mine = false, ring }: { av
 /* ---------------- buttons ---------------- */
 
 export function Button({ text, onClick, kind = "primary", icon, disabled, small, block, style, title }: {
-  text: string; onClick?: () => void; kind?: "primary" | "secondary" | "danger" | "ghost" | "ok"; icon?: string; disabled?: boolean; small?: boolean; block?: boolean; style?: React.CSSProperties; title?: string;
+  text: string; onClick?: (e: React.MouseEvent) => void; kind?: "primary" | "secondary" | "danger" | "ghost" | "ok"; icon?: string; disabled?: boolean; small?: boolean; block?: boolean; style?: React.CSSProperties; title?: string;
 }) {
   return (
     <button className={`btn ${kind} ${small ? "small" : ""} ${block ? "block" : ""}`} disabled={disabled} onClick={onClick} style={style} title={title}>
