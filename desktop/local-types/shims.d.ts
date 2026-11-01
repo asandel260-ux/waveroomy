@@ -22,14 +22,14 @@ declare module "react" {
   export type PointerEvent<T = any> = any;
   export type WheelEvent<T = any> = any;
   export type DragEvent<T = any> = any;
-  export type FormEvent<T = any> = any;
+  export type FormEvent<T = any> = any; type ClipboardEvent<T = any> = any;
   export type Ref<T = any> = any; type ComponentType<P = any> = (props: P) => any;
   export type RefObject<T = any> = any;
 }
 declare namespace React {
   type CSSProperties = any; type ReactNode = any; type MouseEvent<T = any> = any; type ChangeEvent<T = any> = any;
   type KeyboardEvent<T = any> = any; type PointerEvent<T = any> = any; type WheelEvent<T = any> = any; type DragEvent<T = any> = any;
-  type Ref<T = any> = any; type RefObject<T = any> = any; type FormEvent<T = any> = any;
+  type Ref<T = any> = any; type RefObject<T = any> = any; type FormEvent<T = any> = any; type ClipboardEvent<T = any> = any;
 }
 declare module "react/jsx-runtime" { export const jsx: any; export const jsxs: any; export const Fragment: any; }
 declare module "react-dom" { export const createPortal: any; const x: any; export default x; }

@@ -191,3 +191,8 @@ button.listrow:hover, .listrow.click:hover { background: var(--surface2); }
 .pill-orb { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; flex: none; }
 .unread { border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 700; background: linear-gradient(180deg, #9CFF6B, var(--neon), var(--neon-deep)); color: #052200; }
 .unread.muted { background: var(--surface3); color: #fff; }
+
+/* chat bubbles: the actions button shows on hover */
+.bubble-more { opacity: 0; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); flex: none; transition: opacity .12s; }
+.bubble-row:hover .bubble-more { opacity: 1; }
+.bubble-more:hover { background: var(--surface2); color: var(--text); }
