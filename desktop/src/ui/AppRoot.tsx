@@ -103,6 +103,7 @@ export function AppRoot() {
   const settings = useFlow(core.settings.state);
   const phase = useFlow(core.session.phase);
   const [intro, setIntro] = useState(!welcomed);
+  useEffect(() => { native.setPrefs({ closeToTray: settings.closeToTray, startMinimized: settings.startMinimized, notifications: settings.notifications }); }, [settings.closeToTray, settings.startMinimized, settings.notifications]);
   useEffect(() => { applyTheme(settings); }, [settings.accentColor, settings.bgColor, settings.animations]);
   useEffect(() => { if (phase === "joining" || phase === "live") { if (nav.top.t !== "room") nav.push({ t: "room" }); } else nav.removeAll("room"); }, [phase]);
   useEmitter(core.session.toasts, (t) => core.toast(t));

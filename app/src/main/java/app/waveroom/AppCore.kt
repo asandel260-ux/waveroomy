@@ -284,8 +284,11 @@ object AppCore : MeshHandler, app.waveroom.net.LanApp {
         connected.value = mesh.authedLinks().map { it.uid }.toSet()
     }
 
+    val sync by lazy { DeviceSync(this) }
+
     override fun onLinkAuthed(link: PeerLink) {
         refreshConnected()
+        if (link.uid == profile.uid) { sync.onLinkAuthed(link); return }
         if (link.purpose == "dm") shareFriendSecret(link)
         dmHub.onLinkAuthed(link)
         session.onLinkAuthed(link)
@@ -317,6 +320,7 @@ object AppCore : MeshHandler, app.waveroom.net.LanApp {
 
     override fun onLinkGone(link: PeerLink, reason: String) {
         refreshConnected()
+        if (link.uid == profile.uid) { sync.onLinkGone(link); return }
         if (link.authed && link.purpose == "dm") Rendezvous.lost(link.uid)
         session.onLinkGone(link, reason)
     }
@@ -327,6 +331,7 @@ object AppCore : MeshHandler, app.waveroom.net.LanApp {
     }
 
     override fun onMessage(fromSid: String, msg: JSONObject, link: PeerLink?) {
+        if (link != null && link.uid == profile.uid) { sync.onMessage(msg); return }
         when (msg.str("t")) {
             "m", "mr", "mq", "mb", "dmack", "fol", "gh", "gr", "gi", "gu", "gl", "call", "callr", "callx" -> if (link != null) dmHub.onMessage(link, msg)
             else -> session.onMessage(fromSid, msg, link)

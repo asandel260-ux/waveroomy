@@ -215,6 +215,9 @@ fun SettingsScreen(nav: Nav) {
                 Muted("Network changes apply to the next connection you make.", size = 12)
             } }
 
+            SectionTitle("Your devices")
+            Row2("Link another device", "Keep your profile and contacts in step with HoMit on Windows", "qr", onClick = { nav.push(Route.Invite("sync")) })
+
             SectionTitle("Identity & data")
             Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Muted("Your identity is a key stored only on this phone. Export a backup to keep your name, handle and followers across devices.", size = 12)

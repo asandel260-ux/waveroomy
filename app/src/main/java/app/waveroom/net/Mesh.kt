@@ -366,7 +366,9 @@ class Mesh(
         if (link.remoteSid != sid && !link.remoteSid.startsWith("pending-")) {
             dropLink(link, "sid mismatch"); return
         }
-        if (uid == profile.uid) {
+        // my own other device may link in, but only for syncing
+        val purp = m.str("purpose").ifEmpty { link.purpose }
+        if (uid == profile.uid && purp != "sync") {
             dropLink(link, "self"); return
         }
         if (social.blocked.value.contains(uid)) {
@@ -389,7 +391,7 @@ class Mesh(
             dropLink(link, "auth failed"); return
         }
         link.authed = true
-        link.hello?.let { h ->
+        link.hello?.takeIf { link.uid != profile.uid }?.let { h ->
             val c = Contact(
                 link.uid, h.str("user").take(40), h.str("name").ifEmpty { h.str("user") }.take(60), Avatar.from(h.obj("av")),
                 h.str("bio").take(400), h.str("pron").take(40), link.remotePub, nowMs()
@@ -402,10 +404,10 @@ class Mesh(
             }
         }
         link.hello = null
-        social.touchSeen(link.uid)
+        if (link.uid != profile.uid) social.touchSeen(link.uid)
         // two links to the same person: both phones keep the one whose offerer has the lower id
         for (other in links.values.toList()) {
-            if (other !== link && other.uid == link.uid && other.authed) {
+            if (other !== link && other.uid == link.uid && other.authed && (other.purpose == "sync") == (link.purpose == "sync")) {
                 val mine = if (link.offerer) profile.uid else link.uid
                 val theirs = if (other.offerer) profile.uid else other.uid
                 val keepNew = if (mine != theirs) mine < theirs else other.createdAt < link.createdAt

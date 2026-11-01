@@ -185,7 +185,7 @@ fun InviteScreen(nav: Nav, purpose: String) {
         val added = connected - before
         if (added.isNotEmpty()) {
             val uid = added.first()
-            AppCore.toast("Connected to ${AppCore.contactName(uid)}")
+            if (purpose != "sync") AppCore.toast("Connected to ${AppCore.contactName(uid)}")
             if (purpose == "dm") {
                 nav.pop(); nav.push(Route.Chat(uid))
             } else nav.pop()
@@ -212,7 +212,7 @@ fun InviteScreen(nav: Nav, purpose: String) {
     Box(Modifier.fillMaxSize().screenBackdrop(4)) {
         Column(Modifier.fillMaxSize().imePadding()) {
             ScreenHeader(
-                if (purpose == "room") "Invite to room" else if (purpose.startsWith("group:")) "Add to group" else "Add a friend", { nav.pop() },
+                if (purpose == "room") "Invite to room" else if (purpose.startsWith("group:")) "Add to group" else if (purpose == "sync") "Link a device" else "Add a friend", { nav.pop() },
                 subtitle = if (purpose == "room") roomTitle else if (purpose.startsWith("group:")) AppCore.groups.get(purpose.removePrefix("group:"))?.name else null
             )
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {

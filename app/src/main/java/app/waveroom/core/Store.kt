@@ -260,10 +260,11 @@ class ProfileStore {
         photoVersion.value = photoVersion.value + 1
     }
 
-    fun save(p: MyProfile) {
+    fun save(p: MyProfile, fromSync: Boolean = false) {
         profile.value = p
         Docs.write("profile.json", p.toJson())
         app.waveroom.Discovery.profileChanged()
+        if (!fromSync) app.waveroom.AppCore.sync.profileChanged()
     }
 
     fun setPhoto(bytes: ByteArray?) {
