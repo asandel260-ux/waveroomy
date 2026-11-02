@@ -21,7 +21,7 @@ export function VoiceFxPanel() {
         {FX_PRESETS.map((p) => {
           const on = s.fxPreset === p.id;
           return (
-            <button key={p.id} style={{ width: 150, textAlign: "left", borderRadius: 4, padding: 12, background: on ? "var(--accent-30)" : "var(--surface2)", boxShadow: `inset 0 0 0 1px ${on ? "rgb(82 255 31 / .7)" : "var(--border)"}` }} onClick={() => upd((x) => ({ ...x, fxPreset: p.id, fxEnabled: available }))}>
+            <button key={p.id} style={{ width: 150, textAlign: "left", borderRadius: 12, padding: 12, background: on ? "var(--accent-30)" : "var(--surface2)", boxShadow: `inset 0 0 0 1px ${on ? "rgb(82 255 31 / .7)" : "var(--border)"}` }} onClick={() => upd((x) => ({ ...x, fxPreset: p.id, fxEnabled: available }))}>
               <div style={{ color: on ? "var(--accent-bright)" : "var(--text)", fontSize: 14, fontWeight: 600 }}>{p.name}</div>
               <Muted size={11}>{p.desc}</Muted>
             </button>
@@ -30,7 +30,7 @@ export function VoiceFxPanel() {
       </div>
       <div style={{ height: 10 }} />
       <Tiny>Intensity · {Math.round(s.fxIntensity * 100)}%</Tiny>
-      <input type="range" min={0} max={1} step={0.01} value={s.fxIntensity} style={{ width: "100%", accentColor: "var(--accent)" }} onChange={(e) => upd((x) => ({ ...x, fxIntensity: parseFloat(e.target.value) }))} />
+      <input type="range" min={0} max={1} step={0.01} value={s.fxIntensity} style={{ width: "100%", accentColor: "var(--neon)" }} onChange={(e) => upd((x) => ({ ...x, fxIntensity: parseFloat(e.target.value) }))} />
       <Muted size={12}>Tip: use headphones so the processed sound doesn't loop back into your microphone.</Muted>
     </div>
   );
@@ -74,7 +74,7 @@ export function SettingsScreen({ nav, back }: ScreenProps) {
   return (
     <Backdrop style={2}>
       <ScreenHeader title="Settings" onBack={back} />
-      <div className="scroll"><div style={{ maxWidth: 720, margin: "0 0 0 max(0px, calc((100% - 880px) / 2))", paddingBottom: 32 }}>
+      <div className="scroll"><div style={{ maxWidth: 720, margin: "0 auto", paddingBottom: 32 }}>
         <SectionTitle>Appearance</SectionTitle>
         <Pad><div className="stack g12">
           <SwitchRow title="Animations" subtitle="Screen transitions, pulses and other motion. Turn off for a calmer, faster app." checked={s.animations} onChange={(v) => set({ animations: v })} />

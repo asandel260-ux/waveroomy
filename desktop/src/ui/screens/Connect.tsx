@@ -15,14 +15,14 @@ async function readClipboard(): Promise<string> {
 function Step({ n, text }: { n: number; text: string }) {
   return (
     <div className="hstack g10">
-      <div style={{ width: 26, height: 26, borderRadius: 2, display: "grid", placeItems: "center", background: "var(--accent)", boxShadow: "0 0 0 1px var(--border-strong)", color: "var(--neon)", fontSize: 12, fontWeight: 700 }}>{n}</div>
+      <div style={{ width: 26, height: 26, borderRadius: "50%", display: "grid", placeItems: "center", background: "linear-gradient(180deg, var(--grad-top), var(--grad-bottom))", boxShadow: "0 0 0 1px rgb(182 144 255 / .6)", color: "var(--neon)", fontSize: 12, fontWeight: 700 }}>{n}</div>
       <span style={{ fontSize: 15, fontWeight: 500 }}>{text}</span>
     </div>
   );
 }
 
 function Column({ children }: { children: ReactNode }) {
-  return <div className="scroll"><div style={{ maxWidth: 560, margin: "0 0 0 max(0px, calc((100% - 880px) / 2))", padding: "24px 32px", display: "flex", flexDirection: "column", alignItems: "center" }}>{children}</div></div>;
+  return <div className="scroll"><div style={{ maxWidth: 560, margin: "0 auto", padding: "12px 20px 24px", display: "flex", flexDirection: "column", alignItems: "center" }}>{children}</div></div>;
 }
 
 /** Plain-language view of what the last connection attempt found. Helps when two devices can't reach each other. */
@@ -33,7 +33,7 @@ export function ConnectionReport() {
   return (
     <div style={{ width: "100%" }}>
       <button style={{ color: "var(--accent-bright)", fontSize: 12, padding: "6px 0" }} onClick={() => setOpen(!open)}>{open ? "Hide connection details" : "Connection details"}</button>
-      {open && <div className="mono" style={{ fontSize: 12, color: "var(--muted)", background: "var(--surface)", borderRadius: 2, padding: 10, whiteSpace: "pre-wrap" }}>{r}</div>}
+      {open && <div className="mono" style={{ fontSize: 12, color: "var(--muted)", background: "var(--surface)", borderRadius: 8, padding: 10, whiteSpace: "pre-wrap" }}>{r}</div>}
     </div>
   );
 }
@@ -56,10 +56,10 @@ export function CreateRoomScreen({ back }: ScreenProps) {
   return (
     <Backdrop style={4}>
       <ScreenHeader title="New room" onBack={back} />
-      <div className="scroll"><div style={{ maxWidth: 560, margin: "0 0 0 max(0px, calc((100% - 880px) / 2))", padding: "24px 32px" }}>
+      <div className="scroll"><div style={{ maxWidth: 560, margin: "0 auto", padding: "12px 20px" }}>
         <HeroCard>
           <div className="hstack" style={{ padding: 18, gap: 14 }}>
-            <div style={{ width: 52, height: 52, borderRadius: 2, display: "grid", placeItems: "center", background: "var(--accent)", boxShadow: "0 0 0 1px var(--border-strong)" }}><Icon name="mic" size={24} color="var(--neon)" /></div>
+            <div style={{ width: 52, height: 52, borderRadius: "50%", display: "grid", placeItems: "center", background: "linear-gradient(180deg, var(--grad-top), var(--grad-bottom))", boxShadow: "0 0 0 1px rgb(182 144 255 / .6)" }}><Icon name="mic" size={24} color="var(--neon)" /></div>
             <div><div className="display" style={{ fontSize: 20, color: "#fff" }}>Start talking</div><div style={{ color: "rgb(255 255 255 / .72)", fontSize: 13 }}>Name it, and invite people with a QR code.</div></div>
           </div>
         </HeroCard>
@@ -251,7 +251,7 @@ export function JoinScreen({ nav, route, back }: ScreenProps) {
           <div style={{ height: 8 }} />
           <div className="hstack g8"><Button small kind="secondary" icon="copy" text="Paste" onClick={async () => setText(await readClipboard())} /></div>
           {isOffer && preview && (
-            <div style={{ width: "100%", marginTop: 16, borderRadius: 4, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 16 }}>
+            <div style={{ width: "100%", marginTop: 16, borderRadius: 14, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 16 }}>
               <Tiny>{str(parsed!, "p") === "dm" ? "Friend invite" : str(parsed!, "p") === "sync" ? "Your other device" : "Room"}</Tiny>
               <div style={{ fontSize: 18, fontWeight: 600, marginTop: 4 }}>{str(preview, "t") || "Someone"}</div>
               {str(parsed!, "p") !== "dm" && str(parsed!, "p") !== "sync" && <Muted>Hosted by {str(preview, "h")} · {int(preview, "n")} here{bool(preview, "l") ? " · locked" : ""}</Muted>}

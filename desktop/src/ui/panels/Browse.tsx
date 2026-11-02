@@ -106,11 +106,11 @@ export function BrowsePanel() {
         {b.url && (
           <div className="hstack g8" style={{ position: "absolute", right: 10, bottom: 10 }}>
             {[[barOpen ? "collapse" : "expand", () => setBarOpen(!barOpen)], ["external", () => { native.openUrl(b.url!); }]].map(([ic, act]) => (
-              <button key={ic as string} onClick={act as () => void} style={{ width: 40, height: 40, borderRadius: "50%", display: "grid", placeItems: "center", background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)" }}><Icon name={ic as string} size={18} /></button>
+              <button key={ic as string} onClick={act as () => void} style={{ width: 40, height: 40, borderRadius: "50%", display: "grid", placeItems: "center", background: "rgb(17 11 28 / .92)", boxShadow: "inset 0 0 0 1px var(--border)" }}><Icon name={ic as string} size={18} /></button>
             ))}
           </div>
         )}
-        {loading && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "var(--surface2)", backgroundSize: "40% 100%", animation: "load 1s linear infinite" }} />}
+        {loading && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg, transparent, var(--accent-bright), transparent)", backgroundSize: "40% 100%", animation: "load 1s linear infinite" }} />}
         {loadError && b.url && (
           <div style={{ position: "absolute", inset: 0, background: "var(--bg)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28, textAlign: "center" }}>
             <Icon name="globe" size={32} color="var(--faint)" />
@@ -126,7 +126,7 @@ export function BrowsePanel() {
             <Muted>One person drives, everybody follows the same page. Each device loads the page itself, so your logins stay on your computer.</Muted>
             <div style={{ height: 16 }} /><Tiny>Quick start</Tiny><div style={{ height: 8 }} />
             {[["Wikipedia", "https://wikipedia.org"], ["DuckDuckGo", "https://duckduckgo.com"], ["OpenStreetMap", "https://openstreetmap.org"], ["Hacker News", "https://news.ycombinator.com"]].map(([n, u]) => (
-              <button key={n} className="hstack g12" onClick={() => go(u)} style={{ width: "100%", textAlign: "left", margin: "4px 0", borderRadius: 4, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 14 }}>
+              <button key={n} className="hstack g12" onClick={() => go(u)} style={{ width: "100%", textAlign: "left", margin: "4px 0", borderRadius: 12, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 14 }}>
                 <Icon name="globe" size={20} color="var(--accent-bright)" />
                 <div className="grow"><div style={{ fontSize: 15, fontWeight: 500 }}>{n}</div><Muted size={12}>{u.replace("https://", "")}</Muted></div>
                 <Icon name="chevron-right" size={16} color="var(--faint)" />

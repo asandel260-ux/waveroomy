@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { core } from "../../app/instance";
 import type { Nav } from "../nav";
 import { useFlow } from "../hooks";
-import { Avatar, Backdrop, Button, Chip, ConfirmDialog, EmptyState, GroupAvatar, PageHead, Icon, IconButton, Menu, MenuEntry, Muted, Row2, SectionTitle, Sheet, Field, Tiny, Spinner } from "../components/kit";
+import { Avatar, Backdrop, Button, Chip, ConfirmDialog, EmptyState, GroupAvatar, HeroCard, Icon, IconButton, Menu, MenuEntry, Muted, NeonWave, Row2, SectionTitle, Sheet, Field, Tiny, Spinner } from "../components/kit";
 import { NearbyRoom, SavedRoom, avatarFrom, defaultAvatar } from "../../core/models";
 import { timeAgo } from "../../core/util";
 import { SAVED } from "../../room/dmhub";
@@ -48,15 +48,26 @@ function RoomsTab({ nav }: { nav: Nav }) {
   return (
     <div className="scroll">
       <div className="col" style={{ paddingBottom: 24 }}>
-        <PageHead label="Voice rooms" title="Rooms" text="Open a room, or connect to one with a code or on the same Wi-Fi. Everyone in it can speak.">
-          <Button text="Join" icon="scan" kind="secondary" onClick={() => nav.push({ t: "join", code: "" })} />
-          <Button text="New room" icon="plus" onClick={() => nav.push({ t: "create" })} />
-        </PageHead>
+        <div style={{ padding: "20px 16px 0" }}>
+          <h1 className="title-xl" style={{ paddingLeft: 4 }}>Rooms</h1>
+          <div style={{ height: 12 }} />
+          <HeroCard>
+            <div style={{ padding: 20 }}>
+              <div className="display" style={{ fontSize: 24, color: "#fff" }}>Talk. Just talk.</div>
+              <div style={{ color: "rgb(255 255 255 / .72)", fontSize: 14, lineHeight: "20px", marginTop: 4 }}>Start a room, or connect to one with a code or on the same Wi-Fi.</div>
+              <div style={{ padding: "6px 0" }}><NeonWave height={56} amplitude={16} stroke={2.5} /></div>
+              <div className="hstack g10">
+                <div className="grow"><Button block text="New room" icon="plus" onClick={() => nav.push({ t: "create" })} /></div>
+                <div className="grow"><Button block text="Join" icon="scan" kind="secondary" onClick={() => nav.push({ t: "join", code: "" })} /></div>
+              </div>
+            </div>
+          </HeroCard>
+        </div>
 
         {settings.nearby && <>
           <SectionTitle>Nearby · same network</SectionTitle>
           {nearby.length === 0 ? (
-            <div className="hstack g10" style={{ padding: "8px 32px" }}><Icon name="wifi" size={18} color="var(--faint)" /><Muted>Listening for rooms on this Wi-Fi… none yet.</Muted></div>
+            <div className="hstack g10" style={{ padding: "6px 20px" }}><Icon name="wifi" size={18} color="var(--faint)" /><Muted>Listening for rooms on this Wi-Fi… none yet.</Muted></div>
           ) : nearby.map((r) => <NearbyRow key={r.roomId + r.ip} r={r} busy={joining === r.roomId + r.ip} onJoin={() => joinNearby(r)} />)}
         </>}
 
@@ -65,7 +76,7 @@ function RoomsTab({ nav }: { nav: Nav }) {
           <EmptyState icon="waveform" title="No rooms yet" text="Rooms you start are remembered here, with their chat and blackboard, so you can open them again." />
         ) : saved.map((r) => (
           <div key={r.meta.id} className="listrow click" style={{ cursor: "pointer", paddingRight: 8 }} onClick={() => setRestart(r)} onContextMenu={(e) => { e.preventDefault(); setMenu({ r, x: e.clientX, y: e.clientY }); }}>
-            <div className="pill-orb" style={{ boxShadow: "inset 0 0 0 1px var(--border-strong)" }}><Icon name={r.meta.unlisted ? "lock" : "waveform"} size={18} /></div>
+            <div className="pill-orb" style={{ background: "linear-gradient(135deg, var(--accent-30), var(--surface2))", boxShadow: "inset 0 0 0 1px var(--border)" }}><Icon name={r.meta.unlisted ? "lock" : "waveform"} size={20} color="var(--accent-bright)" /></div>
             <div className="grow">
               <div className="ellipsis" style={{ fontSize: 16, fontWeight: 500 }}>{r.meta.title}</div>
               <Muted size={12}>{r.totalJoins} joins · peak {r.peak} · {timeAgo(r.lastActiveAt)}</Muted>
@@ -90,7 +101,7 @@ function RoomsTab({ nav }: { nav: Nav }) {
 function NearbyRow({ r, busy, onJoin }: { r: NearbyRoom; busy: boolean; onJoin: () => void }) {
   return (
     <button className="listrow" disabled={busy} onClick={onJoin}>
-      <div className="pill-orb" style={{ background: "var(--surface2)", boxShadow: "inset 0 0 0 1px var(--ok)" }}><Icon name="wifi" size={18} color="var(--ok)" /></div>
+      <div className="pill-orb" style={{ background: "linear-gradient(135deg, var(--accent-30), rgb(82 255 31 / .14))", boxShadow: "inset 0 0 0 1px rgb(82 255 31 / .35)" }}><Icon name="wifi" size={20} color="var(--neon)" /></div>
       <div className="grow">
         <div className="hstack g6"><span className="ellipsis" style={{ fontSize: 16, fontWeight: 500 }}>{r.title}</span>{r.locked && <Icon name="lock" size={13} color="var(--faint)" />}</div>
         <Muted size={12}>{r.hostName} · {r.count} here{r.topic ? ` · ${r.topic}` : ""}</Muted>
@@ -114,16 +125,17 @@ function MessagesTab({ nav }: { nav: Nav }) {
 
   return (
     <div className="stack" style={{ flex: 1, minHeight: 0 }}>
-      <PageHead label="Conversations" title="Messages">
-        <Button small kind="secondary" icon="users" text="New group" onClick={() => nav.push({ t: "newGroup" })} />
-        <Button small icon="user-plus" text="Add" onClick={() => setSheet(true)} />
-      </PageHead>
+      <div className="col hstack" style={{ padding: "20px 8px 0 20px" }}>
+        <h1 className="title-xl grow">Messages</h1>
+        <IconButton icon="users" color="var(--muted)" onClick={() => nav.push({ t: "newGroup" })} title="New group" />
+        <IconButton icon="user-plus" color="var(--muted)" onClick={() => setSheet(true)} title="Add someone" />
+      </div>
       <div className="scroll">
         <div className="col">
           <FriendRequests />
           <NearbyPeople nav={nav} />
           <button className="listrow" onClick={() => nav.push({ t: "chat", uid: SAVED })}>
-            <div style={{ width: 48, height: 48, borderRadius: 2, display: "grid", placeItems: "center", background: "var(--accent)", boxShadow: "0 0 0 1px var(--border-strong)" }}><Icon name="bookmark" size={22} color="#fff" /></div>
+            <div style={{ width: 48, height: 48, borderRadius: "50%", display: "grid", placeItems: "center", background: "linear-gradient(180deg, var(--grad-top), var(--grad-bottom))", boxShadow: "0 0 0 1px rgb(182 144 255 / .6)" }}><Icon name="bookmark" size={22} color="#fff" /></div>
             <div className="grow"><div style={{ fontSize: 16, fontWeight: 500 }}>Saved messages</div><Muted><span className="ellipsis" style={{ display: "block" }}>{lastSaved ? core.dmHub.preview(lastSaved) : "Notes, links and files for yourself"}</span></Muted></div>
           </button>
           {list.length === 0 && (
@@ -223,7 +235,7 @@ export function NearbyPeople({ nav, compact }: { nav: Nav; compact?: boolean }) 
   const [busy, setBusy] = useState<string | null>(null);
   if (!settings.nearby) return null;
   const list = people.filter((p) => p.uid !== core.profile.uid);
-  if (list.length === 0 && compact) return <div className="hstack g10" style={{ padding: "8px 32px" }}><Icon name="wifi" size={18} color="var(--faint)" /><Muted>Looking for people on this Wi-Fi… make sure both devices are on the same network.</Muted></div>;
+  if (list.length === 0 && compact) return <div className="hstack g10" style={{ padding: "6px 20px" }}><Icon name="wifi" size={18} color="var(--faint)" /><Muted>Looking for people on this Wi-Fi… make sure both devices are on the same network.</Muted></div>;
   if (list.length === 0) return null;
   return (
     <>
@@ -257,19 +269,21 @@ function YouTab({ nav }: { nav: Nav }) {
   return (
     <div className="scroll">
       <div className="col">
-        <button style={{ display: "block", width: "100%", textAlign: "left" }} onClick={() => nav.push({ t: "editProfile" })}>
-          <div className="pagehead-w"><div className="pagehead" style={{ alignItems: "center" }}>
-            <div className="l hstack g20">
-              {p && <Avatar avatar={p.avatar} size={72} mine />}
-              <div style={{ minWidth: 0 }}>
-                <Tiny>You</Tiny>
-                <h1 className="ellipsis" style={{ fontSize: 40, marginTop: 8 }}>{p?.displayName}</h1>
-                <div className="mono" style={{ color: "var(--muted)", fontSize: 13, marginTop: 8 }}>@{p?.username}</div>
+        <div style={{ padding: 16 }}>
+          <button style={{ display: "block", width: "100%", textAlign: "left" }} onClick={() => nav.push({ t: "editProfile" })}>
+            <HeroCard>
+              <div className="hstack g16" style={{ padding: "22px 16px 0 20px" }}>
+                {p && <Avatar avatar={p.avatar} size={68} mine />}
+                <div className="grow">
+                  <div className="display ellipsis" style={{ fontSize: 24 }}>{p?.displayName}</div>
+                  <div style={{ color: "var(--neon)", fontSize: 13, fontWeight: 500 }}>@{p?.username}</div>
+                </div>
+                <Icon name="chevron-right" size={20} color="rgb(242 239 249 / .6)" />
               </div>
-            </div>
-            <div className="r"><Icon name="chevron-right" size={20} color="var(--faint)" /></div>
-          </div></div>
-        </button>
+              <NeonWave height={46} amplitude={12} stroke={3} />
+            </HeroCard>
+          </button>
+        </div>
         <Row2 icon="pencil" title="Edit profile" onClick={() => nav.push({ t: "editProfile" })} />
         <Row2 icon="users" title="People" subtitle="Following, followers, blocked" onClick={() => nav.push({ t: "people" })} />
         <Row2 icon="shield-alert" title="Moderation desk" subtitle={open > 0 ? `${open} open report(s)` : "Reports and audit trail for your rooms"} onClick={() => nav.push({ t: "moderation" })} />

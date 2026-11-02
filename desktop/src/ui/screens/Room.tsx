@@ -16,9 +16,9 @@ interface Floating { id: number; emoji: string; name: string; x: number }
 
 function TabChip({ label, icon, on, live, onClick }: { label: string; icon: string; on: boolean; live: boolean; onClick: () => void }) {
   return (
-    <button className="hstack g6" onClick={onClick} style={{ borderRadius: 2, padding: "8px 12px", flex: "none", background: on ? "var(--text)" : "transparent", boxShadow: on ? "none" : "inset 0 0 0 1px var(--border)" }}>
-      <Icon name={icon} size={15} color={on ? "var(--bg)" : "var(--muted)"} />
-      <span style={{ color: on ? "var(--bg)" : "var(--muted)", fontSize: 12, fontWeight: 600 }}>{label}</span>
+    <button className="hstack g6" onClick={onClick} style={{ borderRadius: 50, padding: "7px 12px", flex: "none", background: on ? "linear-gradient(180deg, var(--grad-top), var(--grad-bottom))" : "transparent", boxShadow: `inset 0 0 0 1px ${on ? "rgb(182 144 255 / .6)" : "var(--border)"}` }}>
+      <Icon name={icon} size={15} color={on ? "var(--neon)" : "var(--muted)"} />
+      <span style={{ color: on ? "#fff" : "var(--muted)", fontSize: 12, fontWeight: 500 }}>{label}</span>
       {live && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--neon)" }} />}
     </button>
   );
@@ -26,11 +26,11 @@ function TabChip({ label, icon, on, live, onClick }: { label: string; icon: stri
 
 function CtlButton({ icon, onClick, on, danger, badge = 0, title }: { icon: string; onClick: () => void; on?: boolean; danger?: boolean; badge?: number; title: string }) {
   return (
-    <button onClick={onClick} title={title} style={{ position: "relative", width: 44, height: 44, borderRadius: 2, display: "grid", placeItems: "center", flex: "none",
-      background: danger ? "transparent" : on ? "var(--accent)" : "transparent",
-      boxShadow: on ? "none" : `inset 0 0 0 1px ${danger ? "var(--danger)" : "var(--border-strong)"}` }}>
-      <Icon name={icon} size={20} color={danger ? "var(--danger)" : on ? "var(--on-accent)" : "var(--text)"} />
-      {badge > 0 && <span style={{ position: "absolute", top: 3, right: 3, width: 17, height: 17, borderRadius: 2, background: "var(--accent)", color: "var(--on-accent)", fontSize: 9, fontWeight: 700, display: "grid", placeItems: "center" }}>{badge > 9 ? "9+" : badge}</span>}
+    <button onClick={onClick} title={title} style={{ position: "relative", width: 50, height: 50, borderRadius: "50%", display: "grid", placeItems: "center", flex: "none",
+      background: danger ? "var(--danger-soft)" : on ? "linear-gradient(180deg, var(--grad-top), var(--grad-bottom))" : "linear-gradient(180deg, var(--surface3), var(--surface2))",
+      boxShadow: `inset 0 0 0 1px ${on ? "rgb(82 255 31 / .8)" : danger ? "rgb(255 90 90 / .4)" : "var(--border)"}` }}>
+      <Icon name={icon} size={21} color={danger ? "var(--danger)" : on ? "var(--neon)" : "var(--text)"} />
+      {badge > 0 && <span style={{ position: "absolute", top: 3, right: 3, width: 17, height: 17, borderRadius: "50%", background: "var(--neon)", color: "#052200", fontSize: 9, fontWeight: 700, display: "grid", placeItems: "center" }}>{badge > 9 ? "9+" : badge}</span>}
     </button>
   );
 }
@@ -45,12 +45,13 @@ function MicButton({ muted, ptt }: { muted: boolean; ptt: boolean }) {
     ? { onMouseDown: unmute, onMouseUp: () => session.setMuted(true), onMouseLeave: () => { if (!session.me?.muted) session.setMuted(true); } }
     : { onClick: () => (muted ? unmute() : session.setMuted(true)) };
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch", width: d, flex: "none", gap: 6 }}>
-      <button {...handlers} title={ptt ? "Hold to talk" : muted ? "Unmute" : "Mute"} style={{ width: d, height: d, borderRadius: 2, display: "grid", placeItems: "center",
-        background: muted ? "transparent" : "var(--text)", boxShadow: muted ? "inset 0 0 0 2px var(--text)" : "none", transition: "background .12s" }}>
-        <Icon name={muted ? "mic-off" : "mic"} size={30} color={muted ? "var(--text)" : "var(--bg)"} />
+    <div style={{ position: "relative", width: d + 16, height: d + 16, display: "grid", placeItems: "center", flex: "none" }}>
+      {muted ? <span className="halo" style={{ position: "absolute", width: d + 8, height: d + 8, borderRadius: "50%", border: "2px solid rgb(182 144 255 / .5)" }} />
+        : <span style={{ position: "absolute", width: d + 14, height: d + 14, borderRadius: "50%", background: "rgb(82 255 31 / .45)", transform: `scale(${0.92 + ring * 0.12})`, opacity: 0.25 + ring * 0.6, transition: "transform .08s, opacity .08s" }} />}
+      <button {...handlers} title={ptt ? "Hold to talk" : muted ? "Unmute" : "Mute"} style={{ position: "relative", width: d, height: d, borderRadius: "50%", display: "grid", placeItems: "center",
+        background: muted ? "linear-gradient(180deg, var(--surface3), var(--surface2))" : "linear-gradient(180deg, #7dff55, var(--neon))", boxShadow: `inset 0 0 0 3px ${muted ? "var(--accent-bright)" : "rgb(150 255 110)"}` }}>
+        <Icon name={muted ? "mic-off" : "mic"} size={32} color={muted ? "var(--accent-bright)" : "#052200"} />
       </button>
-      <div style={{ height: 3, background: "var(--border)" }}><div style={{ height: "100%", width: muted ? 0 : `${Math.round(ring * 100)}%`, background: "var(--ok)", transition: "width .08s linear" }} /></div>
     </div>
   );
 }
@@ -58,16 +59,17 @@ function MicButton({ muted, ptt }: { muted: boolean; ptt: boolean }) {
 function StageTile({ p, speaking, online, onClick }: { p: Participant; speaking: boolean; online: boolean; onClick: () => void }) {
   const mine = p.sid === core.session.mySid;
   return (
-    <button onClick={onClick} style={{ width: 108, padding: "4px 0", borderRadius: 4, display: "flex", flexDirection: "column", alignItems: "center" }}>
+    <button onClick={onClick} style={{ width: 108, padding: "4px 0", borderRadius: 18, display: "flex", flexDirection: "column", alignItems: "center" }}>
       <div style={{ position: "relative", width: 92, height: 92, display: "grid", placeItems: "center" }}>
-        <div style={{ width: 82, height: 82, borderRadius: "50%", padding: 4, display: "grid", placeItems: "center", boxShadow: speaking ? "0 0 0 3px var(--ok)" : "0 0 0 1px var(--border-strong)", transition: "box-shadow .12s" }}>
+        {speaking && <span className="glow" style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "radial-gradient(circle, rgb(82 255 31 / .4), transparent 70%)" }} />}
+        <div style={{ width: 82, height: 82, borderRadius: "50%", padding: 4, display: "grid", placeItems: "center", boxShadow: speaking ? "0 0 0 3px var(--neon)" : "0 0 0 1.5px rgb(182 144 255 / .5)" }}>
           <div style={{ opacity: online ? 1 : 0.55 }}><Avatar avatar={p.avatar} size={74} uid={p.uid} mine={mine} /></div>
         </div>
         {p.muted && <span style={{ position: "absolute", right: 4, bottom: 4, width: 26, height: 26, borderRadius: "50%", background: "var(--surface3)", boxShadow: "inset 0 0 0 1px rgb(255 90 90 / .5)", display: "grid", placeItems: "center" }}><Icon name="mic-off" size={14} color="var(--danger)" /></span>}
-        {p.sharing && <span style={{ position: "absolute", right: 4, top: 4, width: 24, height: 24, borderRadius: 2, background: "var(--accent)", display: "grid", placeItems: "center" }}><Icon name="monitor" size={13} color="var(--on-accent)" /></span>}
+        {p.sharing && <span style={{ position: "absolute", right: 4, top: 4, width: 24, height: 24, borderRadius: "50%", background: "linear-gradient(180deg, var(--grad-top), var(--grad-bottom))", display: "grid", placeItems: "center" }}><Icon name="monitor" size={13} color="var(--neon)" /></span>}
         {!online && <span style={{ position: "absolute" }}><Spinner size={24} /></span>}
       </div>
-      <div className="hstack g4" style={{ marginTop: 4, borderRadius: 2, padding: "3px 10px", background: speaking ? "var(--text)" : "var(--surface2)", color: speaking ? "var(--bg)" : "var(--text)", maxWidth: "100%" }}>
+      <div className="hstack g4" style={{ marginTop: 4, borderRadius: 50, padding: "3px 10px", background: speaking ? "rgb(124 58 237 / .35)" : "rgb(33 23 58 / .7)", maxWidth: "100%" }}>
         {p.role === "host" && <Icon name="crown" size={12} color="var(--warn)" />}
         <span className="ellipsis" style={{ fontSize: 13, fontWeight: 500 }}>{mine ? "You" : p.displayName}</span>
       </div>
@@ -149,12 +151,13 @@ export function RoomScreen({ nav }: ScreenProps) {
   if (phase === "joining") {
     return (
       <Backdrop style={1}>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 64px", maxWidth: 720 }}>
-          <Tiny>Connecting</Tiny>
-          <div className="display" style={{ fontSize: 56, margin: "12px 0 16px", letterSpacing: "-.045em" }}>Joining room…</div>
-          <Muted>Setting up direct connections with everyone in the room.</Muted>
-          <div style={{ marginTop: 32, height: 2, background: "var(--border)", maxWidth: 360, overflow: "hidden" }}><div style={{ height: "100%", width: "40%", background: "var(--accent)", animation: "indet 1.1s var(--ease) infinite" }} /></div>
-          <div style={{ marginTop: 32 }}><Button small kind="secondary" text="Cancel" onClick={() => session.leave()} /></div>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, textAlign: "center" }}>
+          <div style={{ width: 84, height: 84, borderRadius: "50%", display: "grid", placeItems: "center", background: "linear-gradient(180deg, var(--grad-top), var(--grad-bottom))", boxShadow: "0 0 0 1.5px rgb(182 144 255 / .6)" }}><Spinner size={40} /></div>
+          <div className="display" style={{ fontSize: 26, marginTop: 22 }}>Joining room…</div>
+          <div style={{ marginTop: 6 }}><Muted>Setting up direct connections</Muted></div>
+          <div style={{ width: 360, maxWidth: "100%", padding: "8px 0" }}><NeonWave height={44} amplitude={10} stroke={2.5} /></div>
+          <div style={{ height: 16 }} />
+          <Button small kind="secondary" text="Cancel" onClick={() => session.leave()} />
         </div>
       </Backdrop>
     );
@@ -172,7 +175,7 @@ export function RoomScreen({ nav }: ScreenProps) {
     default: main = (
       <div className="scroll"><div style={{ maxWidth: 980, margin: "0 auto", padding: "14px 16px" }}>
         {sharer && (
-          <button className="hstack g12" onClick={() => setMode("screen")} style={{ width: "100%", textAlign: "left", borderRadius: 4, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 14, marginBottom: 14 }}>
+          <button className="hstack g12" onClick={() => setMode("screen")} style={{ width: "100%", textAlign: "left", borderRadius: 14, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 14, marginBottom: 14 }}>
             <Icon name="monitor" size={22} color="var(--accent-bright)" />
             <div className="grow"><div style={{ fontSize: 14, fontWeight: 500 }}>{iShare ? "You are" : sharer.displayName + " is"} sharing a screen</div><Muted size={12}>{sharer.sharing?.res}p · {sharer.sharing?.fps} fps</Muted></div>
             <Chip text={iShare ? "Preview" : "Watch"} selected />
@@ -234,8 +237,8 @@ export function RoomScreen({ nav }: ScreenProps) {
             {main}
             {floats.map((f) => <FloatingReaction key={f.id} f={f} onDone={() => setFloats((x) => x.filter((y) => y.id !== f.id))} />)}
           </div>
-          <div style={{ display: "flex", justifyContent: "center", padding: "16px", borderTop: "1px solid var(--border)" }}>
-            <div className="hstack" style={{ gap: 12, alignItems: "center" }}>
+          <div style={{ display: "flex", justifyContent: "center", padding: "10px 14px" }}>
+            <div className="hstack" style={{ gap: 14, borderRadius: 36, padding: "8px 14px", background: "linear-gradient(180deg, var(--surface3), var(--surface))", boxShadow: "inset 0 0 0 1px rgb(182 144 255 / .35)" }}>
               <CtlButton icon={deaf ? "volume-x" : "headphones"} title={deaf ? "Undeafen" : "Deafen"} danger={deaf} onClick={() => session.toggleDeafen()} />
               <CtlButton icon="smile-plus" title="React" onClick={() => setReactOpen(true)} />
               <MicButton muted={me?.muted !== false} ptt={settings.ptt} />
@@ -252,7 +255,7 @@ export function RoomScreen({ nav }: ScreenProps) {
       {reactOpen && (
         <Sheet title="React" center onDismiss={() => setReactOpen(false)}>
           <div className="hstack" style={{ flexWrap: "wrap", gap: 10, padding: "0 16px 8px", justifyContent: "center" }}>
-            {REACTIONS.map((e) => <button key={e} style={{ width: 56, height: 56, borderRadius: 2, background: "var(--surface2)", fontSize: 26 }} onClick={() => { session.react(e); setReactOpen(false); }}>{e}</button>)}
+            {REACTIONS.map((e) => <button key={e} style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--surface2)", fontSize: 26 }} onClick={() => { session.react(e); setReactOpen(false); }}>{e}</button>)}
           </div>
         </Sheet>
       )}

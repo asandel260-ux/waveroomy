@@ -12,7 +12,7 @@ export function ModerationScreen({ back }: ScreenProps) {
     <Backdrop style={2}>
       <ScreenHeader title="Moderation desk" onBack={back} subtitle="For rooms you host" />
       <div style={{ padding: "6px 16px" }}><Segmented options={[["reports", "Reports"], ["audit", "Audit"], ["stats", "Activity"]]} selected={tab} onSelect={setTab} /></div>
-      <div className="scroll"><div style={{ maxWidth: 760, margin: "0 0 0 max(0px, calc((100% - 880px) / 2))" }}>
+      <div className="scroll"><div style={{ maxWidth: 760, margin: "0 auto" }}>
         {tab === "reports" ? <ReportsTab /> : tab === "audit" ? <AuditTab /> : <StatsTab />}
       </div></div>
     </Backdrop>
@@ -34,11 +34,11 @@ function ReportsTab() {
       {list.length === 0 ? <EmptyState icon="shield-alert" title="Nothing here" text="Reports from people in rooms you host land here. There is no central moderator — you decide." /> : (
         <div className="stack g10" style={{ padding: 16 }}>
           {list.map((r) => (
-            <div key={r.id} style={{ borderRadius: 4, background: "var(--surface2)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 14 }}>
+            <div key={r.id} style={{ borderRadius: 16, background: "linear-gradient(180deg, var(--surface2), var(--surface))", boxShadow: "inset 0 0 0 1px var(--border)", padding: 14 }}>
               <div className="hstack"><span className="grow"><Tiny>{r.targetType} · {r.category}</Tiny></span><Tiny>{timeAgo(r.createdAt)}</Tiny></div>
               <div style={{ fontSize: 16, fontWeight: 600, marginTop: 4 }}>{r.targetLabel}</div>
               <Muted size={12}>in “{r.roomTitle}” · from {r.outgoing ? "you" : r.reporterName}</Muted>
-              {r.excerpt && <div style={{ marginTop: 8, background: "var(--surface2)", borderRadius: 2, padding: 10, color: "var(--muted)", fontSize: 13 }}>“{r.excerpt}”</div>}
+              {r.excerpt && <div style={{ marginTop: 8, background: "var(--surface2)", borderRadius: 8, padding: 10, color: "var(--muted)", fontSize: 13 }}>“{r.excerpt}”</div>}
               {r.details && <div style={{ marginTop: 8, fontSize: 14 }}>{r.details}</div>}
               {r.status !== "open" ? <div style={{ marginTop: 8 }}><Muted size={12}>{r.status}{r.note ? ` — ${r.note}` : ""}</Muted></div>
                 : !r.outgoing && <div className="hstack g8" style={{ marginTop: 10 }}><Button small text="Resolve" onClick={() => setResolving([r, "resolved"])} /><Button small kind="secondary" text="Dismiss" onClick={() => setResolving([r, "dismissed"])} /></div>}
@@ -70,7 +70,7 @@ function AuditTab() {
 
 function Tile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grow" style={{ borderRadius: 4, background: "var(--surface2)", boxShadow: "inset 0 0 0 1px var(--border-strong)", padding: 12 }}>
+    <div className="grow" style={{ borderRadius: 16, background: "linear-gradient(135deg, var(--accent-30), var(--surface))", boxShadow: "inset 0 0 0 1px rgb(182 144 255 / .35)", padding: 12 }}>
       <div className="display" style={{ fontSize: 26 }}>{value}</div><Tiny>{label}</Tiny>
     </div>
   );

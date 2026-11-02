@@ -4,7 +4,7 @@ import { AVATAR_EMOJIS } from "../../core/models";
 import { newProfile } from "../../core/identity";
 import { native } from "../../core/native";
 import { parseJson } from "../../core/util";
-import { Avatar, Backdrop, Button, Field, Icon, Muted, Tiny } from "../components/kit";
+import { Avatar, Backdrop, Button, Field, HeroCard, Icon, Muted, NeonWave, Tiny } from "../components/kit";
 import { hsl } from "../theme";
 
 export const cleanHandle = (s: string) => s.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 20);
@@ -37,32 +37,31 @@ export function Onboarding() {
   return (
     <Backdrop>
       <div className="scroll" style={{ position: "relative" }}>
-        <div style={{ maxWidth: 1040, margin: "0 auto", padding: "72px 32px 56px", display: "grid", gridTemplateColumns: "repeat(12, 1fr)", columnGap: 24, rowGap: 48 }}>
-          <div style={{ gridColumn: "1 / span 5" }}>
-            <Tiny>Step 1 of 1 · Identity</Tiny>
-            <h1 className="display" style={{ fontSize: 56, margin: "16px 0 0", letterSpacing: "-.05em" }}>Create your identity.</h1>
-            <p className="muted" style={{ fontSize: 15, lineHeight: "22px", margin: "20px 0 0", maxWidth: 340 }}>Your identity is a key that lives only on this computer. There is no account, no email and no server to sign in to.</p>
-            <div style={{ borderTop: "2px solid var(--text)", marginTop: 40 }}>
-              {[["Back up", "Export it from Settings; the same file restores it on your phone."], ["Private", "Voice, messages and files go device to device."]].map(([t, d]) => (
-                <div key={t} style={{ padding: "14px 0", borderBottom: "1px solid var(--border)" }}>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>{t}</div><Muted size={13}>{d}</Muted>
-                </div>
-              ))}
+        <div style={{ maxWidth: 520, margin: "0 auto", padding: "32px 24px 40px" }}>
+          <HeroCard>
+            <div style={{ padding: 22 }}>
+              <div className="hstack g10">
+                <div style={{ width: 38, height: 38, borderRadius: "50%", display: "grid", placeItems: "center", background: "linear-gradient(180deg, var(--grad-top), var(--grad-bottom))", boxShadow: "0 0 0 1px rgb(182 144 255 / .6)" }}><Icon name="waveform" size={20} color="#fff" /></div>
+                <span className="display" style={{ fontSize: 22 }}>HoMit</span>
+              </div>
+              <div className="display" style={{ fontSize: 34, lineHeight: "38px", marginTop: 22 }}>Voice rooms<br />with no server.</div>
+              <NeonWave height={40} amplitude={12} stroke={3} />
+              <Muted size={14}>Talk, chat, share your screen, watch together and draw — device to device. Your identity is a key that lives only on this computer.</Muted>
             </div>
-          </div>
-          <div style={{ gridColumn: "7 / span 6" }}>
-          <div className="hstack g16">
+          </HeroCard>
+
+          <div className="hstack g16" style={{ marginTop: 32 }}>
             <Avatar avatar={{ emoji, hue }} size={64} />
             <div>
               <Tiny>Avatar</Tiny>
               <div className="hstack g8" style={{ marginTop: 8 }}>
-                {HUES.map((h) => <button key={h} onClick={() => setHue(h)} style={{ width: 22, height: 22, borderRadius: "50%", background: hsl(h, 0.55, 0.42), boxShadow: h === hue ? "0 0 0 2px var(--text)" : "none" }} />)}
+                {HUES.map((h) => <button key={h} onClick={() => setHue(h)} style={{ width: 22, height: 22, borderRadius: "50%", background: hsl(h, 0.55, 0.42), boxShadow: h === hue ? "0 0 0 2px var(--neon)" : "none" }} />)}
               </div>
             </div>
           </div>
           <div className="hstack wrap g8" style={{ marginTop: 14 }}>
             {AVATAR_EMOJIS.map((e) => (
-              <button key={e} onClick={() => setEmoji(e)} style={{ width: 42, height: 42, borderRadius: "50%", fontSize: 20, background: e === emoji ? "var(--accent-soft)" : "var(--surface2)", boxShadow: `inset 0 0 0 ${e === emoji ? 1.5 : 1}px ${e === emoji ? "var(--text)" : "var(--border)"}` }}>{e}</button>
+              <button key={e} onClick={() => setEmoji(e)} style={{ width: 42, height: 42, borderRadius: "50%", fontSize: 20, background: e === emoji ? "var(--accent-soft)" : "var(--surface2)", boxShadow: `inset 0 0 0 ${e === emoji ? 1.5 : 1}px ${e === emoji ? "var(--neon)" : "var(--border)"}` }}>{e}</button>
             ))}
           </div>
           <Field style={{ marginTop: 24 }} label="Display name" placeholder="Ada Lovelace" value={name} onChange={(v) => { setName(v.slice(0, 30)); if (!edited) setHandle(cleanHandle(v.replace(/ /g, ""))); }} />
@@ -70,7 +69,7 @@ export function Onboarding() {
           {error && <div style={{ color: "var(--danger)", fontSize: 13, marginTop: 10 }}>{error}</div>}
           <div style={{ marginTop: 24 }}><Button block text="Create my identity" onClick={create} /></div>
           <div style={{ marginTop: 10 }}><Button block kind="secondary" text="Restore from a backup file" onClick={restore} /></div>
-          </div>
+          <div style={{ marginTop: 20 }}><Muted size={12}>No account, no email, no server. Back up your identity from Settings to keep it if you change computers — the same backup file also works in the HoMit phone app.</Muted></div>
         </div>
       </div>
     </Backdrop>
