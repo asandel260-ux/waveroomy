@@ -6,7 +6,7 @@ function Page({ title, back, children }: { title: string; back: () => void; chil
   return (
     <Backdrop style={4}>
       <ScreenHeader title={title} onBack={back} />
-      <div className="scroll"><div style={{ maxWidth: 720, margin: "0 auto", padding: "8px 20px 32px" }}>{children}</div></div>
+      <div className="scroll"><div style={{ maxWidth: 720, margin: "0 0 0 max(0px, calc((100% - 880px) / 2))", padding: "24px 32px" }}>{children}</div></div>
     </Backdrop>
   );
 }

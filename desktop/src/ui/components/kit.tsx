@@ -43,7 +43,7 @@ export function Avatar({ avatar, size = 40, uid = "", mine = false, ring }: { av
   const inner = photo ? (
     <img src={photo} alt="" draggable={false} />
   ) : (
-    <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", fontSize: size * 0.46, background: `linear-gradient(135deg, ${hsl(avatar.hue, 0.5, 0.38)}, ${hsl(avatar.hue + 40, 0.5, 0.22)})` }}>{avatar.emoji}</div>
+    <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", fontSize: size * 0.46, background: hsl(avatar.hue, 0.3, 0.26) }}>{avatar.emoji}</div>
   );
   if (ring) return <div className="avatar ring" style={{ width: size, height: size, ["--ring" as any]: ring }}><div className="in">{inner}</div></div>;
   return <div className="avatar" style={{ width: size, height: size }}>{inner}</div>;
@@ -123,15 +123,16 @@ export function Segmented({ options, selected, onSelect }: { options: [string, s
 export function ScreenHeader({ title, onBack, subtitle, actions }: { title: string; onBack?: () => void; subtitle?: string; actions?: ReactNode }) {
   return (
     <div className="header">
-      <div className="bar">
-        {onBack ? <IconButton icon="chevron-left" onClick={onBack} title="Back" /> : <div style={{ width: 8 }} />}
-        <div className="title">
-          <h1 className="ellipsis">{title}</h1>
-          {subtitle && <Muted size={12}><span className="ellipsis" style={{ display: "block" }}>{subtitle}</span></Muted>}
+      <div className="bar" style={{ flexDirection: "column", alignItems: "stretch", gap: 12, padding: "20px 32px 24px" }}>
+        {onBack && <button className="hstack g4 tiny" onClick={onBack} style={{ alignSelf: "flex-start", marginLeft: -4 }} title="Back"><Icon name="chevron-left" size={14} />Back</button>}
+        <div className="hstack g8">
+          <div className="title" style={{ padding: 0 }}>
+            <h1 className="ellipsis">{title}</h1>
+            {subtitle && <Muted size={13}><span className="ellipsis" style={{ display: "block", marginTop: 4 }}>{subtitle}</span></Muted>}
+          </div>
+          {actions}
         </div>
-        {actions}
       </div>
-      <div className="glow" />
     </div>
   );
 }
@@ -292,22 +293,7 @@ export function ToastHost() {
 
 /* ---------------- silk background ---------------- */
 
-export function Silk({ opacity = 1 }: { opacity?: number }) {
-  return (
-    <svg className="silk" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ opacity }}>
-      <defs>
-        <linearGradient id="s1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="var(--accent-bright)" stopOpacity="0" /><stop offset=".5" stopColor="var(--accent)" stopOpacity=".30" /><stop offset="1" stopColor="var(--accent-bright)" stopOpacity=".06" /></linearGradient>
-        <linearGradient id="s2" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stopColor="var(--accent)" stopOpacity=".34" /><stop offset=".5" stopColor="var(--accent-bright)" stopOpacity=".1" /><stop offset="1" stopColor="var(--accent)" stopOpacity="0" /></linearGradient>
-        <linearGradient id="s3" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stopColor="#52FF1F" stopOpacity="0" /><stop offset=".5" stopColor="#52FF1F" stopOpacity=".1" /><stop offset="1" stopColor="var(--accent)" stopOpacity=".22" /></linearGradient>
-      </defs>
-      <path d="M-10 30 C25 0 60 60 110 24 L110 58 C60 94 25 34 -10 64 Z" fill="url(#s1)" />
-      <path d="M-10 62 C25 36 60 88 110 52 L110 74 C60 114 25 58 -10 84 Z" fill="url(#s2)" />
-      <path d="M-10 82 C25 64 60 100 110 76 L110 92 C60 112 25 90 -10 98 Z" fill="url(#s3)" />
-      <path d="M-10 62 C25 36 60 88 110 52" fill="none" stroke="#52FF1F" strokeOpacity=".22" strokeWidth=".8" vectorEffect="non-scaling-stroke" style={{ strokeWidth: 5 }} />
-      <path d="M-10 62 C25 36 60 88 110 52" fill="none" stroke="#B8FF93" strokeOpacity=".55" vectorEffect="non-scaling-stroke" style={{ strokeWidth: 1.2 }} />
-    </svg>
-  );
-}
+export function Silk(_: { opacity?: number }) { return null; }
 
 /* ---------------- rich text ---------------- */
 
@@ -401,71 +387,39 @@ export function RichText({ text, color, linkColor, size = 15 }: { text: string; 
 
 const mix = (c: string, pct: number) => `color-mix(in srgb, ${c} ${pct}%, var(--bg))`;
 
-/** The ground every full screen stands on: violet at the top fading to the base colour. style 0 silk, 1 aurora (room), 2 beams (settings), 3 contours (chat), 4 glows (forms). */
-export function Backdrop({ style = 0, children, className = "", css }: { style?: number; children?: ReactNode; className?: string; css?: React.CSSProperties }) {
-  const base = `linear-gradient(180deg, ${mix("var(--accent)", 22)}, ${mix("var(--accent)", 7)} 45%, var(--bg))`;
-  let layers = "";
-  if (style === 1) layers = `radial-gradient(circle at 15% 12%, rgb(124 58 237 / .34), transparent 70%), radial-gradient(circle at 95% 45%, rgb(82 255 31 / .075), transparent 55%), radial-gradient(circle at 50% 100%, rgb(124 58 237 / .18), transparent 65%), `;
-  else if (style === 2) layers = `linear-gradient(110deg, transparent 40%, rgb(182 144 255 / .10) 45%, transparent 52%), linear-gradient(110deg, transparent 58%, rgb(182 144 255 / .07) 62%, transparent 68%), `;
-  else if (style === 3) layers = `radial-gradient(circle at 0 0, rgb(124 58 237 / .22), transparent 70%), radial-gradient(circle at 100% 100%, rgb(82 255 31 / .05), transparent 60%), `;
-  else if (style === 4) layers = `radial-gradient(circle at 100% 10%, rgb(124 58 237 / .34), transparent 65%), radial-gradient(circle at 0 88%, rgb(82 255 31 / .07), transparent 60%), `;
+/** The ground every full screen stands on: flat, so content carries the hierarchy. */
+export function Backdrop({ children, className = "", css }: { style?: number; children?: ReactNode; className?: string; css?: React.CSSProperties }) {
   return (
-    <div className={`backdrop ${className}`} style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", background: layers + base, ...css }}>
-      {style === 0 && <Silk opacity={0.34} />}
+    <div className={`backdrop ${className}`} style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", background: "var(--bg)", ...css }}>
       {children}
     </div>
   );
 }
 
-export function NeonWave({ height = 160, amplitude = 42, stroke = 4, animated = true }: { height?: number; amplitude?: number; stroke?: number; animated?: boolean }) {
-  const ref = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const cv = ref.current;
-    if (!cv) return;
-    let raf = 0;
-    const draw = (t: number) => {
-      const dpr = window.devicePixelRatio || 1;
-      const w = cv.clientWidth, h = cv.clientHeight;
-      if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
-      const g = cv.getContext("2d")!;
-      g.setTransform(dpr, 0, 0, dpr, 0, 0);
-      g.clearRect(0, 0, w, h);
-      const phase = animated && !document.documentElement.classList.contains("no-anim") ? ((t % 4200) / 4200) * Math.PI * 2 : 1.2;
-      const cy = h / 2, amp = Math.min(amplitude, h / 2 - stroke);
-      g.beginPath();
-      for (let x = -6; x <= w + 6; x += 3) {
-        const u = x / w;
-        const env = 0.62 + 0.38 * Math.sin(u * 3 * Math.PI + phase);
-        const y = cy + amp * env * Math.sin(u * 5 * Math.PI - phase);
-        if (x === -6) g.moveTo(x, y); else g.lineTo(x, y);
-      }
-      g.lineCap = "round"; g.lineJoin = "round";
-      for (const [wm, a] of [[5, 0.1], [2.4, 0.22], [1, 1]] as const) { g.strokeStyle = `rgba(82,255,31,${a})`; g.lineWidth = stroke * wm; g.stroke(); }
-      if (animated) raf = requestAnimationFrame(draw);
-    };
-    raf = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(raf);
-  }, [amplitude, stroke, animated]);
-  return <canvas ref={ref} style={{ width: "100%", height, display: "block" }} />;
-}
+export function NeonWave(_: { height?: number; amplitude?: number; stroke?: number; animated?: boolean }) { return null; }
 
-export function HeroCard({ children, radius = 22, style }: { children: ReactNode; radius?: number; style?: React.CSSProperties }) {
-  return (
-    <div style={{ position: "relative", borderRadius: radius, overflow: "hidden", background: "linear-gradient(180deg, var(--hero-a), var(--hero-b), var(--hero-c))", boxShadow: "0 0 0 1px rgb(182 144 255 / .45)", ...style }}>
-      <Silk />
-      <div style={{ position: "relative" }}>{children}</div>
-    </div>
-  );
+export function HeroCard({ children, style }: { children: ReactNode; radius?: number; style?: React.CSSProperties }) {
+  return <div style={{ borderTop: "2px solid var(--text)", borderBottom: "1px solid var(--border)", ...style }}>{children}</div>;
 }
 
 export function GroupAvatar({ emoji, hue, size }: { emoji: string; hue: number; size: number }) {
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", display: "grid", placeItems: "center", flex: "none", fontSize: size * 0.5, background: `linear-gradient(135deg, ${hsl(hue, 0.55, 0.42)}, ${hsl(hue + 40, 0.5, 0.22)})`, boxShadow: "inset 0 0 0 1px var(--border)" }}>
+    <div style={{ width: size, height: size, borderRadius: 2, display: "grid", placeItems: "center", flex: "none", fontSize: size * 0.5, background: hsl(hue, 0.3, 0.26) }}>
       {emoji === "👥" ? "💬" : emoji}
     </div>
   );
 }
 
+/** The editorial header every top-level page opens with: a label, a large title, one line of explanation, actions on the right. */
+export function PageHead({ label, title, text, children }: { label: string; title: string; text?: string; children?: ReactNode }) {
+  return (
+    <div className="pagehead-w"><div className="pagehead">
+      <div className="l"><Tiny>{label}</Tiny><h1>{title}</h1>{text && <p>{text}</p>}</div>
+      {children && <div className="r">{children}</div>}
+    </div></div>
+  );
+}
+
 export function Spinner({ size = 20 }: { size?: number }) {
-  return <span style={{ width: size, height: size, borderRadius: "50%", border: "2px solid var(--accent-30)", borderTopColor: "var(--accent-bright)", display: "inline-block", animation: "spin .8s linear infinite" }} />;
+  return <span style={{ width: size, height: size, borderRadius: "50%", border: "2px solid var(--border-strong)", borderTopColor: "var(--text)", display: "inline-block", animation: "spin .8s linear infinite" }} />;
 }

@@ -20,7 +20,7 @@ function TitleBar() {
   useEffect(() => { native.win.isMaximized().then(setMax); native.win.onState(setMax); }, []);
   return (
     <div className="titlebar">
-      <div className="brand"><Icon name="waveform" size={16} color="var(--neon)" />HoMit</div>
+      <div className="brand"><Icon name="waveform" size={16} />HoMit</div>
       <div className="grow" />
       <button className="wc" onClick={() => native.win.minimize()} title="Minimize"><Icon name="minus" size={16} /></button>
       <button className="wc" onClick={() => native.win.maximize()} title={max ? "Restore" : "Maximize"}><Icon name={max ? "restore" : "square"} size={14} /></button>
@@ -51,10 +51,10 @@ function Sidebar({ route }: { route: Route }) {
       <div className="sp" />
       {phase !== "idle" && (
         <button className={`nav ${route.t === "room" ? "on" : ""}`} onClick={() => nav.push({ t: "room" })} title="Back to room">
-          <Icon name="radio" size={22} color="var(--neon)" />Live
+          <Icon name="radio" size={22} color="var(--ok)" />Live
         </button>
       )}
-      {p && <button onClick={() => nav.goHome(2)} title={p.displayName}><Avatar avatar={p.avatar} size={36} mine /></button>}
+      {p && <button onClick={() => nav.goHome(2)} title={p.displayName} style={{ height: 64, display: "grid", placeItems: "center", borderTop: "1px solid var(--border)" }}><Avatar avatar={p.avatar} size={32} mine /></button>}
     </div>
   );
 }
