@@ -78,8 +78,8 @@ export function SettingsScreen({ nav, back }: ScreenProps) {
         <SectionTitle>Appearance</SectionTitle>
         <Pad><div className="stack g12">
           <SwitchRow title="Animations" subtitle="Screen transitions, pulses and other motion. Turn off for a calmer, faster app." checked={s.animations} onChange={(v) => set({ animations: v })} />
-          <ColorPickerCard title="Buttons & accents" subtitle="Buttons, highlights, switches and sliders." value={s.accentColor} def={0xFF2E5BFF | 0} presets={ACCENT_PRESETS} onChange={(c) => set({ accentColor: c })} />
-          <ColorPickerCard title="Background" subtitle="The dark base of the app. Panels and borders follow it automatically." value={s.bgColor} def={0xFF0A0A0A | 0} presets={BG_PRESETS} onChange={(c) => set({ bgColor: c })} />
+          <ColorPickerCard title="Buttons & accents" subtitle="Buttons, highlights, switches and sliders." value={s.accentColor} def={0xFF7C3AED | 0} presets={ACCENT_PRESETS} onChange={(c) => set({ accentColor: c })} />
+          <ColorPickerCard title="Background" subtitle="The dark base of the app. Panels and borders follow it automatically." value={s.bgColor} def={0xFF0A0710 | 0} presets={BG_PRESETS} onChange={(c) => set({ bgColor: c })} />
         </div></Pad>
 
         <SectionTitle>Voice</SectionTitle>
