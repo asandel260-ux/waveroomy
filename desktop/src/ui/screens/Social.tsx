@@ -31,13 +31,13 @@ export function ProfileScreen({ nav, route, back }: ScreenProps) {
   return (
     <Backdrop style={3}>
       <ScreenHeader title="Profile" onBack={back} />
-      <div className="scroll"><div style={{ maxWidth: 520, margin: "0 auto", padding: 20, display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div className="scroll"><div style={{ maxWidth: 520, margin: "0 0 0 max(0px, calc((100% - 880px) / 2))", padding: 20, display: "flex", flexDirection: "column", alignItems: "center" }}>
         <div style={{ width: "100%" }}>
           <HeroCard>
             <div style={{ paddingTop: 24, display: "flex", flexDirection: "column", alignItems: "center" }}>
               <Avatar avatar={av ?? defaultAvatar()} size={96} uid={uid} mine={mine} />
               <div className="display" style={{ fontSize: 26, marginTop: 12 }}>{name}</div>
-              <div style={{ color: "var(--neon)", fontSize: 13, fontWeight: 500 }}>@{user}</div>
+              <div style={{ color: "var(--muted)", fontSize: 13, fontWeight: 500 }}>@{user}</div>
               <div style={{ width: "100%" }}><NeonWave height={40} amplitude={10} stroke={3} /></div>
             </div>
           </HeroCard>
@@ -81,7 +81,7 @@ export function PeopleScreen({ nav, back }: ScreenProps) {
       <ScreenHeader title="People" onBack={back} />
       <div style={{ padding: "6px 16px" }}><Segmented options={[["met", "Met"], ["following", "Following"], ["followers", "Followers"], ["blocked", "Blocked"]]} selected={tab} onSelect={setTab} /></div>
       {uids.length === 0 ? <EmptyState icon="users" title="Nobody here yet" text="People appear after you've connected with them in a room or with a QR code." /> : (
-        <div className="scroll"><div style={{ maxWidth: 720, margin: "0 auto" }}>
+        <div className="scroll"><div style={{ maxWidth: 720, margin: "0 0 0 max(0px, calc((100% - 880px) / 2))" }}>
           {uids.map((uid) => {
             const c = contacts[uid];
             const f = following.includes(uid);
@@ -127,7 +127,7 @@ export function EditProfileScreen({ back }: ScreenProps) {
   return (
     <Backdrop style={3}>
       <ScreenHeader title="Edit profile" onBack={back} />
-      <div className="scroll"><div style={{ maxWidth: 560, margin: "0 auto", padding: "12px 20px" }}>
+      <div className="scroll"><div style={{ maxWidth: 560, margin: "0 0 0 max(0px, calc((100% - 880px) / 2))", padding: "24px 32px" }}>
         <div className="hstack g16">
           <Avatar avatar={{ emoji, hue }} size={80} mine />
           <div className="stack g6">
@@ -136,10 +136,10 @@ export function EditProfileScreen({ back }: ScreenProps) {
           </div>
         </div>
         <div className="hstack" style={{ gap: 8, marginTop: 14, flexWrap: "wrap" }}>
-          {HUES.map((h) => <button key={h} style={{ width: 24, height: 24, borderRadius: "50%", background: hsl(h, 0.55, 0.42), boxShadow: h === hue ? "0 0 0 2px var(--neon)" : "none" }} onClick={() => setHue(h)} />)}
+          {HUES.map((h) => <button key={h} style={{ width: 24, height: 24, borderRadius: "50%", background: hsl(h, 0.55, 0.42), boxShadow: h === hue ? "0 0 0 2px var(--text)" : "none" }} onClick={() => setHue(h)} />)}
         </div>
         <div className="hstack" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-          {AVATAR_EMOJIS.map((e) => <button key={e} style={{ width: 40, height: 40, borderRadius: "50%", fontSize: 19, background: e === emoji ? "var(--accent-30)" : "var(--surface2)", boxShadow: `inset 0 0 0 ${e === emoji ? 1.5 : 1}px ${e === emoji ? "var(--neon)" : "var(--border)"}` }} onClick={() => setEmoji(e)}>{e}</button>)}
+          {AVATAR_EMOJIS.map((e) => <button key={e} style={{ width: 40, height: 40, borderRadius: "50%", fontSize: 19, background: e === emoji ? "var(--accent-30)" : "var(--surface2)", boxShadow: `inset 0 0 0 ${e === emoji ? 1.5 : 1}px ${e === emoji ? "var(--text)" : "var(--border)"}` }} onClick={() => setEmoji(e)}>{e}</button>)}
         </div>
         <div style={{ height: 20 }} />
         <Field label="Display name" value={name} onChange={(v) => setName(v.slice(0, 30))} />
