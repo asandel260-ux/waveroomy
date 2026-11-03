@@ -14,8 +14,8 @@ const hex = (s: string): Rgb => rgb(parseInt(s.slice(1), 16));
 
 /** Two complete palettes (see DESIGN.md for the reasoning). The owner's custom accent and background override them. */
 const PALETTES = {
-  dark: { bg: "#1a1236", s1: "#221848", s2: "#2b205a", s3: "#372a70", b1: "#40337a", b2: "#6252a8", text: "#f6f3ff", muted: "#cbc3e6", faint: "#b3a9d6", accent: "#7c3aed", bright: "#b690ff", live: "#52ff1f", onLive: "#052200", danger: "#ff6b6b", warn: "#f5b544", scrim: "rgb(16 9 40 / .74)", lift: "0 12px 32px rgb(0 0 0 / .45)" },
-  light: { bg: "#faf9fd", s1: "#ffffff", s2: "#f3f0fa", s3: "#eae5f6", b1: "#ddd6ee", b2: "#a99bd0", text: "#1a1226", muted: "#554a6b", faint: "#675c7e", accent: "#6d28d9", bright: "#5b21b6", live: "#178009", onLive: "#ffffff", danger: "#c62828", warn: "#9a5b00", scrim: "rgb(26 18 38 / .45)", lift: "0 12px 32px rgb(26 18 38 / .18)" },
+  dark: { bg: "#1d0e57", s1: "#281572", s2: "#321b88", s3: "#3f239f", b1: "#5233bd", b2: "#7f60f5", text: "#ffffff", muted: "#ddd3ff", faint: "#c4b6f7", accent: "#7c3aed", bright: "#cdb4ff", live: "#52ff1f", onLive: "#052200", danger: "#ff7b7b", warn: "#f5b544", scrim: "rgb(20 8 60 / .76)", lift: "0 14px 36px rgb(10 0 40 / .55)" },
+  light: { bg: "#efe8ff", s1: "#ffffff", s2: "#e8dfff", s3: "#dacdff", b1: "#c8b6fb", b2: "#8b6be0", text: "#1a0f3d", muted: "#4a3d78", faint: "#5d5088", accent: "#6d28d9", bright: "#5b21b6", live: "#178009", onLive: "#ffffff", danger: "#a81f1f", warn: "#9a5b00", scrim: "rgb(26 15 61 / .45)", lift: "0 12px 32px rgb(60 20 140 / .2)" },
 } as const;
 
 export function resolveMode(theme: string): "dark" | "light" {

@@ -122,7 +122,7 @@ export function AppRoot() {
     </div>
   );
   return (
-    <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", background: "var(--bg)" }}>
+    <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", background: "transparent" }}>
       <TitleBar />
       {body}
       {profile && <Globals />}

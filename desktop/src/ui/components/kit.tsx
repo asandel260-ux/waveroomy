@@ -402,9 +402,19 @@ const mix = (c: string, pct: number) => `color-mix(in srgb, ${c} ${pct}%, var(--
 /** The ground every full screen stands on: flat, so content carries the hierarchy. */
 export function Backdrop({ children, className = "", css }: { style?: number; children?: ReactNode; className?: string; css?: React.CSSProperties }) {
   return (
-    <div className={`backdrop ${className}`} style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", background: "var(--bg)", ...css }}>
+    <div className={`backdrop ${className}`} style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", ...css }}>
       {children}
     </div>
+  );
+}
+
+/** The seven bars of the HoMit icon. Moves while something is live; still otherwise. */
+export function Equalizer({ live = true, size = 32 }: { live?: boolean; size?: number }) {
+  const hs = [0.4, 0.65, 1, 0.55, 0.85, 0.5, 0.3];
+  return (
+    <span className={`eq ${live ? "live" : ""}`} aria-hidden="true" style={{ height: size }}>
+      {hs.map((h, i) => <i key={i} style={{ height: `${h * 100}%`, animationDelay: `${i * 0.13}s` }} />)}
+    </span>
   );
 }
 

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { core } from "../../app/instance";
 import type { Nav } from "../nav";
 import { useFlow } from "../hooks";
-import { Avatar, Backdrop, Button, Chip, ConfirmDialog, EmptyState, GroupAvatar, PageHead, Icon, IconButton, Menu, MenuEntry, Muted, Row2, SectionTitle, Sheet, Field, Tiny, Spinner } from "../components/kit";
+import { Equalizer, Avatar, Backdrop, Button, Chip, ConfirmDialog, EmptyState, GroupAvatar, PageHead, Icon, IconButton, Menu, MenuEntry, Muted, Row2, SectionTitle, Sheet, Field, Tiny, Spinner } from "../components/kit";
 import { NearbyRoom, SavedRoom, avatarFrom, defaultAvatar } from "../../core/models";
 import { timeAgo } from "../../core/util";
 import { SAVED } from "../../room/dmhub";
@@ -60,13 +60,14 @@ function RoomsTab({ nav }: { nav: Nav }) {
             <Button small kind="secondary" text="Open network settings" onClick={() => nav.push({ t: "settings" })} />
           </div>
         ) : nearby.length === 0 ? (
-          <div className="hstack g10" style={{ padding: "8px 32px" }}><Spinner size={16} /><Muted>Listening for rooms on this Wi-Fi. When someone starts one, it appears here.</Muted></div>
+          <div className="card hstack g16 inset" style={{ padding: 20 }}><Equalizer /><Muted>Listening for rooms on this Wi-Fi. When someone starts one, it appears here.</Muted></div>
         ) : nearby.map((r) => <NearbyRow key={r.roomId + r.ip} r={r} busy={joining === r.roomId + r.ip} onJoin={() => joinNearby(r)} />)}
 
         <SectionTitle>Rooms you have hosted</SectionTitle>
         {saved.length === 0 ? (
-          <div className="empty" style={{ paddingTop: 8 }}>
-            <Muted>Rooms you start are kept here with their chat and blackboard, so you can open them again.</Muted>
+          <div className="card hstack g16 inset" style={{ padding: 20 }}>
+            <Equalizer live={false} />
+            <div className="grow"><Muted>Rooms you start are kept here with their chat and blackboard, so you can open them again.</Muted></div>
             <Button small kind="ok" text="Start your first room" onClick={() => nav.push({ t: "create" })} />
           </div>
         ) : <>

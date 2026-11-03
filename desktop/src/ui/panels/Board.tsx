@@ -8,7 +8,7 @@ import { Button, Dialog, Field, Icon, IconButton, Muted, Segmented, Sheet, Tiny 
 import { BoardExport, BoardGeo, BoardRenderer } from "./boardCore";
 import { BOARD_COLORS, BoardController, DRAW_TOOLS, type TextEdit } from "./BoardController";
 
-const BG = "#161030";
+const BG = "#230f57";
 const ACCENT = "#2e5bff";
 
 const TOOL_HINTS: Record<string, string> = {

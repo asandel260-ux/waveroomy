@@ -16,10 +16,10 @@ interface Floating { id: number; emoji: string; name: string; x: number }
 
 function TabChip({ label, icon, on, live, onClick }: { label: string; icon: string; on: boolean; live: boolean; onClick: () => void }) {
   return (
-    <button className="hstack g8" onClick={onClick} aria-pressed={on} style={{ borderRadius: 999, padding: "10px 18px", flex: "none", background: on ? "var(--accent-soft)" : "transparent", boxShadow: `inset 0 0 0 1px ${on ? "var(--accent)" : "var(--border)"}`, transition: "background .12s" }}>
-      <Icon name={icon} size={17} color={on ? "var(--accent-bright)" : "var(--muted)"} />
-      <span style={{ color: on ? "var(--text)" : "var(--muted)", fontSize: 14, fontWeight: 500 }}>{label}</span>
-      {live && <span role="img" aria-label="active" style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--live)" }} />}
+    <button className="hstack g8" onClick={onClick} aria-pressed={on} style={{ borderRadius: 999, padding: "10px 18px", flex: "none", background: on ? "var(--live)" : "var(--accent-10)", boxShadow: `inset 0 0 0 1px ${on ? "var(--live)" : "var(--border-strong)"}`, transition: "background .12s" }}>
+      <Icon name={icon} size={17} color={on ? "var(--on-live)" : "var(--muted)"} />
+      <span style={{ color: on ? "var(--on-live)" : "var(--muted)", fontSize: 14, fontWeight: on ? 600 : 500 }}>{label}</span>
+      {live && <span role="img" aria-label="active" style={{ width: 7, height: 7, borderRadius: "50%", background: on ? "var(--on-live)" : "var(--live)" }} />}
     </button>
   );
 }
@@ -102,7 +102,7 @@ function StageTile({ p, speaking, online, alone, onClick }: { p: Participant; sp
   return (
     <button ref={ref} onClick={onClick} aria-label={`${mine ? "You" : p.displayName}${p.muted ? ", muted" : ""}${speaking ? ", speaking" : ""}`}
       style={{ position: "relative", minWidth: 0, minHeight: 0, borderRadius: 12, overflow: "hidden", display: "grid", placeItems: "center",
-        background: `color-mix(in srgb, hsl(${p.avatar.hue} 55% 50%) 14%, var(--surface2))`,
+        background: `color-mix(in srgb, hsl(${p.avatar.hue} 70% 55%) 32%, var(--surface2))`,
         boxShadow: speaking ? "inset 0 0 0 3px var(--live), 0 0 16px color-mix(in srgb, var(--live) 35%, transparent)" : "inset 0 0 0 1px var(--border)", transition: "box-shadow .15s" }}>
       <div style={{ opacity: online ? 1 : 0.55, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
         <Avatar avatar={p.avatar} size={d} uid={p.uid} mine={mine} name={p.displayName} />
