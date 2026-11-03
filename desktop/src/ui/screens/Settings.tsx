@@ -80,7 +80,7 @@ export function SettingsScreen({ nav, back }: ScreenProps) {
           <div><Tiny>Theme</Tiny><div style={{ height: 8 }} /><Segmented options={[["dark", "Dark"], ["light", "Light"], ["system", "Match Windows"]]} selected={s.theme} onSelect={(v) => set({ theme: v, bgColor: 0 })} /></div>
           <SwitchRow title="Animations" subtitle="Fades and slides between screens. Turn off for a calmer app." checked={s.animations} onChange={(v) => set({ animations: v })} />
           <ColorPickerCard title="Buttons & accents" subtitle="Buttons, highlights, switches and sliders." value={s.accentColor} def={0xFF7C3AED | 0} presets={ACCENT_PRESETS} onChange={(c) => set({ accentColor: c })} />
-          <ColorPickerCard title="Background" subtitle="Overrides the theme base colour. Panels and borders follow it." value={s.bgColor} def={0xFF0B0713 | 0} presets={BG_PRESETS} onChange={(c) => set({ bgColor: c })} />
+          <ColorPickerCard title="Background" subtitle="Overrides the theme base colour. Panels and borders follow it." value={s.bgColor} def={0xFF1A1236 | 0} presets={BG_PRESETS} onChange={(c) => set({ bgColor: c })} />
         </div></Pad>
 
         <SectionTitle>Voice</SectionTitle>

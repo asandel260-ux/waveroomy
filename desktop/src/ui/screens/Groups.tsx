@@ -31,13 +31,10 @@ export function NewGroupScreen({ nav, back }: ScreenProps) {
     <Backdrop style={4}>
       <ScreenHeader title="New group" onBack={back} />
       <div className="scroll"><div style={{ maxWidth: 560, margin: "0 0 0 max(0px, calc((100% - 880px) / 2))", padding: "24px 32px" }}>
-        <div className="hstack g14"><GroupAvatar emoji={emoji} hue={hue} size={64} /><div className="grow"><Field label="Group name" placeholder="Weekend plans" value={name} onChange={(v) => { setName(v); setError(null); }} maxLength={60} autoFocus onEnter={create} /></div></div>
+        <div className="hstack g14"><GroupAvatar name={name} hue={hue} size={64} /><div className="grow"><Field label="Group name" placeholder="Weekend plans" value={name} onChange={(v) => { setName(v); setError(null); }} maxLength={60} autoFocus onEnter={create} /></div></div>
         <div style={{ height: 12 }} />
         <Field label="About (optional)" placeholder="What is this group for?" value={about} onChange={setAbout} maxLength={200} />
-        <div style={{ height: 14 }} /><Tiny>Icon</Tiny><div style={{ height: 8 }} />
-        <div className="hstack" style={{ flexWrap: "wrap", gap: 8 }}>
-          {EMOJIS.map((e) => <button key={e} style={{ width: 44, height: 44, borderRadius: "50%", fontSize: 20, background: e === emoji ? "var(--accent-30)" : "var(--surface2)", boxShadow: `inset 0 0 0 ${e === emoji ? 1.5 : 1}px ${e === emoji ? "var(--text)" : "var(--border)"}` }} onClick={() => setEmoji(e)}>{e}</button>)}
-        </div>
+        <div style={{ height: 14 }} /><Tiny>Colour</Tiny><div style={{ height: 8 }} />
         <div className="hstack" style={{ flexWrap: "wrap", gap: 8, marginTop: 10 }}>
           {HUES.map((h) => <button key={h} style={{ width: 44, height: 44, display: "grid", placeItems: "center" }} onClick={() => setHue(h)}><span style={{ width: 30, height: 30, borderRadius: "50%", background: hsl(h, 0.5, 0.4), boxShadow: h === hue ? "0 0 0 2px var(--text)" : "none" }} /></button>)}
         </div>
@@ -47,7 +44,7 @@ export function NewGroupScreen({ nav, back }: ScreenProps) {
           const on = picked.includes(c.uid);
           return (
             <button key={c.uid} className="hstack g12" style={{ width: "100%", padding: "8px 0", textAlign: "left" }} onClick={() => toggle(c.uid)}>
-              <Avatar avatar={c.avatar} size={40} uid={c.uid} />
+              <Avatar avatar={c.avatar} size={40} uid={c.uid} name={c.displayName} />
               <div className="grow"><div style={{ fontSize: 15 }}>{c.displayName}</div><Muted size={12}>@{c.username}</Muted></div>
               <span style={{ width: 24, height: 24, borderRadius: "50%", display: "grid", placeItems: "center", background: on ? "var(--text)" : "transparent", boxShadow: `inset 0 0 0 1.5px ${on ? "var(--text)" : "var(--border-strong)"}` }}>{on && <Icon name="check" size={14} color="#052200" />}</span>
             </button>
@@ -89,7 +86,7 @@ export function GroupInfoScreen({ nav, route, back }: ScreenProps) {
         <div style={{ padding: 16 }}>
           <HeroCard>
             <div style={{ padding: 20, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-              <GroupAvatar emoji={g.emoji} hue={g.hue} size={88} />
+              <GroupAvatar name={g.name} hue={g.hue} size={88} />
               <div className="display" style={{ fontSize: 26, marginTop: 12 }}>{g.name}</div>
               {g.about && <div style={{ marginTop: 4 }}><Muted>{g.about}</Muted></div>}
               <div style={{ marginTop: 6 }}><Muted size={12}>{members.length === 1 ? "1 member" : `${members.length} members`}</Muted></div>
@@ -127,7 +124,7 @@ export function GroupInfoScreen({ nav, route, back }: ScreenProps) {
             {Object.values(contacts).filter((c) => !g.members[c.uid]).length === 0 && <div style={{ padding: 20 }}><Muted>Everyone you know is already here. Use “Invite with link or QR” for new people.</Muted></div>}
             {Object.values(contacts).filter((c) => !g.members[c.uid]).map((c) => (
               <button key={c.uid} className="listrow" onClick={() => { core.dmHub.addMember(g.id, c.uid); setAdd(false); }}>
-                <Avatar avatar={c.avatar} size={40} uid={c.uid} />
+                <Avatar avatar={c.avatar} size={40} uid={c.uid} name={c.displayName} />
                 <div className="grow"><div style={{ fontSize: 15 }}>{c.displayName}</div><Muted size={12}>{connected.has(c.uid) ? "connected. Added instantly" : "added when you next connect"}</Muted></div>
               </button>
             ))}
@@ -159,9 +156,6 @@ function EditGroup({ g, onDismiss }: { g: { id: string; name: string; about: str
         <div style={{ height: 10 }} />
         <Field label="About" value={a} onChange={setA} maxLength={200} />
         <div style={{ height: 10 }} />
-        <div className="hstack" style={{ flexWrap: "wrap", gap: 8 }}>
-          {EMOJIS.map((x) => <button key={x} style={{ width: 40, height: 40, borderRadius: "50%", fontSize: 20, background: x === e ? "var(--accent-30)" : "var(--surface2)" }} onClick={() => setE(x)}>{x}</button>)}
-        </div>
         <SwitchRow title="Members can add people" subtitle="Otherwise only admins can." checked={mca} onChange={setMca} />
         <div style={{ height: 10 }} />
         <Button block text="Save" onClick={() => { core.dmHub.updateGroup(g.id, n, a, mca, e, g.hue); onDismiss(); }} />

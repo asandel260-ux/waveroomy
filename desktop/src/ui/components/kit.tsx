@@ -38,12 +38,17 @@ export function usePhoto(uid: string, mine = false): string | null {
   return url;
 }
 
-export function Avatar({ avatar, size = 40, uid = "", mine = false, ring }: { avatar: AvatarT; size?: number; uid?: string; mine?: boolean; ring?: string }) {
+const initialOf = (name?: string) => ((name ?? "").trim().match(/[\p{L}\p{N}]/u)?.[0] ?? "?").toUpperCase();
+const hueFill = (h: number) => hsl(h, 0.5, 0.36);
+
+/** A real photo when one is set, otherwise the first letter of the name on the person's colour. */
+export function Avatar({ avatar, size = 40, uid = "", mine = false, ring, name }: { avatar: AvatarT; size?: number; uid?: string; mine?: boolean; ring?: string; name?: string }) {
   const photo = usePhoto(uid, mine);
+  const who = name ?? (mine ? core.profile.profile.value?.displayName : core.social.contact(uid)?.displayName);
   const inner = photo ? (
     <img src={photo} alt="" draggable={false} />
   ) : (
-    <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", fontSize: size * 0.46, background: "var(--surface3)" }}>{avatar.emoji}</div>
+    <div aria-hidden="true" style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", fontSize: size * 0.44, fontWeight: 600, color: "#fff", background: hueFill(avatar.hue) }}>{initialOf(who)}</div>
   );
   if (ring) return <div className="avatar ring" style={{ width: size, height: size, ["--ring" as any]: ring }}><div className="in">{inner}</div></div>;
   return <div className="avatar" style={{ width: size, height: size }}>{inner}</div>;
@@ -409,10 +414,10 @@ export function HeroCard({ children, style }: { children: ReactNode; radius?: nu
   return <div style={{ borderTop: "2px solid var(--text)", borderBottom: "1px solid var(--border)", ...style }}>{children}</div>;
 }
 
-export function GroupAvatar({ emoji, hue, size }: { emoji: string; hue: number; size: number }) {
+export function GroupAvatar({ name, hue, size }: { name?: string; hue: number; size: number; emoji?: string }) {
   return (
-    <div style={{ width: size, height: size, borderRadius: 6, display: "grid", placeItems: "center", flex: "none", fontSize: size * 0.5, background: "var(--surface3, var(--surface2))" }}>
-      {emoji === "👥" ? "💬" : emoji}
+    <div aria-hidden="true" style={{ width: size, height: size, borderRadius: 10, display: "grid", placeItems: "center", flex: "none", fontSize: size * 0.44, fontWeight: 600, color: "#fff", background: hueFill(hue) }}>
+      {initialOf(name)}
     </div>
   );
 }

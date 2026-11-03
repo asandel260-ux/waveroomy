@@ -36,7 +36,7 @@ export function ChatPanel({ nav, onOpenChess, onClose }: { nav: Nav; onOpenChess
               const chess = m.text.startsWith(CHESS_MARK);
               return (
                 <div key={m.id} className="hstack" style={{ alignItems: "flex-start", gap: 10, cursor: !m.deleted && !hidden && !chess ? "pointer" : "default" }} {...(!m.deleted && !hidden && !chess ? asButton(() => setActionFor(m), "Message actions") : {})}>
-                  <Avatar avatar={m.avatar} size={34} uid={m.uid} mine={mine} />
+                  <Avatar avatar={m.avatar} size={34} uid={m.uid} mine={mine} name={m.displayName} />
                   <div className="grow" style={{ minWidth: 0 }}>
                     <div className="hstack g8"><span style={{ fontSize: 13, fontWeight: 600, color: mine ? "var(--accent-bright)" : "var(--text)" }}>{mine ? "You" : m.displayName}</span><Tiny>{fmtClock(m.at)}</Tiny></div>
                     {m.deleted ? <div style={{ color: "var(--faint)", fontSize: 13, fontStyle: "italic" }}>message removed</div>
@@ -96,7 +96,7 @@ export function PersonSheet({ p, nav, onDismiss }: { p: Participant; nav: Nav; o
     <>
       <Sheet center onDismiss={onDismiss}>
         <div className="hstack g14" style={{ padding: "0 20px 8px" }}>
-          <Avatar avatar={p.avatar} size={56} uid={p.uid} mine={mine} />
+          <Avatar avatar={p.avatar} size={56} uid={p.uid} mine={mine} name={p.displayName} />
           <div className="grow"><div style={{ fontSize: 18, fontWeight: 600 }}>{p.displayName}{mine ? " (you)" : ""}</div><Muted>@{p.username} · {p.role === "host" ? "host" : "member"}{!mine && !connected.has(p.uid) ? " · connecting…" : ""}</Muted></div>
         </div>
         {!mine && canSpeak(p.role) && (

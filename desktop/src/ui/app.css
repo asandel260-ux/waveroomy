@@ -1,22 +1,22 @@
-@font-face { font-family: "Caladea"; src: url("./fonts/caladea_bold.ttf"); font-weight: 700; font-style: normal; }
-@font-face { font-family: "Caladea"; src: url("./fonts/caladea_bolditalic.ttf"); font-weight: 700; font-style: italic; }
-
 /* Tokens are set by theme.ts; these are the dark defaults. See DESIGN.md for the reason behind each. */
+/* The atmosphere the app is known for: violet from one corner, a little neon green from the other. */
+:root { --atmos: radial-gradient(1100px 700px at 0% 0%, rgb(139 92 246 / .34), transparent 65%), radial-gradient(900px 600px at 100% 100%, rgb(82 255 31 / .09), transparent 65%); }
+:root.light, .light { --atmos: radial-gradient(1100px 700px at 0% 0%, rgb(124 58 237 / .12), transparent 65%), radial-gradient(900px 600px at 100% 100%, rgb(31 157 10 / .07), transparent 65%); }
 :root {
-  --bg: #0b0713; --surface: #120d1d; --surface2: #191225; --surface3: #231a34;
-  --border: #2c2142; --border-strong: #44346b;
-  --text: #f4f1fa; --muted: #b4acc8; --faint: #9a91b3;
-  --accent: #7c3aed; --accent-bright: #b690ff; --on-accent: #ffffff; --focus: #b690ff;
+  --bg: #1a1236; --surface: #221848; --surface2: #2b205a; --surface3: #372a70;
+  --border: #40337a; --border-strong: #6252a8;
+  --text: #f6f3ff; --muted: #cbc3e6; --faint: #b3a9d6;
+  --accent: #7c3aed; --accent-bright: #b690ff; --on-accent: #ffffff; --focus: #52ff1f;
   --accent-soft: rgb(124 58 237 / .2); --accent-30: rgb(124 58 237 / .3); --accent-10: rgb(124 58 237 / .1);
   --accent-bright-22: rgb(182 144 255 / .22); --accent-bright-70: rgb(182 144 255 / .7);
   --grad-top: #7c3aed; --grad-bottom: #7c3aed; --bubble-a: #6d2fd8; --bubble-b: #6d2fd8;
-  --hero-a: #120d1d; --hero-b: #120d1d; --hero-c: #120d1d; --rim: none;
+  --hero-a: #221848; --hero-b: #221848; --hero-c: #221848; --rim: none;
   --live: #52ff1f; --on-live: #052200;
   --ok: #52ff1f; --neon: #52ff1f; --neon-soft: #52ff1f; --neon-deep: #52ff1f;
   --warn: #f5b544; --danger: #ff6b6b; --danger-soft: rgb(255 107 107 / .14);
   --scrim: rgb(5 3 10 / .72);
   --lift: 0 12px 32px rgb(0 0 0 / .45);
-  --serif: "Caladea", Georgia, "Times New Roman", serif;
+  --serif: "Segoe UI Variable Display", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   --sans: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
   --r-s: 6px; --r-m: 10px; --r-l: 14px;
@@ -25,7 +25,7 @@
 .light { color-scheme: light; }
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
-body { background: var(--bg); color: var(--text); font: 14px/1.5 var(--sans); overflow: hidden; -webkit-font-smoothing: antialiased; user-select: none; }
+body { background: var(--atmos, none), var(--bg); color: var(--text); font: 14px/1.5 var(--sans); overflow: hidden; -webkit-font-smoothing: antialiased; user-select: none; }
 input, textarea, [contenteditable], .selectable { user-select: text; }
 button { font: inherit; color: inherit; border: 0; background: none; padding: 0; }
 /* R-39: every enabled control says it is clickable, every disabled one says it is not */
@@ -55,7 +55,7 @@ svg.ic { flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-l
 .sidebar { width: 76px; flex: none; display: flex; flex-direction: column; align-items: stretch; background: var(--bg); border-right: 1px solid var(--border); padding: 8px 0; gap: 4px; }
 .sidebar .nav { margin: 0 8px; height: 56px; border-radius: var(--r-m); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--muted); position: relative; font-size: 11px; font-weight: 500; transition: color .12s, background .12s; }
 .sidebar .nav:hover { color: var(--text); background: var(--surface2); }
-.sidebar .nav.on { color: var(--text); background: var(--accent-soft); }
+.sidebar .nav.on { color: var(--text); background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--live); }
 .sidebar .nav.on svg { color: var(--accent-bright); }
 .sidebar .nav .badge { position: absolute; top: 4px; right: 8px; }
 .sidebar .sp { flex: 1; }
@@ -68,10 +68,10 @@ svg.ic { flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-l
 .col.wide { max-width: 1040px; }
 
 /* ---------- type ---------- */
-.tiny { font-family: var(--serif); font-weight: 700; font-style: italic; font-size: 14px; color: var(--muted); }
+.tiny { font-weight: 600; font-size: 13px; color: var(--muted); }
 .muted { color: var(--muted); font-size: 13px; }
 .faint { color: var(--faint); }
-.display { font-family: var(--serif); font-weight: 700; letter-spacing: -.01em; line-height: 1.1; }
+.display { font-family: var(--serif); font-weight: 600; letter-spacing: -.01em; line-height: 1.15; }
 .mono { font-family: var(--mono); }
 .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hairline { height: 1px; background: var(--border); }
@@ -80,7 +80,7 @@ svg.ic { flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-l
 /* ---------- headers ---------- */
 .header { flex: none; border-bottom: 1px solid var(--border); }
 .header .bar { display: flex; align-items: center; gap: 8px; max-width: 880px; margin: 0 auto; width: 100%; }
-.header h1 { margin: 0; font-family: var(--serif); font-size: 32px; font-weight: 700; line-height: 1.15; letter-spacing: -.01em; }
+.header h1 { margin: 0; font-family: var(--serif); font-size: 30px; font-weight: 600; line-height: 1.15; letter-spacing: -.01em; }
 .header .title { flex: 1; min-width: 0; }
 .header .glow { display: none; }
 .back { display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 8px 0 4px; margin-left: -4px; border-radius: var(--r-s); color: var(--muted); font-size: 13px; transition: background .12s, color .12s; }
@@ -95,17 +95,18 @@ svg.ic { flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-l
 .section-title i { display: none; }
 
 /* ---------- buttons ---------- */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 20px; border-radius: var(--r-s); font-size: 14px; font-weight: 600; white-space: nowrap; transition: background .12s, box-shadow .12s, transform .08s; }
-.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 22px; border-radius: 12px; font-size: 14px; font-weight: 600; white-space: nowrap; transition: background .15s, box-shadow .15s, transform .12s, filter .15s; }
+.btn:hover:not(:disabled) { transform: translateY(-1px); }
+.btn:active:not(:disabled) { transform: translateY(0) scale(.99); }
 .btn:disabled { opacity: .4; }
-.btn.small { min-height: 36px; padding: 0 14px; font-size: 13px; }
-.btn.primary { color: var(--on-accent); background: var(--accent); }
-.btn.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 88%, #fff); }
-.btn.ok { color: var(--on-live); background: var(--live); }
-.btn.ok:hover:not(:disabled) { background: color-mix(in srgb, var(--live) 90%, #fff); }
-.btn.secondary { color: var(--text); background: transparent; box-shadow: inset 0 0 0 1px var(--border-strong); }
-.btn.secondary:hover:not(:disabled) { background: var(--surface2); }
-.btn.danger { color: var(--danger); background: var(--danger-soft); }
+.btn.small { min-height: 38px; padding: 0 16px; font-size: 13px; border-radius: 10px; }
+.btn.primary { color: var(--on-accent); background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 80%, #fff) 0%, var(--accent) 100%); box-shadow: inset 0 1px 0 rgb(255 255 255 / .28), 0 1px 2px rgb(0 0 0 / .3); }
+.btn.primary:hover:not(:disabled) { filter: brightness(1.1); box-shadow: inset 0 1px 0 rgb(255 255 255 / .32), 0 6px 16px color-mix(in srgb, var(--accent) 40%, transparent); }
+.btn.ok { color: var(--on-live); background: linear-gradient(180deg, color-mix(in srgb, var(--live) 78%, #fff) 0%, var(--live) 100%); box-shadow: inset 0 1px 0 rgb(255 255 255 / .45), 0 1px 2px rgb(0 0 0 / .3); }
+.btn.ok:hover:not(:disabled) { filter: brightness(1.06); box-shadow: inset 0 1px 0 rgb(255 255 255 / .5), 0 6px 16px color-mix(in srgb, var(--live) 32%, transparent); }
+.btn.secondary { color: var(--text); background: var(--surface2); box-shadow: inset 0 0 0 1px var(--border-strong); }
+.btn.secondary:hover:not(:disabled) { background: var(--surface3); box-shadow: inset 0 0 0 1px var(--accent-bright); }
+.btn.danger { color: var(--danger); background: var(--danger-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 35%, transparent); }
 .btn.danger:hover:not(:disabled) { box-shadow: inset 0 0 0 1px var(--danger); }
 .btn.ghost { color: var(--muted); }
 .btn.ghost:hover:not(:disabled) { color: var(--text); background: var(--surface2); }

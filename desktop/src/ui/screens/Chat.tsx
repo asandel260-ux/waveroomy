@@ -127,7 +127,7 @@ export function ChatScreen({ nav, route, back }: ScreenProps) {
           <IconButton icon="chevron-left" onClick={back} title="Back" />
           <button className="hstack g10 grow" style={{ textAlign: "left", borderRadius: 6, padding: 4, minWidth: 0 }} onClick={() => { if (grp) nav.push({ t: "groupInfo", gid: gid(chat) }); else if (!isSaved) nav.push({ t: "profile", uid: chat }); }}>
             {isSaved ? <div style={{ width: 40, height: 40, borderRadius: 6, display: "grid", placeItems: "center", background: "var(--accent)", boxShadow: "0 0 0 1px var(--border-strong)" }}><Icon name="bookmark" size={20} color="#fff" /></div>
-              : grp ? <GroupAvatar emoji={group?.emoji ?? "💬"} hue={group?.hue ?? 265} size={40} />
+              : grp ? <GroupAvatar name={group?.name} hue={group?.hue ?? 265} size={40} />
               : <Avatar avatar={contacts[chat]?.avatar ?? defaultAvatar()} size={40} uid={chat} />}
             <div style={{ minWidth: 0 }}>
               <div className="display ellipsis" style={{ fontSize: 18 }}>{title}</div>
@@ -372,10 +372,10 @@ export function ChatPicker({ title, onDismiss, onPick }: { title: string; onDism
       <div style={{ maxHeight: 480, overflowY: "auto" }}>
         <Row2 title="Saved messages" subtitle="Just for you" icon="bookmark" onClick={() => onPick(SAVED)} />
         {Object.values(groups).filter((g) => !g.left).map((g) => (
-          <button key={g.id} className="listrow" onClick={() => onPick("g:" + g.id)}><GroupAvatar emoji={g.emoji} hue={g.hue} size={36} /><span style={{ fontSize: 15 }}>{g.name}</span></button>
+          <button key={g.id} className="listrow" onClick={() => onPick("g:" + g.id)}><GroupAvatar name={g.name} hue={g.hue} size={36} /><span style={{ fontSize: 15 }}>{g.name}</span></button>
         ))}
         {Object.values(contacts).map((c) => (
-          <button key={c.uid} className="listrow" onClick={() => onPick(c.uid)}><Avatar avatar={c.avatar} size={36} uid={c.uid} /><span style={{ fontSize: 15 }}>{c.displayName}</span></button>
+          <button key={c.uid} className="listrow" onClick={() => onPick(c.uid)}><Avatar avatar={c.avatar} size={36} uid={c.uid} name={c.displayName} /><span style={{ fontSize: 15 }}>{c.displayName}</span></button>
         ))}
       </div>
     </Sheet>

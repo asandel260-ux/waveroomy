@@ -51,7 +51,7 @@ export function Onboarding() {
           </div>
           <div style={{ gridColumn: "7 / span 6" }}>
           <div className="hstack g16">
-            <Avatar avatar={{ emoji, hue }} size={64} />
+            <Avatar avatar={{ emoji, hue }} size={64} name={name} />
             <div>
               <Tiny>Avatar</Tiny>
               <div className="hstack g8" style={{ marginTop: 8 }}>
@@ -59,15 +59,10 @@ export function Onboarding() {
               </div>
             </div>
           </div>
-          <div className="hstack wrap g8" style={{ marginTop: 14 }}>
-            {AVATAR_EMOJIS.map((e) => (
-              <button key={e} onClick={() => setEmoji(e)} aria-label={`Avatar ${e}`} aria-pressed={e === emoji} style={{ width: 42, height: 42, borderRadius: "50%", fontSize: 20, background: e === emoji ? "var(--accent-soft)" : "var(--surface2)", boxShadow: `inset 0 0 0 ${e === emoji ? 1.5 : 1}px ${e === emoji ? "var(--text)" : "var(--border)"}` }}>{e}</button>
-            ))}
-          </div>
           <Field style={{ marginTop: 24 }} label="Display name" placeholder="Your name" value={name} onChange={(v) => { setName(v.slice(0, 30)); if (!edited) setHandle(cleanHandle(v.replace(/ /g, ""))); }} />
           <Field style={{ marginTop: 14 }} label="Username" placeholder="yourname" leadingIcon="user" value={handle} onChange={(v) => { setHandle(cleanHandle(v)); setEdited(true); }} onEnter={create} />
           {error && <div style={{ color: "var(--danger)", fontSize: 13, marginTop: 10 }}>{error}</div>}
-          <div style={{ marginTop: 24 }}><Button block text="Create my identity" onClick={create} /></div>
+          <div style={{ marginTop: 24 }}><Button block kind="ok" text="Create my identity" onClick={create} /></div>
           <div style={{ marginTop: 10 }}><Button block kind="secondary" text="Restore from a backup file" onClick={restore} /></div>
           </div>
         </div>

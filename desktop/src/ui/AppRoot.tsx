@@ -54,7 +54,7 @@ function Sidebar({ route }: { route: Route }) {
           <Icon name="radio" size={22} color="var(--ok)" />Live
         </button>
       )}
-      {p && <button onClick={() => nav.goHome(2)} title={p.displayName} aria-label={`Your profile, ${p.displayName}`} style={{ height: 56, display: "grid", placeItems: "center" }}><Avatar avatar={p.avatar} size={32} mine /></button>}
+      {p && <button onClick={() => nav.goHome(2)} title={p.displayName} aria-label={`Your profile, ${p.displayName}`} style={{ height: 56, display: "grid", placeItems: "center" }}><Avatar avatar={p.avatar} size={32} mine name={p.displayName} /></button>}
     </nav>
   );
 }
@@ -89,7 +89,7 @@ function Globals() {
       {joinErr && <Dialog title="Couldn't join" onDismiss={() => { core.session.joinError.value = null; }} actions={<Button text="OK" onClick={() => { core.session.joinError.value = null; }} />}><div>{joinErr}</div></Dialog>}
       {add && (
         <Dialog title={`Add ${add.name}?`} onDismiss={() => { core.pendingAdd.value = null; }} actions={<><Button kind="ghost" text="Not now" onClick={() => { core.pendingAdd.value = null; }} /><Button text="Send request" onClick={() => { void core.discovery.sendRequest(add); core.pendingAdd.value = null; }} /></>}>
-          <div className="hstack g12"><Avatar avatar={avatarFrom(add.avatar)} size={46} /><div><div style={{ fontWeight: 600 }}>{add.name}</div><Muted>@{add.username}</Muted></div></div>
+          <div className="hstack g12"><Avatar avatar={avatarFrom(add.avatar)} size={46} name={add.name} /><div><div style={{ fontWeight: 600 }}>{add.name}</div><Muted>@{add.username}</Muted></div></div>
         </Dialog>
       )}
     </>

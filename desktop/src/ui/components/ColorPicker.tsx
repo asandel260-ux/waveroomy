@@ -19,7 +19,7 @@ const hexOf = (argb: number) => css(argb).toUpperCase();
 const parseHex = (s: string): number | null => { const t = s.trim().replace(/^#/, ""); return /^[0-9a-fA-F]{6}$/.test(t) ? (0xff000000 | parseInt(t, 16)) | 0 : null; };
 
 export const ACCENT_PRESETS = [0xFF7C3AED, 0xFF3B82F6, 0xFF06B6D4, 0xFF10B981, 0xFFF59E0B, 0xFFEF4444, 0xFFEC4899, 0xFFA855F7, 0xFFFAFAFA].map((x) => x | 0);
-export const BG_PRESETS = [0xFF0B0713, 0xFF000000, 0xFF0B1220, 0xFF0A1A14, 0xFF1A0B14, 0xFF1B1B1F, 0xFF2B2B33, 0xFFF4F4F6].map((x) => x | 0);
+export const BG_PRESETS = [0xFF1A1236, 0xFF000000, 0xFF0B1220, 0xFF0A1A14, 0xFF1A0B14, 0xFF1B1B1F, 0xFF2B2B33, 0xFFF4F4F6].map((x) => x | 0);
 
 function Swatch({ c, selected, onClick }: { c: number; selected: boolean; onClick: () => void }) {
   const lum = (((c >> 16) & 255) * 0.3 + ((c >> 8) & 255) * 0.6 + (c & 255) * 0.1) / 255;

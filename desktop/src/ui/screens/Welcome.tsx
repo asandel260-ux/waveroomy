@@ -25,7 +25,7 @@ export function WelcomeScreen({ onStart }: { onStart: () => void }) {
           <div className="display" style={{ fontSize: 22, color: "var(--accent-bright)" }}>HoMit</div>
           <h1 id="welcome-h" className="display" style={{ fontSize: 60, margin: "16px 0 0", lineHeight: 1.04 }}>Voice rooms that run straight between your devices.</h1>
           <p style={{ margin: "24px 0 0", maxWidth: 460, fontSize: 16, lineHeight: "25px", color: "var(--muted)" }}>Talk, message, share your screen and draw together. You connect with a code or over the same Wi-Fi, so your voice and files never pass through a company's computer. Use the same identity on your phone and on this computer.</p>
-          <div style={{ marginTop: 32 }}><Button text="Create my identity" onClick={onStart} /></div>
+          <div style={{ marginTop: 32 }}><Button kind="ok" text="Create my identity" onClick={onStart} /></div>
         </div>
         <MeshDiagram />
       </div>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { core } from "../../app/instance";
-import { AVATAR_EMOJIS, defaultAvatar } from "../../core/models";
+import { defaultAvatar } from "../../core/models";
 import { newProfile } from "../../core/identity";
 import { timeAgo } from "../../core/util";
 import { native } from "../../core/native";
@@ -129,7 +129,7 @@ export function EditProfileScreen({ back }: ScreenProps) {
       <ScreenHeader title="Edit profile" onBack={back} />
       <div className="scroll"><div style={{ maxWidth: 560, margin: "0 0 0 max(0px, calc((100% - 880px) / 2))", padding: "24px 32px" }}>
         <div className="hstack g16">
-          <Avatar avatar={{ emoji, hue }} size={80} mine />
+          <Avatar avatar={{ emoji, hue }} size={80} mine name={name} />
           <div className="stack g6">
             <Button small kind="secondary" icon="image" text="Choose photo" onClick={choosePhoto} />
             {core.profile.photo && <Button small kind="ghost" text="Remove photo" onClick={() => core.profile.setPhoto(null)} />}
@@ -137,9 +137,6 @@ export function EditProfileScreen({ back }: ScreenProps) {
         </div>
         <div className="hstack" style={{ gap: 8, marginTop: 14, flexWrap: "wrap" }}>
           {HUES.map((h) => <button key={h} style={{ width: 24, height: 24, borderRadius: "50%", background: hsl(h, 0.55, 0.42), boxShadow: h === hue ? "0 0 0 2px var(--text)" : "none" }} onClick={() => setHue(h)} />)}
-        </div>
-        <div className="hstack" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-          {AVATAR_EMOJIS.map((e) => <button key={e} style={{ width: 40, height: 40, borderRadius: "50%", fontSize: 19, background: e === emoji ? "var(--accent-30)" : "var(--surface2)", boxShadow: `inset 0 0 0 ${e === emoji ? 1.5 : 1}px ${e === emoji ? "var(--text)" : "var(--border)"}` }} onClick={() => setEmoji(e)}>{e}</button>)}
         </div>
         <div style={{ height: 20 }} />
         <Field label="Display name" value={name} onChange={(v) => setName(v.slice(0, 30))} />

@@ -67,7 +67,7 @@ function RoomsTab({ nav }: { nav: Nav }) {
         {saved.length === 0 ? (
           <div className="empty" style={{ paddingTop: 8 }}>
             <Muted>Rooms you start are kept here with their chat and blackboard, so you can open them again.</Muted>
-            <Button small text="Start your first room" onClick={() => nav.push({ t: "create" })} />
+            <Button small kind="ok" text="Start your first room" onClick={() => nav.push({ t: "create" })} />
           </div>
         ) : <>
           <div className="roomrow head"><span className="tiny">Room</span><span className="tiny num">Joins</span><span className="tiny num">Peak</span><span className="tiny">Last open</span><span /></div>
@@ -150,7 +150,7 @@ function MessagesTab({ nav }: { nav: Nav }) {
             const who = !last ? "" : last.from === core.profile.uid ? "You: " : isG && last.from ? (last.authorName || core.contactName(last.from)) + ": " : "";
             return (
               <button key={c.uid} className="listrow" onClick={() => nav.push({ t: "chat", uid: c.uid })}>
-                {isG ? <GroupAvatar emoji={grp?.emoji ?? "💬"} hue={grp?.hue ?? 265} size={48} /> : <Avatar avatar={ct?.avatar ?? defaultAvatar()} size={48} uid={c.uid} />}
+                {isG ? <GroupAvatar name={grp?.name} hue={grp?.hue ?? 265} size={48} /> : <Avatar avatar={ct?.avatar ?? defaultAvatar()} size={48} uid={c.uid} name={ct?.displayName} />}
                 <div className="grow">
                   <div className="hstack g6">
                     <span className="ellipsis" style={{ fontSize: 16, fontWeight: c.unread > 0 ? 600 : 500 }}>{isG ? grp?.name ?? "Group" : ct?.displayName ?? "Unknown"}</span>
@@ -192,7 +192,7 @@ export function AddFriendSheet({ nav, onDismiss }: { nav: Nav; onDismiss: () => 
         const already = !!contacts[c.uid]?.pair;
         return (
           <div key={c.uid} className="listrow">
-            <Avatar avatar={avatarFrom(c.avatar)} size={46} />
+            <Avatar avatar={avatarFrom(c.avatar)} size={46} name={c.name} />
             <div className="grow"><div className="ellipsis" style={{ fontSize: 16, fontWeight: 500 }}>{c.name}</div><Muted size={12}>@{c.username} · id {c.uid.slice(0, 5)}</Muted></div>
             {already ? <Chip text="Added" /> : <Button small text="Add" onClick={() => void core.discovery.sendRequest(c)} />}
           </div>
@@ -216,7 +216,7 @@ export function FriendRequests() {
       <SectionTitle>Friend requests</SectionTitle>
       {reqs.map((r) => (
         <div key={r.card.uid} className="listrow" style={{ paddingTop: 8, paddingBottom: 8 }}>
-          <Avatar avatar={avatarFrom(r.card.avatar)} size={46} />
+          <Avatar avatar={avatarFrom(r.card.avatar)} size={46} name={r.card.name} />
           <div className="grow"><div className="ellipsis" style={{ fontSize: 16, fontWeight: 500 }}>{r.card.name}</div><Muted size={12}>@{r.card.username} · wants to connect</Muted></div>
           <Button small text="Accept" onClick={() => void core.discovery.accept(r)} />
           <IconButton icon="x" color="var(--muted)" onClick={() => core.discovery.decline(r)} title="Decline" />
@@ -249,7 +249,7 @@ export function NearbyPeople({ nav, compact }: { nav: Nav; compact?: boolean }) 
             setBusy(null);
             core.toast(err ?? `Connecting to ${p.name}…`);
           }}>
-            <Avatar avatar={avatarFrom(p.avatar)} size={44} uid={p.uid} />
+            <Avatar avatar={avatarFrom(p.avatar)} size={44} uid={p.uid} name={p.name} />
             <div className="grow"><div style={{ fontSize: 16, fontWeight: 500 }}>{p.name}</div><Muted size={12}>@{p.username}</Muted></div>
             {busy === p.uid ? <Spinner /> : <Chip text={on ? "Open chat" : "Connect"} selected={!on} />}
           </button>
@@ -271,7 +271,7 @@ function YouTab({ nav }: { nav: Nav }) {
         <button style={{ display: "block", width: "100%", textAlign: "left" }} onClick={() => nav.push({ t: "editProfile" })}>
           <div className="pagehead-w"><div className="pagehead" style={{ alignItems: "center" }}>
             <div className="l hstack g20">
-              {p && <Avatar avatar={p.avatar} size={72} mine />}
+              {p && <Avatar avatar={p.avatar} size={72} mine name={p.displayName} />}
               <div style={{ minWidth: 0 }}>
                 <Tiny>You</Tiny>
                 <h1 className="ellipsis" style={{ fontSize: 40, marginTop: 8 }}>{p?.displayName}</h1>

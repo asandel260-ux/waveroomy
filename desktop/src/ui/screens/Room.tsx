@@ -105,8 +105,7 @@ function StageTile({ p, speaking, online, alone, onClick }: { p: Participant; sp
         background: `color-mix(in srgb, hsl(${p.avatar.hue} 55% 50%) 14%, var(--surface2))`,
         boxShadow: speaking ? "inset 0 0 0 3px var(--live), 0 0 16px color-mix(in srgb, var(--live) 35%, transparent)" : "inset 0 0 0 1px var(--border)", transition: "box-shadow .15s" }}>
       <div style={{ opacity: online ? 1 : 0.55, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-        <Avatar avatar={p.avatar} size={d} uid={p.uid} mine={mine} />
-        {alone && <span style={{ color: "var(--muted)", fontSize: 13 }}>Waiting for others. Invite them from the top right.</span>}
+        <Avatar avatar={p.avatar} size={d} uid={p.uid} mine={mine} name={p.displayName} />
       </div>
       {!online && <span style={{ position: "absolute", top: 10, left: 10 }}><Spinner size={20} /></span>}
       {p.sharing && <span style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: 6, background: "var(--accent)", display: "grid", placeItems: "center" }}><Icon name="monitor" size={14} color="var(--on-accent)" /></span>}
@@ -242,16 +241,11 @@ export function RoomScreen({ nav }: ScreenProps) {
       <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", position: "relative" }}>
           {!hideChrome && <>
-            <div className="hstack" style={{ padding: "6px 4px 4px 16px" }}>
-              <div className="grow" style={{ minWidth: 0 }}>
-                <div className="hstack g6"><span className="display ellipsis" style={{ fontSize: 20 }}>{s.meta.title}</span>{s.meta.locked && <Icon name="lock" size={14} color="var(--warn)" />}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr)", alignItems: "center", gap: 12, padding: "10px 8px 10px 16px" }}>
+              <div style={{ minWidth: 0 }}>
+                <div className="hstack g6"><span className="display ellipsis" style={{ fontSize: 18 }}>{s.meta.title}</span>{s.meta.locked && <Icon name="lock" size={14} color="var(--warn)" />}</div>
                 <Muted size={12}>{participants.length} in room{live < participants.length ? ` · connecting ${participants.length - live}` : ""}</Muted>
               </div>
-              <IconButton icon="user-plus" onClick={() => nav.push({ t: "invite", purpose: "room" })} title="Invite" />
-              <IconButton icon="more-v" title="More" onClick={(e) => { const b = e.currentTarget.getBoundingClientRect(); setMenu({ x: b.right - 200, y: b.bottom }); }} />
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8, padding: "8px 12px" }}>
-              <div />
               <div className="hstack g8" role="group" aria-label="Room views" style={{ overflowX: "auto", maxWidth: "100%" }}>
               <TabChip label="Stage" icon="users" on={mode === "stage"} live={false} onClick={() => setMode("stage")} />
               {sharer && <TabChip label="Screen" icon="monitor" on={mode === "screen"} live onClick={() => setMode("screen")} />}
@@ -265,6 +259,8 @@ export function RoomScreen({ nav }: ScreenProps) {
               {mode === "screen" && iShare && <Button small kind="danger" text="Stop sharing" onClick={() => { core.screen.stop(true); setMode("stage"); }} />}
               {mode === "watch" && watching && session.canWatchControl() && <Button small kind="danger" text="End Watch" onClick={() => { session.watchEnd(); setMode("stage"); }} />}
               {mode === "browse" && browsing && session.canBrowseControl() && <Button small kind="danger" text="Close browser" onClick={() => { session.browseEnd(); setMode("stage"); }} />}
+                <IconButton icon="user-plus" onClick={() => nav.push({ t: "invite", purpose: "room" })} title="Invite" />
+                <IconButton icon="more-v" title="More" onClick={(e) => { const b = e.currentTarget.getBoundingClientRect(); setMenu({ x: b.right - 200, y: b.bottom }); }} />
               </div>
             </div>
             <div className="hairline" />

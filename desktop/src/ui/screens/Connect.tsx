@@ -74,7 +74,7 @@ export function CreateRoomScreen({ back }: ScreenProps) {
         <Muted size={12}>You are the host. If you leave, hosting passes to the person who has been here longest. The room keeps going.</Muted>
         {error && <div style={{ color: "var(--danger)", fontSize: 13, marginTop: 10 }}>{error}</div>}
         <div style={{ height: 20 }} />
-        <Button block icon="mic" text="Start room" onClick={start} />
+        <Button block kind="ok" icon="mic" text="Start room" onClick={start} />
       </div></div>
     </Backdrop>
   );

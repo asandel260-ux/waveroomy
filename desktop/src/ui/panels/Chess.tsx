@@ -181,7 +181,7 @@ function SeatRow({ label, seat, g, mySeat, canTake, flat }: { label: string; sea
   const who = [...(session.room?.participants.values() ?? [])].find((p) => p.uid === s?.uid);
   return (
     <div className="hstack g10" style={{ padding: "8px 12px", ...(flat ? {} : { borderRadius: 6, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)" }) }}>
-      {who ? <Avatar avatar={who.avatar} size={32} uid={who.uid} mine={who.uid === session.myUid} /> : <span style={{ width: 32, height: 32, borderRadius: "50%", boxShadow: "inset 0 0 0 1px var(--border-strong)" }} />}
+      {who ? <Avatar avatar={who.avatar} size={32} name={who.displayName} uid={who.uid} mine={who.uid === session.myUid} /> : <span style={{ width: 32, height: 32, borderRadius: "50%", boxShadow: "inset 0 0 0 1px var(--border-strong)" }} />}
       <div className="grow" style={{ minWidth: 0 }}>
         <div className="ellipsis" style={{ fontSize: 14, fontWeight: 500, color: s ? "var(--text)" : "var(--faint)" }}>{s ? s.name + (seat === mySeat ? " (you)" : "") : "Open seat"}</div>
         <Tiny>{label}</Tiny>
@@ -346,7 +346,7 @@ function PlayerStrip({ g, seat, now, pos, board }: { g: ChessGame; seat: number;
     <div className="hstack" style={{ height: 46, background: "var(--surface)", paddingRight: 8 }}>
       <div style={{ width: 3, alignSelf: "stretch", background: team === 0 ? "var(--accent-bright)" : team === 1 ? "var(--warn)" : toMove ? "var(--accent)" : "transparent" }} />
       <div style={{ width: 8 }} />
-      {who ? <Avatar avatar={who.avatar} size={28} uid={who.uid} mine={who.uid === session.myUid} /> : <span style={{ width: 28, height: 28, borderRadius: "50%", boxShadow: "inset 0 0 0 1px var(--border-strong)" }} />}
+      {who ? <Avatar avatar={who.avatar} size={28} name={who.displayName} uid={who.uid} mine={who.uid === session.myUid} /> : <span style={{ width: 28, height: 28, borderRadius: "50%", boxShadow: "inset 0 0 0 1px var(--border-strong)" }} />}
       <div style={{ width: 8 }} />
       <div className="grow" style={{ minWidth: 0 }}>
         <div className="hstack g6">
