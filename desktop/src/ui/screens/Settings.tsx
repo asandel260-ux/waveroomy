@@ -21,7 +21,7 @@ export function VoiceFxPanel() {
         {FX_PRESETS.map((p) => {
           const on = s.fxPreset === p.id;
           return (
-            <button key={p.id} style={{ width: 150, textAlign: "left", borderRadius: 12, padding: 12, background: on ? "var(--accent-30)" : "var(--surface2)", boxShadow: `inset 0 0 0 1px ${on ? "rgb(82 255 31 / .7)" : "var(--border)"}` }} onClick={() => upd((x) => ({ ...x, fxPreset: p.id, fxEnabled: available }))}>
+            <button key={p.id} style={{ width: 150, textAlign: "left", borderRadius: "var(--r-m)", padding: 12, background: on ? "var(--accent-30)" : "var(--surface2)", boxShadow: `inset 0 0 0 1px ${on ? "rgb(82 255 31 / .7)" : "var(--border)"}` }} onClick={() => upd((x) => ({ ...x, fxPreset: p.id, fxEnabled: available }))}>
               <div style={{ color: on ? "var(--accent-bright)" : "var(--text)", fontSize: 14, fontWeight: 600 }}>{p.name}</div>
               <Muted size={11}>{p.desc}</Muted>
             </button>
@@ -79,8 +79,8 @@ export function SettingsScreen({ nav, back }: ScreenProps) {
         <Pad><div className="stack g12">
           <div><Tiny>Theme</Tiny><div style={{ height: 8 }} /><Segmented options={[["dark", "Dark"], ["light", "Light"], ["system", "Match Windows"]]} selected={s.theme} onSelect={(v) => set({ theme: v, bgColor: 0 })} /></div>
           <SwitchRow title="Animations" subtitle="Fades and slides between screens. Turn off for a calmer app." checked={s.animations} onChange={(v) => set({ animations: v })} />
-          <ColorPickerCard title="Buttons & accents" subtitle="Buttons, highlights, switches and sliders." value={s.accentColor} def={0xFF7C3AED | 0} presets={ACCENT_PRESETS} onChange={(c) => set({ accentColor: c })} />
-          <ColorPickerCard title="Background" subtitle="Overrides the theme base colour. Panels and borders follow it." value={s.bgColor} def={0xFF1A1236 | 0} presets={BG_PRESETS} onChange={(c) => set({ bgColor: c })} />
+          <ColorPickerCard title="Buttons & accents" subtitle="Buttons, highlights, switches and sliders." value={s.accentColor} def={0xFF5BE033 | 0} presets={ACCENT_PRESETS} onChange={(c) => set({ accentColor: c })} />
+          <ColorPickerCard title="Background" subtitle="Overrides the theme base colour. Panels and borders follow it." value={s.bgColor} def={0xFF4A2679 | 0} presets={BG_PRESETS} onChange={(c) => set({ bgColor: c })} />
         </div></Pad>
 
         <SectionTitle>Voice</SectionTitle>

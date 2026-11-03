@@ -34,11 +34,11 @@ function ReportsTab() {
       {list.length === 0 ? <EmptyState icon="shield-alert" title="Nothing here" text="Reports from people in rooms you host land here. There is no central moderator. You decide." /> : (
         <div className="stack g10" style={{ padding: 16 }}>
           {list.map((r) => (
-            <div key={r.id} style={{ borderRadius: 12, background: "var(--surface2)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 14 }}>
+            <div key={r.id} style={{ borderRadius: "var(--r-m)", background: "var(--surface2)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 14 }}>
               <div className="hstack"><span className="grow"><Tiny>{r.targetType} · {r.category}</Tiny></span><Tiny>{timeAgo(r.createdAt)}</Tiny></div>
               <div style={{ fontSize: 16, fontWeight: 600, marginTop: 4 }}>{r.targetLabel}</div>
               <Muted size={12}>in “{r.roomTitle}” · from {r.outgoing ? "you" : r.reporterName}</Muted>
-              {r.excerpt && <div style={{ marginTop: 8, background: "var(--surface2)", borderRadius: 8, padding: 10, color: "var(--muted)", fontSize: 13 }}>“{r.excerpt}”</div>}
+              {r.excerpt && <div style={{ marginTop: 8, background: "var(--surface2)", borderRadius: "var(--r-s)", padding: 10, color: "var(--muted)", fontSize: 13 }}>“{r.excerpt}”</div>}
               {r.details && <div style={{ marginTop: 8, fontSize: 14 }}>{r.details}</div>}
               {r.status !== "open" ? <div style={{ marginTop: 8 }}><Muted size={12}>{r.status}{r.note ? `. ${r.note}` : ""}</Muted></div>
                 : !r.outgoing && <div className="hstack g8" style={{ marginTop: 10 }}><Button small text="Resolve" onClick={() => setResolving([r, "resolved"])} /><Button small kind="secondary" text="Dismiss" onClick={() => setResolving([r, "dismissed"])} /></div>}
@@ -70,7 +70,7 @@ function AuditTab() {
 
 function Tile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grow" style={{ borderRadius: 12, background: "var(--surface2)", boxShadow: "inset 0 0 0 1px var(--border-strong)", padding: 12 }}>
+    <div className="grow" style={{ borderRadius: "var(--r-m)", background: "var(--surface2)", boxShadow: "inset 0 0 0 1px var(--border-strong)", padding: 12 }}>
       <div className="display" style={{ fontSize: 26 }}>{value}</div><Tiny>{label}</Tiny>
     </div>
   );
@@ -80,7 +80,7 @@ function Bars({ values, color }: { values: number[]; color: string }) {
   const mx = Math.max(1, ...values);
   return (
     <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 90 }}>
-      {values.map((v, i) => <div key={i} style={{ flex: 1, height: Math.max(3, (v / mx) * 90), borderRadius: 12, background: v === 0 ? "var(--surface3)" : color }} title={String(v)} />)}
+      {values.map((v, i) => <div key={i} style={{ flex: 1, height: Math.max(3, (v / mx) * 90), borderRadius: "var(--r-m)", background: v === 0 ? "var(--surface3)" : color }} title={String(v)} />)}
     </div>
   );
 }

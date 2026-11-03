@@ -426,7 +426,7 @@ export function HeroCard({ children, style }: { children: ReactNode; radius?: nu
 
 export function GroupAvatar({ name, hue, size }: { name?: string; hue: number; size: number; emoji?: string }) {
   return (
-    <div aria-hidden="true" style={{ width: size, height: size, borderRadius: 12, display: "grid", placeItems: "center", flex: "none", fontSize: size * 0.44, fontWeight: 600, color: "#fff", background: hueFill(hue) }}>
+    <div aria-hidden="true" style={{ width: size, height: size, borderRadius: "var(--r-m)", display: "grid", placeItems: "center", flex: "none", fontSize: size * 0.44, fontWeight: 600, color: "#fff", background: hueFill(hue) }}>
       {initialOf(name)}
     </div>
   );

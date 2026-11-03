@@ -14,8 +14,8 @@ const hex = (s: string): Rgb => rgb(parseInt(s.slice(1), 16));
 
 /** Two complete palettes (see DESIGN.md for the reasoning). The owner's custom accent and background override them. */
 const PALETTES = {
-  dark: { bg: "#1d0e57", s1: "#281572", s2: "#321b88", s3: "#3f239f", b1: "#5233bd", b2: "#7f60f5", text: "#ffffff", muted: "#ddd3ff", faint: "#c4b6f7", accent: "#7c3aed", bright: "#cdb4ff", live: "#52ff1f", onLive: "#052200", danger: "#ff7b7b", warn: "#f5b544", scrim: "rgb(20 8 60 / .76)", lift: "0 14px 36px rgb(10 0 40 / .55)" },
-  light: { bg: "#efe8ff", s1: "#ffffff", s2: "#e8dfff", s3: "#dacdff", b1: "#c8b6fb", b2: "#8b6be0", text: "#1a0f3d", muted: "#4a3d78", faint: "#5d5088", accent: "#6d28d9", bright: "#5b21b6", live: "#178009", onLive: "#ffffff", danger: "#a81f1f", warn: "#9a5b00", scrim: "rgb(26 15 61 / .45)", lift: "0 12px 32px rgb(60 20 140 / .2)" },
+  dark: { bg: "#4a2679", s1: "rgb(33 11 68 / .86)", s2: "rgb(45 17 90 / .88)", s3: "rgb(62 26 116 / .92)", b1: "rgb(91 224 51 / .42)", b2: "rgb(91 224 51 / .85)", text: "#ffffff", muted: "#eadfff", faint: "#d8caf8", accent: "#5be033", bright: "#8dfc62", live: "#52ff1f", onLive: "#052200", doodle: "#5be033", danger: "#ffa3a3", warn: "#f5b544", scrim: "rgb(26 6 56 / .78)", lift: "0 14px 36px rgb(15 0 40 / .55)" },
+  light: { bg: "#efe6ff", s1: "rgb(255 255 255 / .86)", s2: "rgb(243 234 255 / .92)", s3: "rgb(228 213 255 / .95)", b1: "rgb(40 140 20 / .45)", b2: "rgb(40 140 20 / .9)", text: "#1a0f3d", muted: "#4a3d78", faint: "#5d5088", accent: "#1a7a08", bright: "#0f5a05", live: "#178009", onLive: "#ffffff", doodle: "#2f9a16", danger: "#a81f1f", warn: "#9a5b00", scrim: "rgb(26 15 61 / .45)", lift: "0 12px 32px rgb(60 20 140 / .2)" },
 } as const;
 
 export function resolveMode(theme: string): "dark" | "light" {
@@ -53,6 +53,7 @@ export function applyTheme(st: Pick<Settings, "accentColor" | "bgColor" | "anima
   for (const k of ["--grad-top", "--grad-bottom"]) set(k, toCss(accent));
   for (const k of ["--bubble-a", "--bubble-b"]) set(k, toCss(light ? accent : lerp(accent, BLACK, 0.12)));
   for (const k of ["--hero-a", "--hero-b", "--hero-c"]) set(k, P.s1);
+  set("--doodle", P.doodle);
   set("--live", P.live); set("--on-live", P.onLive);
   for (const k of ["--ok", "--neon", "--neon-soft", "--neon-deep"]) set(k, P.live);
   set("--danger", P.danger); set("--warn", P.warn);

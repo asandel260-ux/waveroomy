@@ -77,7 +77,7 @@ export function ChessChallengeCard({ gameId, text, onOpen }: { gameId: string; t
   const g = session.room?.chess.games.get(gameId);
   const me = session.myUid;
   return (
-    <div style={{ borderRadius: 8, background: "var(--surface2)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 12 }}>
+    <div style={{ borderRadius: "var(--r-s)", background: "var(--surface2)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 12 }}>
       <div style={{ fontSize: 13 }}>{text}</div>
       <div style={{ height: 10 }} />
       {!g ? <div className="hstack g8"><Icon name="chess" size={18} color="var(--faint)" /><Muted>Finished</Muted></div> : (() => {
@@ -87,7 +87,7 @@ export function ChessChallengeCard({ gameId, text, onOpen }: { gameId: string; t
         return (
           <>
             <div className="hstack g10">
-              <div style={{ width: 36, height: 36, borderRadius: 8, background: "var(--surface3)", display: "grid", placeItems: "center" }}><Icon name="chess" size={20} color="var(--accent-bright)" /></div>
+              <div style={{ width: 36, height: 36, borderRadius: "var(--r-s)", background: "var(--surface3)", display: "grid", placeItems: "center" }}><Icon name="chess" size={20} color="var(--accent-bright)" /></div>
               <div className="grow" style={{ minWidth: 0 }}>
                 <div className="ellipsis" style={{ fontSize: 14, fontWeight: 600 }}>{g.seats[0]?.name ?? "Open seat"}</div>
                 <div style={{ color: "var(--muted)", fontSize: 12 }}>{g.label} · {g.timeLabel}</div>
@@ -168,7 +168,7 @@ function ChessLobby({ g }: { g: ChessGame }) {
 
 function TeamCard({ title, seats, g, mySeat }: { title: string; seats: [number, string][]; g: ChessGame; mySeat: number }) {
   return (
-    <div style={{ borderRadius: 8, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)" }}>
+    <div style={{ borderRadius: "var(--r-s)", background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)" }}>
       <div className="hstack g8" style={{ padding: "8px 12px" }}><span style={{ width: 8, height: 8, background: title === "Team 1" ? "var(--accent-bright)" : "var(--warn)" }} /><Tiny>{title.toUpperCase()}</Tiny></div>
       {seats.map(([seat, label]) => <SeatRow key={seat} label={label} seat={seat} g={g} mySeat={mySeat} canTake={mySeat < 0} flat />)}
     </div>
@@ -180,7 +180,7 @@ function SeatRow({ label, seat, g, mySeat, canTake, flat }: { label: string; sea
   const s = g.seats[seat];
   const who = [...(session.room?.participants.values() ?? [])].find((p) => p.uid === s?.uid);
   return (
-    <div className="hstack g10" style={{ padding: "8px 12px", ...(flat ? {} : { borderRadius: 8, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)" }) }}>
+    <div className="hstack g10" style={{ padding: "8px 12px", ...(flat ? {} : { borderRadius: "var(--r-s)", background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)" }) }}>
       {who ? <Avatar avatar={who.avatar} size={32} name={who.displayName} uid={who.uid} mine={who.uid === session.myUid} /> : <span style={{ width: 32, height: 32, borderRadius: "50%", boxShadow: "inset 0 0 0 1px var(--border-strong)" }} />}
       <div className="grow" style={{ minWidth: 0 }}>
         <div className="ellipsis" style={{ fontSize: 14, fontWeight: 500, color: s ? "var(--text)" : "var(--faint)" }}>{s ? s.name + (seat === mySeat ? " (you)" : "") : "Open seat"}</div>
@@ -317,7 +317,7 @@ function BoardBlock({ g, b, size, ui, now, showLegal }: { g: ChessGame; b: numbe
           label={g.bughouse ? `Board ${b === 0 ? "A" : "B"}` : "Chessboard"}
           onMove={(m) => { ui.setPending({ board: b, move: m, pos: board.pos.play(m).pos }); ui.setDropSel(0); session.chessAct("chess:move", g.id, { m: m.uci(), ply: board.moves.length }, (ok) => { if (!ok) ui.setPending(null); }); }} />
         {g.over && ui.showResult && !g.bughouse && (
-          <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", borderRadius: 8, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border-strong)", padding: "16px 22px", textAlign: "center" }}>
+          <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", borderRadius: "var(--r-s)", background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border-strong)", padding: "16px 22px", textAlign: "center" }}>
             <div className="display" style={{ fontSize: 20, letterSpacing: 1 }}>{g.winnerLine()}</div>
             <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>{reasonLine(g.reason)}</div>
             <div style={{ height: 12 }} /><Button small kind="secondary" text="Review board" onClick={() => ui.setShowResult(false)} />
@@ -357,7 +357,7 @@ function PlayerStrip({ g, seat, now, pos, board }: { g: ChessGame; seat: number;
         {g.bughouse ? <Tiny>Team {team + 1} · Board {board === 0 ? "A" : "B"}</Tiny>
           : (caps.length > 0 || lead !== 0) && <div className="hstack" style={{ gap: 0 }}>{caps.slice(0, 14).map((t, i) => <PieceIcon key={i} type={t} color={1 - color} size={13} />)}{lead > 0 && <span style={{ color: "var(--muted)", fontSize: 11, marginLeft: 4 }}>+{lead}</span>}</div>}
       </div>
-      <div className="mono" style={{ borderRadius: 8, padding: "5px 10px", fontSize: 17, fontWeight: 600, background: low ? "var(--danger-soft)" : running ? "var(--accent-30)" : "var(--surface2)", boxShadow: `inset 0 0 0 1px ${low ? "var(--danger)" : running ? "var(--accent)" : "var(--border)"}`, color: low ? "var(--danger)" : running ? "var(--text)" : "var(--muted)" }}>{fmtMs(remaining)}</div>
+      <div className="mono" style={{ borderRadius: "var(--r-s)", padding: "5px 10px", fontSize: 17, fontWeight: 600, background: low ? "var(--danger-soft)" : running ? "var(--accent-30)" : "var(--surface2)", boxShadow: `inset 0 0 0 1px ${low ? "var(--danger)" : running ? "var(--accent)" : "var(--border)"}`, color: low ? "var(--danger)" : running ? "var(--text)" : "var(--muted)" }}>{fmtMs(remaining)}</div>
     </div>
   );
 }
@@ -368,7 +368,7 @@ function PocketRow({ pos, color, selectable, ui }: { pos: Position; color: numbe
     const n = pos.pocket[color][t];
     const on = selectable && ui.dropSel === t;
     items.push(
-      <button key={t} disabled={!(selectable && n > 0)} onClick={() => ui.setDropSel(on ? 0 : t)} style={{ position: "relative", width: 34, height: 34, margin: "0 2px", borderRadius: 8, display: "grid", placeItems: "center", background: on ? "var(--accent-30)" : "transparent", boxShadow: `inset 0 0 0 1px ${on ? "var(--accent)" : n > 0 ? "var(--border-strong)" : "transparent"}` }}>
+      <button key={t} disabled={!(selectable && n > 0)} onClick={() => ui.setDropSel(on ? 0 : t)} style={{ position: "relative", width: 34, height: 34, margin: "0 2px", borderRadius: "var(--r-s)", display: "grid", placeItems: "center", background: on ? "var(--accent-30)" : "transparent", boxShadow: `inset 0 0 0 1px ${on ? "var(--accent)" : n > 0 ? "var(--border-strong)" : "transparent"}` }}>
         <PieceIcon type={t} color={color} size={28} alpha={n > 0 ? 1 : 0.22} />
         {n > 1 && <span style={{ position: "absolute", right: 2, bottom: 0, fontSize: 10, fontWeight: 700 }}>{n}</span>}
       </button>
@@ -390,7 +390,7 @@ function InfoBlock({ g, ui, onClose, onNew, expanded, onExpand, onMore, onResign
   return (
     <div className="stack g8">
       {g.bughouse && g.over && (
-        <div style={{ borderRadius: 8, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border-strong)", padding: 14, textAlign: "center" }}>
+        <div style={{ borderRadius: "var(--r-s)", background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border-strong)", padding: 14, textAlign: "center" }}>
           <div className="display" style={{ fontSize: 20, letterSpacing: 1 }}>{g.winnerLine()}</div>
           <div style={{ color: "var(--muted)", fontSize: 13 }}>{reasonLine(g.reason)}</div>
           {g.winner >= 0 && g.winner <= 1 && <Muted size={12}>{[0, 1, 2, 3].filter((i) => g.teamOf(i) === g.winner).map((i) => g.seats[i]?.name ?? "?").join(" & ")}</Muted>}
@@ -399,7 +399,7 @@ function InfoBlock({ g, ui, onClose, onNew, expanded, onExpand, onMore, onResign
       {g.live ? <>
         {!seated ? <Tiny>You are watching</Tiny> : g.bughouse && <Muted size={12}>You and {g.seats[g.partner(seat)]?.name ?? "your partner"} play together. Captures go to their reserve.</Muted>}
         {g.drawBy >= 0 && seated && !g.bughouse && (g.drawBy !== seat ? (
-          <div className="hstack g6" style={{ borderRadius: 8, background: "var(--surface2)", boxShadow: "inset 0 0 0 1px var(--accent)", padding: 10 }}>
+          <div className="hstack g6" style={{ borderRadius: "var(--r-s)", background: "var(--surface2)", boxShadow: "inset 0 0 0 1px var(--accent)", padding: 10 }}>
             <span className="grow" style={{ fontSize: 13 }}>{g.seats[g.drawBy]?.name ?? "Your opponent"} offers a draw</span>
             <Button small text="Accept" onClick={() => session.chessAct("chess:draw", g.id, { act: "accept" })} /><Button small kind="secondary" text="Decline" onClick={() => session.chessAct("chess:draw", g.id, { act: "decline" })} />
           </div>
@@ -434,7 +434,7 @@ function MoveList({ g, ui }: { g: ChessGame; ui: Ui }) {
   const live = ui.view < 0 || ui.view >= sans.length;
   const cur = live ? sans.length : ui.view;
   return (
-    <div style={{ flex: 1, minHeight: 0, borderRadius: 8, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", display: "flex", flexDirection: "column" }}>
+    <div style={{ flex: 1, minHeight: 0, borderRadius: "var(--r-s)", background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", display: "flex", flexDirection: "column" }}>
       <div className="hstack" style={{ padding: "2px 8px" }}>
         <Tiny>MOVES</Tiny><span className="grow" />
         <IconButton icon="chevron-left" size={36} iconSize={18} disabled={!(sans.length > 0 && cur > 0)} title="Previous move" onClick={() => ui.setView(Math.max(0, cur - 1))} />
@@ -449,7 +449,7 @@ function MoveList({ g, ui }: { g: ChessGame; ui: Ui }) {
               {[0, 1].map((k) => {
                 const i = r * 2 + k; const san = sans[i];
                 const selected = live ? i === sans.length - 1 : i + 1 === ui.view;
-                return <button key={k} disabled={san == null} className="grow mono" style={{ textAlign: "left", borderRadius: 8, padding: "6px 8px", fontSize: 13, background: selected ? "var(--accent-30)" : "transparent", color: selected ? "var(--accent-bright)" : "var(--text)" }} onClick={() => ui.setView(i + 1 >= sans.length ? -1 : i + 1)}>{san ?? ""}</button>;
+                return <button key={k} disabled={san == null} className="grow mono" style={{ textAlign: "left", borderRadius: "var(--r-s)", padding: "6px 8px", fontSize: 13, background: selected ? "var(--accent-30)" : "transparent", color: selected ? "var(--accent-bright)" : "var(--text)" }} onClick={() => ui.setView(i + 1 >= sans.length ? -1 : i + 1)}>{san ?? ""}</button>;
               })}
             </div>
           ))}

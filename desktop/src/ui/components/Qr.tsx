@@ -32,7 +32,7 @@ export function QrDisplay({ code, size = 280 }: { code: string; size?: number })
   }, [frames, idx]);
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <div style={{ width: size, height: size, borderRadius: 12, background: "#fff", padding: 10, display: "grid", placeItems: "center" }}>
+      <div style={{ width: size, height: size, borderRadius: "var(--r-m)", background: "#fff", padding: 10, display: "grid", placeItems: "center" }}>
         {url && !bad ? <img src={url} alt="QR code" style={{ width: "100%", height: "100%", imageRendering: "pixelated" }} /> : <span style={{ color: "#000", fontSize: 13 }}>Code is too large for a QR image.<br />Share it as text instead.</span>}
       </div>
       {frames.length > 1 && <div style={{ marginTop: 8 }}><Tiny>Frame {idx + 1} of {frames.length}. Keep the scanner pointed here</Tiny></div>}
@@ -94,7 +94,7 @@ export function ScannerOverlay({ title, hint, onCode, onClose }: { title: string
   return (
     <div style={{ position: "fixed", inset: 0, top: 36, background: "#000", zIndex: 60, display: "flex", flexDirection: "column" }}>
       <video ref={video} muted playsInline style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
-      <div style={{ position: "absolute", left: "50%", top: "50%", width: 260, height: 260, transform: "translate(-50%,-50%)", borderRadius: 12, border: "2px solid var(--neon)" }} />
+      <div style={{ position: "absolute", left: "50%", top: "50%", width: 260, height: 260, transform: "translate(-50%,-50%)", borderRadius: "var(--r-m)", border: "2px solid var(--neon)" }} />
       <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, padding: 16 }}>
         <button onClick={onClose} style={{ width: 44, height: 44, borderRadius: "50%", background: "rgb(0 0 0 / .6)", display: "grid", placeItems: "center", color: "#fff" }}><Icon name="x" /></button>
         <span style={{ color: "#fff", fontSize: 18, fontWeight: 600 }}>{title}</span>

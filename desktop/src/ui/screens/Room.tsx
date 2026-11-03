@@ -16,7 +16,7 @@ interface Floating { id: number; emoji: string; name: string; x: number }
 
 function TabChip({ label, icon, on, live, onClick }: { label: string; icon: string; on: boolean; live: boolean; onClick: () => void }) {
   return (
-    <button className="hstack g8" onClick={onClick} aria-pressed={on} style={{ borderRadius: 999, padding: "10px 18px", flex: "none", background: on ? "var(--live)" : "var(--accent-10)", boxShadow: `inset 0 0 0 1px ${on ? "var(--live)" : "var(--border-strong)"}`, transition: "background .12s" }}>
+    <button className="hstack g8" onClick={onClick} aria-pressed={on} style={{ borderRadius: "var(--r-pill)", padding: "10px 18px", flex: "none", background: on ? "var(--live)" : "var(--accent-10)", boxShadow: `inset 0 0 0 1px ${on ? "var(--live)" : "var(--border-strong)"}`, transition: "background .12s" }}>
       <Icon name={icon} size={17} color={on ? "var(--on-live)" : "var(--muted)"} />
       <span style={{ color: on ? "var(--on-live)" : "var(--muted)", fontSize: 14, fontWeight: on ? 600 : 500 }}>{label}</span>
       {live && <span role="img" aria-label="active" style={{ width: 7, height: 7, borderRadius: "50%", background: on ? "var(--on-live)" : "var(--live)" }} />}
@@ -26,11 +26,11 @@ function TabChip({ label, icon, on, live, onClick }: { label: string; icon: stri
 
 function CtlButton({ icon, onClick, on, danger, badge = 0, title }: { icon: string; onClick: () => void; on?: boolean; danger?: boolean; badge?: number; title: string }) {
   return (
-    <button onClick={onClick} title={title} aria-label={title} aria-pressed={on} style={{ position: "relative", width: 44, height: 44, borderRadius: 8, display: "grid", placeItems: "center", flex: "none",
+    <button onClick={onClick} title={title} aria-label={title} aria-pressed={on} style={{ position: "relative", width: 44, height: 44, borderRadius: "var(--r-s)", display: "grid", placeItems: "center", flex: "none",
       background: danger ? "var(--danger-soft)" : on ? "var(--accent)" : "transparent",
       boxShadow: on || danger ? "none" : "inset 0 0 0 1px var(--border-strong)" }}>
       <Icon name={icon} size={20} color={danger ? "var(--danger)" : on ? "var(--on-accent)" : "var(--text)"} />
-      {badge > 0 && <span style={{ position: "absolute", top: 3, right: 3, width: 17, height: 17, borderRadius: 12, background: "var(--accent)", color: "var(--on-accent)", fontSize: 9, fontWeight: 700, display: "grid", placeItems: "center" }}>{badge > 9 ? "9+" : badge}</span>}
+      {badge > 0 && <span style={{ position: "absolute", top: 3, right: 3, width: 17, height: 17, borderRadius: "var(--r-m)", background: "var(--accent)", color: "var(--on-accent)", fontSize: 9, fontWeight: 700, display: "grid", placeItems: "center" }}>{badge > 9 ? "9+" : badge}</span>}
     </button>
   );
 }
@@ -46,7 +46,7 @@ function MicButton({ muted, ptt }: { muted: boolean; ptt: boolean }) {
     : { onClick: () => (muted ? unmute() : session.setMuted(true)) };
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch", width: d, flex: "none", gap: 6 }}>
-      <button {...handlers} aria-label={ptt ? "Hold to talk" : muted ? "Unmute microphone" : "Mute microphone"} aria-pressed={!muted} title={ptt ? "Hold to talk" : muted ? "Unmute" : "Mute"} style={{ width: d, height: d, borderRadius: 12, display: "grid", placeItems: "center",
+      <button {...handlers} aria-label={ptt ? "Hold to talk" : muted ? "Unmute microphone" : "Mute microphone"} aria-pressed={!muted} title={ptt ? "Hold to talk" : muted ? "Unmute" : "Mute"} style={{ width: d, height: d, borderRadius: "var(--r-m)", display: "grid", placeItems: "center",
         background: muted ? "var(--surface2)" : "var(--live)", boxShadow: muted ? "inset 0 0 0 1px var(--border-strong)" : "0 0 18px color-mix(in srgb, var(--live) 45%, transparent)", transition: "background .12s, box-shadow .12s" }}>
         <Icon name={muted ? "mic-off" : "mic"} size={30} color={muted ? "var(--text)" : "var(--on-live)"} />
       </button>
@@ -101,15 +101,15 @@ function StageTile({ p, speaking, online, alone, onClick }: { p: Participant; sp
   }, []);
   return (
     <button ref={ref} onClick={onClick} aria-label={`${mine ? "You" : p.displayName}${p.muted ? ", muted" : ""}${speaking ? ", speaking" : ""}`}
-      style={{ position: "relative", minWidth: 0, minHeight: 0, borderRadius: 12, overflow: "hidden", display: "grid", placeItems: "center",
+      style={{ position: "relative", minWidth: 0, minHeight: 0, borderRadius: "var(--r-m)", overflow: "hidden", display: "grid", placeItems: "center",
         background: `color-mix(in srgb, hsl(${p.avatar.hue} 70% 55%) 32%, var(--surface2))`,
         boxShadow: speaking ? "inset 0 0 0 3px var(--live), 0 0 16px color-mix(in srgb, var(--live) 35%, transparent)" : "inset 0 0 0 1px var(--border)", transition: "box-shadow .15s" }}>
       <div style={{ opacity: online ? 1 : 0.55, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
         <Avatar avatar={p.avatar} size={d} uid={p.uid} mine={mine} name={p.displayName} />
       </div>
       {!online && <span style={{ position: "absolute", top: 10, left: 10 }}><Spinner size={20} /></span>}
-      {p.sharing && <span style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: 8, background: "var(--accent)", display: "grid", placeItems: "center" }}><Icon name="monitor" size={14} color="var(--on-accent)" /></span>}
-      <div className="hstack g6" style={{ position: "absolute", left: 8, bottom: 8, maxWidth: "calc(100% - 52px)", borderRadius: 8, padding: "4px 10px", background: "var(--surface)", color: "var(--text)", fontSize: 13, fontWeight: 500 }}>
+      {p.sharing && <span style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: "var(--r-s)", background: "var(--accent)", display: "grid", placeItems: "center" }}><Icon name="monitor" size={14} color="var(--on-accent)" /></span>}
+      <div className="hstack g6" style={{ position: "absolute", left: 8, bottom: 8, maxWidth: "calc(100% - 52px)", borderRadius: "var(--r-s)", padding: "4px 10px", background: "var(--surface)", color: "var(--text)", fontSize: 13, fontWeight: 500 }}>
         {p.role === "host" && <Icon name="crown" size={12} color="var(--warn)" />}
         <span className="ellipsis">{mine ? "You" : p.displayName}</span>
       </div>
@@ -215,7 +215,7 @@ export function RoomScreen({ nav }: ScreenProps) {
     default: main = (
       <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", padding: 6, gap: 6 }}>
         {sharer && (
-          <button className="hstack g12" onClick={() => setMode("screen")} style={{ width: "100%", textAlign: "left", borderRadius: 12, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 12, flex: "none" }}>
+          <button className="hstack g12" onClick={() => setMode("screen")} style={{ width: "100%", textAlign: "left", borderRadius: "var(--r-m)", background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 12, flex: "none" }}>
             <Icon name="monitor" size={22} color="var(--accent-bright)" />
             <div className="grow"><div style={{ fontSize: 14, fontWeight: 500 }}>{iShare ? "You are" : sharer.displayName + " is"} sharing a screen</div><Muted size={12}>{sharer.sharing?.res}p · {sharer.sharing?.fps} fps</Muted></div>
             <Chip text={iShare ? "Preview" : "Watch"} selected />
@@ -287,7 +287,7 @@ export function RoomScreen({ nav }: ScreenProps) {
       {reactOpen && (
         <Sheet title="React" center onDismiss={() => setReactOpen(false)}>
           <div className="hstack" style={{ flexWrap: "wrap", gap: 10, padding: "0 16px 8px", justifyContent: "center" }}>
-            {REACTIONS.map((e) => <button key={e} aria-label={`React with ${e}`} style={{ width: 56, height: 56, borderRadius: 8, background: "var(--surface2)", fontSize: 26 }} onClick={() => { session.react(e); setReactOpen(false); }}>{e}</button>)}
+            {REACTIONS.map((e) => <button key={e} aria-label={`React with ${e}`} style={{ width: 56, height: 56, borderRadius: "var(--r-s)", background: "var(--surface2)", fontSize: 26 }} onClick={() => { session.react(e); setReactOpen(false); }}>{e}</button>)}
           </div>
         </Sheet>
       )}

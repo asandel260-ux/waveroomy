@@ -6,6 +6,7 @@ import { useFlow, useEmitter } from "./hooks";
 import { avatarFrom } from "../core/models";
 import { applyTheme } from "./theme";
 import { Avatar, Button, Dialog, Icon, ScreenHeader, ToastHost, Backdrop, Muted } from "./components/kit";
+import { DoodleBackdrop } from "./components/Doodle";
 import { WelcomeScreen } from "./screens/Welcome";
 import { Onboarding } from "./screens/Onboarding";
 import { HomeScreen } from "./screens/Home";
@@ -122,7 +123,8 @@ export function AppRoot() {
     </div>
   );
   return (
-    <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", background: "transparent" }}>
+    <div className="shell" style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", background: "transparent" }}>
+      <DoodleBackdrop />
       <TitleBar />
       {body}
       {profile && <Globals />}

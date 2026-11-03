@@ -135,7 +135,7 @@ function MessagesTab({ nav }: { nav: Nav }) {
           <FriendRequests />
           <NearbyPeople nav={nav} />
           <button className="listrow" onClick={() => nav.push({ t: "chat", uid: SAVED })}>
-            <div style={{ width: 48, height: 48, borderRadius: 8, display: "grid", placeItems: "center", background: "var(--accent)", boxShadow: "0 0 0 1px var(--border-strong)" }}><Icon name="bookmark" size={22} color="#fff" /></div>
+            <div style={{ width: 48, height: 48, borderRadius: "var(--r-s)", display: "grid", placeItems: "center", background: "var(--accent)", boxShadow: "0 0 0 1px var(--border-strong)" }}><Icon name="bookmark" size={22} color="#fff" /></div>
             <div className="grow"><div style={{ fontSize: 16, fontWeight: 500 }}>Saved messages</div><Muted><span className="ellipsis" style={{ display: "block" }}>{lastSaved ? core.dmHub.preview(lastSaved) : "Notes, links and files for yourself"}</span></Muted></div>
           </button>
           {list.length === 0 && (
