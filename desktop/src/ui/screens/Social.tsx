@@ -79,7 +79,7 @@ export function PeopleScreen({ nav, back }: ScreenProps) {
   return (
     <Backdrop style={3}>
       <ScreenHeader title="People" onBack={back} />
-      <div style={{ padding: "6px 16px" }}><Segmented options={[["met", "Met"], ["following", "Following"], ["followers", "Followers"], ["blocked", "Blocked"]]} selected={tab} onSelect={setTab} /></div>
+      <div className="pagebar"><Segmented options={[["met", "Met"], ["following", "Following"], ["followers", "Followers"], ["blocked", "Blocked"]]} selected={tab} onSelect={setTab} /></div>
       {uids.length === 0 ? <EmptyState icon="users" title="Nobody here yet" text="People appear after you've connected with them in a room or with a QR code." /> : (
         <div className="scroll"><div style={{ maxWidth: 720, margin: "0 0 0 max(0px, calc((100% - 880px) / 2))" }}>
           {uids.map((uid) => {

@@ -125,8 +125,8 @@ export function ChatScreen({ nav, route, back }: ScreenProps) {
         {/* header */}
         <div className="hstack" style={{ padding: "6px 8px 6px 4px", gap: 2 }}>
           <IconButton icon="chevron-left" onClick={back} title="Back" />
-          <button className="hstack g10 grow" style={{ textAlign: "left", borderRadius: 6, padding: 4, minWidth: 0 }} onClick={() => { if (grp) nav.push({ t: "groupInfo", gid: gid(chat) }); else if (!isSaved) nav.push({ t: "profile", uid: chat }); }}>
-            {isSaved ? <div style={{ width: 40, height: 40, borderRadius: 6, display: "grid", placeItems: "center", background: "var(--accent)", boxShadow: "0 0 0 1px var(--border-strong)" }}><Icon name="bookmark" size={20} color="#fff" /></div>
+          <button className="hstack g10 grow" style={{ textAlign: "left", borderRadius: 8, padding: 4, minWidth: 0 }} onClick={() => { if (grp) nav.push({ t: "groupInfo", gid: gid(chat) }); else if (!isSaved) nav.push({ t: "profile", uid: chat }); }}>
+            {isSaved ? <div style={{ width: 40, height: 40, borderRadius: 8, display: "grid", placeItems: "center", background: "var(--accent)", boxShadow: "0 0 0 1px var(--border-strong)" }}><Icon name="bookmark" size={20} color="#fff" /></div>
               : grp ? <GroupAvatar name={group?.name} hue={group?.hue ?? 265} size={40} />
               : <Avatar avatar={contacts[chat]?.avatar ?? defaultAvatar()} size={40} uid={chat} />}
             <div style={{ minWidth: 0 }}>
@@ -165,7 +165,7 @@ export function ChatScreen({ nav, route, back }: ScreenProps) {
                   const newDay = !before || dayKey(before.at) !== dayKey(m.at);
                   return (
                     <div key={m.id} id={"m-" + m.id} style={{ display: "contents" }}>
-                      {newDay && <div style={{ display: "flex", justifyContent: "center", padding: "8px 0" }}><span style={{ color: "var(--muted)", fontSize: 12, fontWeight: 500, background: "var(--surface2)", borderRadius: 6, padding: "4px 12px" }}>{dayLabel(m.at)}</span></div>}
+                      {newDay && <div style={{ display: "flex", justifyContent: "center", padding: "8px 0" }}><span style={{ color: "var(--muted)", fontSize: 12, fontWeight: 500, background: "var(--surface2)", borderRadius: 8, padding: "4px 12px" }}>{dayLabel(m.at)}</span></div>}
                       {m.kind === "call"
                         ? <div style={{ display: "flex", justifyContent: "center", padding: "6px 0" }}><Muted size={12}>{m.text}</Muted></div>
                         : <Bubble chat={chat} m={m} all={list} showAuthor={grp && m.from !== me && (!before || before.from !== m.from || before.kind === "call" || newDay)} onAction={() => setActionOn(m)} onView={() => setViewer(m)} />}
@@ -175,13 +175,13 @@ export function ChatScreen({ nav, route, back }: ScreenProps) {
               </div>
             </div>
             {(newBelow > 0 || !atBottom) && (
-              <button className="hstack g6" style={{ position: "absolute", bottom: 10, left: "50%", transform: "translateX(-50%)", borderRadius: 6, padding: "8px 14px", background: "var(--accent)", boxShadow: "0 0 0 1px var(--border-strong)", color: "#fff", fontSize: 12, fontWeight: 500 }} onClick={() => scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" })}>
+              <button className="hstack g6" style={{ position: "absolute", bottom: 10, left: "50%", transform: "translateX(-50%)", borderRadius: 8, padding: "8px 14px", background: "var(--accent)", boxShadow: "0 0 0 1px var(--border-strong)", color: "#fff", fontSize: 12, fontWeight: 500 }} onClick={() => scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" })}>
                 <Icon name="arrow-down" size={14} color="#fff" />{newBelow > 0 ? `${newBelow} new` : "Latest"}
               </button>
             )}
           </div>
         )}
-        {drag && <div style={{ position: "absolute", inset: 0, zIndex: 20, background: "rgb(10 7 16 / .8)", display: "grid", placeItems: "center", border: "2px dashed var(--neon)", borderRadius: 10, pointerEvents: "none" }}><div className="display" style={{ fontSize: 22 }}>Drop to send</div></div>}
+        {drag && <div style={{ position: "absolute", inset: 0, zIndex: 20, background: "rgb(10 7 16 / .8)", display: "grid", placeItems: "center", border: "2px dashed var(--neon)", borderRadius: 12, pointerEvents: "none" }}><div className="display" style={{ fontSize: 22 }}>Drop to send</div></div>}
 
         {/* composer */}
         {readOnly ? <div style={{ background: "var(--surface)", padding: 16, textAlign: "center" }}><Muted>You are no longer in this group.</Muted></div> : (
@@ -208,7 +208,7 @@ export function ChatScreen({ nav, route, back }: ScreenProps) {
               <IconButton icon="paperclip" color="var(--muted)" title="Attach a file or photo" onClick={() => void hub.pickAndSend(chat, "file", replyTo?.id ?? "")} />
               <IconButton icon="image" color="var(--muted)" title="Photo" onClick={() => void hub.pickAndSend(chat, "image", replyTo?.id ?? "")} />
               <IconButton icon="gif" color="var(--muted)" title="GIF from a link" onClick={() => setGifDialog(true)} />
-              <div className="grow" style={{ minHeight: 44, borderRadius: 10, background: "var(--surface2)", boxShadow: "inset 0 0 0 1px var(--border)", padding: "11px 16px", display: "flex" }}>
+              <div className="grow" style={{ minHeight: 44, borderRadius: 12, background: "var(--surface2)", boxShadow: "inset 0 0 0 1px var(--border)", padding: "11px 16px", display: "flex" }}>
                 <textarea ref={ta} value={text} rows={1} placeholder={isSaved ? "Write a note" : "Message"} maxLength={4000} autoFocus
                   style={{ flex: 1, resize: "none", background: "transparent", border: 0, outline: 0, color: "var(--text)", fontSize: 15, lineHeight: "22px", maxHeight: 140, margin: "-1px 0" }}
                   onChange={(e) => setText(e.target.value)} onPaste={onPaste}
@@ -276,8 +276,8 @@ function Bubble({ chat, m, all, showAuthor, onAction, onView }: { chat: string; 
           {showAuthor && <div style={{ color: authorColor(m.from), fontSize: 12, fontWeight: 600 }}>{nameOf(m.from, m.authorName)}</div>}
           {m.fwd && !m.deleted && <div style={{ opacity: 0.75, fontSize: 11, fontWeight: 500 }}>Forwarded from {m.fwd}</div>}
           {m.reply && !m.deleted && (
-            <div className="hstack g6" style={{ margin: "3px 0", padding: 6, borderRadius: 6, background: "rgb(255 255 255 / .12)" }}>
-              <div style={{ width: 3, height: 30, borderRadius: 6, background: mine ? "#fff" : "var(--accent-bright)" }} />
+            <div className="hstack g6" style={{ margin: "3px 0", padding: 6, borderRadius: 8, background: "rgb(255 255 255 / .12)" }}>
+              <div style={{ width: 3, height: 30, borderRadius: 8, background: mine ? "#fff" : "var(--accent-bright)" }} />
               <div style={{ minWidth: 0 }}>
                 <div style={{ color: mine ? "#fff" : "var(--accent-bright)", fontSize: 12, fontWeight: 600 }}>{r ? nameOf(r.from, r.authorName) : "Message"}</div>
                 <div className="ellipsis" style={{ opacity: 0.8, fontSize: 12 }}>{r ? core.dmHub.preview(r) : "not available"}</div>
@@ -300,7 +300,7 @@ function Bubble({ chat, m, all, showAuthor, onAction, onView }: { chat: string; 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4, paddingTop: 2 }}>
           {Object.entries(m.reactions).map(([e, who]) => {
             const on = who.includes(me);
-            return <button key={e} className="hstack" style={{ borderRadius: 6, padding: "3px 8px", background: on ? "var(--accent-30)" : "var(--surface2)", boxShadow: `inset 0 0 0 1px ${on ? "rgb(82 255 31 / .7)" : "var(--border)"}`, fontSize: 13 }} onClick={() => core.dmHub.react(chat, m.id, e)}>{e}{who.length > 1 && <span style={{ color: "var(--muted)", fontSize: 12, marginLeft: 4 }}>{who.length}</span>}</button>;
+            return <button key={e} className="hstack" style={{ borderRadius: 8, padding: "3px 8px", background: on ? "var(--accent-30)" : "var(--surface2)", boxShadow: `inset 0 0 0 1px ${on ? "rgb(82 255 31 / .7)" : "var(--border)"}`, fontSize: 13 }} onClick={() => core.dmHub.react(chat, m.id, e)}>{e}{who.length > 1 && <span style={{ color: "var(--muted)", fontSize: 12, marginLeft: 4 }}>{who.length}</span>}</button>;
           })}
         </div>
       )}
@@ -313,10 +313,10 @@ function MediaView({ m }: { m: DmMessage }) {
   const prog = useFlow(core.dmHub.mediaProgress);
   const src = useMediaUrl(m.id, has && !m.url);
   const img = m.url || src;
-  if (img) return <img src={img} alt="" style={{ width: 240, maxHeight: 300, minHeight: 80, objectFit: "cover", borderRadius: 6, display: "block" }} />;
+  if (img) return <img src={img} alt="" style={{ width: 240, maxHeight: 300, minHeight: 80, objectFit: "cover", borderRadius: 8, display: "block" }} />;
   const p = prog[m.id];
   return (
-    <div style={{ width: 200, height: 140, borderRadius: 6, background: "rgb(0 0 0 / .25)", display: "grid", placeItems: "center", textAlign: "center" }}>
+    <div style={{ width: 200, height: 140, borderRadius: 8, background: "rgb(0 0 0 / .25)", display: "grid", placeItems: "center", textAlign: "center" }}>
       {p != null ? <Spinner size={30} /> : <Muted size={12}>{m.kind === "gif" ? "GIF" : "Photo"} · {fmtSize(m.size)}<br />waiting for sender</Muted>}
     </div>
   );
@@ -354,7 +354,7 @@ function ImageViewer({ m, onClose }: { m: DmMessage; onClose: () => void }) {
   const img = m.url || src;
   return (
     <div style={{ position: "fixed", inset: 0, top: 36, zIndex: 70, background: "rgb(0 0 0 / .86)", display: "grid", placeItems: "center" }} onClick={onClose}>
-      {img && <img src={img} alt="" style={{ maxWidth: "92vw", maxHeight: "86vh", borderRadius: 10 }} onClick={(e) => e.stopPropagation()} />}
+      {img && <img src={img} alt="" style={{ maxWidth: "92vw", maxHeight: "86vh", borderRadius: 12 }} onClick={(e) => e.stopPropagation()} />}
       <div className="hstack g8" style={{ position: "absolute", top: 12, right: 12 }}>
         {!m.url && has && <IconButton icon="download" bg="rgb(0 0 0 / .6)" color="#fff" onClick={async (e) => { e.stopPropagation(); const b = await Media.read(m.id); if (b && (await native.saveFile(m.name || (m.kind === "gif" ? "image.gif" : "image.jpg"), b))) core.toast("Saved"); }} />}
         <IconButton icon="x" bg="rgb(0 0 0 / .6)" color="#fff" onClick={onClose} />

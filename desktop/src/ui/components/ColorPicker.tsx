@@ -43,7 +43,7 @@ export function ColorPickerCard({ title, subtitle, value, def, presets, onChange
     <div><Tiny>{label}</Tiny><input type="range" min={0} max={max} step={max / 360} value={val} style={{ width: "100%", accentColor: css(shown) }} onChange={(e) => { const x = parseFloat(e.target.value); set(x); f(x); }} /></div>
   );
   return (
-    <div style={{ borderRadius: 10, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 14 }}>
+    <div style={{ borderRadius: 12, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 14 }}>
       <div className="hstack g10">
         <div className="grow"><div style={{ fontSize: 15, fontWeight: 600 }}>{title}</div><Muted size={12}>{subtitle}</Muted></div>
         <span style={{ width: 30, height: 30, borderRadius: "50%", background: css(shown), boxShadow: "inset 0 0 0 1px var(--border-strong)" }} />

@@ -159,7 +159,7 @@ export function WatchPanel() {
 
   return (
     <div style={{ flex: 1, minHeight: 0, display: "flex", background: "var(--bg)" }}>
-      <div style={{ flex: 1.4, minWidth: 0, background: "#000", display: "grid", placeItems: "center" }}>
+      <div style={{ flex: 1.4, minWidth: 0, background: "var(--bg)", display: "grid", placeItems: "center" }}>
         <div style={{ position: "relative", width: "100%", maxHeight: "100%", aspectRatio: "16/9" }}>
           {fallback
             ? React.createElement("webview", { ref: web, src: "about:blank", partition: "persist:browse", style: { position: "absolute", inset: 0, width: "100%", height: "100%" } })

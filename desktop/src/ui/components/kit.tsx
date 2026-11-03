@@ -209,8 +209,8 @@ export function ConfirmDialog({ title, text, confirm, onConfirm, onDismiss, dang
 }) {
   return (
     <Dialog title={title} onDismiss={onDismiss} actions={<>
-      <button style={{ color: "var(--muted)" }} onClick={onDismiss}>{cancel}</button>
-      <button style={{ color: danger ? "var(--danger)" : "var(--accent-bright)" }} onClick={() => { onConfirm(); onDismiss(); }}>{confirm}</button>
+      <Button small kind="secondary" text={cancel} onClick={onDismiss} />
+      <Button small kind={danger ? "danger" : "primary"} text={confirm} onClick={() => { onConfirm(); onDismiss(); }} />
     </>}>
       <div className="body-t">{text}</div>
     </Dialog>
@@ -223,8 +223,8 @@ export function InputDialog({ title, initial = "", placeholder = "", confirm = "
   const [v, setV] = useState(initial);
   return (
     <Dialog title={title} onDismiss={onDismiss} actions={<>
-      <button style={{ color: "var(--muted)" }} onClick={onDismiss}>Cancel</button>
-      <button style={{ color: "var(--accent-bright)" }} onClick={() => { onConfirm(v.trim()); onDismiss(); }}>{confirm}</button>
+      <Button small kind="secondary" text="Cancel" onClick={onDismiss} />
+      <Button small text={confirm} onClick={() => { onConfirm(v.trim()); onDismiss(); }} />
     </>}>
       <Field value={v} onChange={setV} placeholder={placeholder} autoFocus onEnter={() => { onConfirm(v.trim()); onDismiss(); }} />
     </Dialog>
@@ -411,12 +411,12 @@ export function Backdrop({ children, className = "", css }: { style?: number; ch
 export function NeonWave(_: { height?: number; amplitude?: number; stroke?: number; animated?: boolean }) { return null; }
 
 export function HeroCard({ children, style }: { children: ReactNode; radius?: number; style?: React.CSSProperties }) {
-  return <div style={{ borderTop: "2px solid var(--text)", borderBottom: "1px solid var(--border)", ...style }}>{children}</div>;
+  return <div className="card" style={style}>{children}</div>;
 }
 
 export function GroupAvatar({ name, hue, size }: { name?: string; hue: number; size: number; emoji?: string }) {
   return (
-    <div aria-hidden="true" style={{ width: size, height: size, borderRadius: 10, display: "grid", placeItems: "center", flex: "none", fontSize: size * 0.44, fontWeight: 600, color: "#fff", background: hueFill(hue) }}>
+    <div aria-hidden="true" style={{ width: size, height: size, borderRadius: 12, display: "grid", placeItems: "center", flex: "none", fontSize: size * 0.44, fontWeight: 600, color: "#fff", background: hueFill(hue) }}>
       {initialOf(name)}
     </div>
   );

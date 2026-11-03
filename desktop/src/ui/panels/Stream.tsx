@@ -26,10 +26,10 @@ export function StreamPanel({ p }: { p: Participant }) {
     return () => { live = false; };
   }, [p.sid, at]);
   return (
-    <div style={{ position: "relative", flex: 1, minHeight: 0, background: "#000", display: "grid", placeItems: "center" }}>
+    <div style={{ position: "relative", flex: 1, minHeight: 0, background: "var(--bg)", display: "grid", placeItems: "center" }}>
       <video ref={video} playsInline autoPlay muted style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }} onPlaying={() => setHasFrame(true)} onLoadedData={() => setHasFrame(true)} onDoubleClick={(e) => { const v = e.currentTarget; if (document.fullscreenElement) void document.exitFullscreen(); else void v.requestFullscreen(); }} />
       {!hasFrame && <div className="stack" style={{ alignItems: "center", gap: 10, position: "relative" }}><Spinner size={28} /><span style={{ color: "rgb(255 255 255 / .8)", fontSize: 13 }}>Waiting for {p.displayName}'s screen…</span></div>}
-      <div style={{ position: "absolute", top: 10, left: 10, background: "rgb(0 0 0 / .6)", borderRadius: 6, padding: "5px 10px", color: "#fff", fontSize: 12 }}>{p.displayName} · {p.sharing?.res}p {p.sharing?.fps}fps · double-click for full screen</div>
+      <div style={{ position: "absolute", top: 10, left: 10, background: "rgb(0 0 0 / .6)", borderRadius: 8, padding: "5px 10px", color: "#fff", fontSize: 12 }}>{p.displayName} · {p.sharing?.res}p {p.sharing?.fps}fps · double-click for full screen</div>
     </div>
   );
 }
@@ -48,7 +48,7 @@ function SharerPanel({ p }: { p: Participant }) {
     <div className="scroll"><div style={{ maxWidth: 560, margin: "0 auto", padding: 20, display: "flex", flexDirection: "column", alignItems: "center" }}>
       <div style={{ fontSize: 20 }}>{active ? "You're sharing your screen" : "Starting…"}</div>
       <div style={{ margin: "6px 0 14px" }}><Muted>Everyone in the room can see it.</Muted></div>
-      <video ref={preview} muted playsInline style={{ width: "100%", maxHeight: 280, borderRadius: 10, background: "#000", objectFit: "contain" }} />
+      <video ref={preview} muted playsInline style={{ width: "100%", maxHeight: 280, borderRadius: 12, background: "#000", objectFit: "contain" }} />
       <div style={{ height: 20 }} />
       <div style={{ width: "100%" }}>
         <Tiny>Resolution</Tiny><div style={{ height: 8 }} />
@@ -83,8 +83,8 @@ export function ShareSheet({ onDismiss, onStarted }: { onDismiss: () => void; on
   };
   const screens = (sources ?? []).filter((s) => s.isScreen), windows = (sources ?? []).filter((s) => !s.isScreen);
   const tile = (s: ScreenSource) => (
-    <button key={s.id} onClick={() => setPick(s.id)} style={{ width: 168, textAlign: "left", borderRadius: 10, padding: 6, background: pick === s.id ? "var(--accent-30)" : "var(--surface2)", boxShadow: `inset 0 0 0 ${pick === s.id ? 2 : 1}px ${pick === s.id ? "var(--neon)" : "var(--border)"}` }}>
-      <img src={s.thumb} alt="" style={{ width: "100%", aspectRatio: "16/10", objectFit: "cover", borderRadius: 6, background: "#000", display: "block" }} />
+    <button key={s.id} onClick={() => setPick(s.id)} style={{ width: 168, textAlign: "left", borderRadius: 12, padding: 6, background: pick === s.id ? "var(--accent-30)" : "var(--surface2)", boxShadow: `inset 0 0 0 ${pick === s.id ? 2 : 1}px ${pick === s.id ? "var(--neon)" : "var(--border)"}` }}>
+      <img src={s.thumb} alt="" style={{ width: "100%", aspectRatio: "16/10", objectFit: "cover", borderRadius: 8, background: "#000", display: "block" }} />
       <div className="hstack g6" style={{ marginTop: 6 }}>{s.appIcon && <img src={s.appIcon} alt="" style={{ width: 14, height: 14 }} />}<span className="ellipsis" style={{ fontSize: 12 }}>{s.name}</span></div>
     </button>
   );

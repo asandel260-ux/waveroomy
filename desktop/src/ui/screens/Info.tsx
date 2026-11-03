@@ -67,7 +67,7 @@ export function AboutScreen({ back }: ScreenProps) {
       <H t="Built with" />
       <P t="Electron, React and the browser's WebRTC, with qrcode and jsQR for codes, and the Lucide icon set." />
       <H t="Design" />
-      <P t="Dark, typographic, one accent colour. Hairlines instead of shadows." />
+      <P t="Violet and neon green, in a dark or a light theme. Plain type, clear buttons." />
     </Page>
   );
 }

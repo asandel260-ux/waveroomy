@@ -126,7 +126,7 @@ export function BrowsePanel() {
             <Muted>One person drives, everybody follows the same page. Each device loads the page itself, so your logins stay on your computer.</Muted>
             <div style={{ height: 16 }} /><Tiny>Quick start</Tiny><div style={{ height: 8 }} />
             {[["Wikipedia", "https://wikipedia.org"], ["DuckDuckGo", "https://duckduckgo.com"], ["OpenStreetMap", "https://openstreetmap.org"], ["Hacker News", "https://news.ycombinator.com"]].map(([n, u]) => (
-              <button key={n} className="hstack g12" onClick={() => go(u)} style={{ width: "100%", textAlign: "left", margin: "4px 0", borderRadius: 10, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 14 }}>
+              <button key={n} className="hstack g12" onClick={() => go(u)} style={{ width: "100%", textAlign: "left", margin: "4px 0", borderRadius: 12, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 14 }}>
                 <Icon name="globe" size={20} color="var(--accent-bright)" />
                 <div className="grow"><div style={{ fontSize: 15, fontWeight: 500 }}>{n}</div><Muted size={12}>{u.replace("https://", "")}</Muted></div>
                 <Icon name="chevron-right" size={16} color="var(--faint)" />

@@ -14,12 +14,12 @@
   --live: #52ff1f; --on-live: #052200;
   --ok: #52ff1f; --neon: #52ff1f; --neon-soft: #52ff1f; --neon-deep: #52ff1f;
   --warn: #f5b544; --danger: #ff6b6b; --danger-soft: rgb(255 107 107 / .14);
-  --scrim: rgb(5 3 10 / .72);
+  --scrim: rgb(16 9 40 / .74);
   --lift: 0 12px 32px rgb(0 0 0 / .45);
   --serif: "Segoe UI Variable Display", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   --sans: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
-  --r-s: 6px; --r-m: 10px; --r-l: 14px;
+  --r-s: 8px; --r-m: 12px; --r-l: 16px;
   --ease: cubic-bezier(.2, 0, 0, 1);
 }
 .light { color-scheme: light; }
@@ -95,11 +95,11 @@ svg.ic { flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-l
 .section-title i { display: none; }
 
 /* ---------- buttons ---------- */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 22px; border-radius: 12px; font-size: 14px; font-weight: 600; white-space: nowrap; transition: background .15s, box-shadow .15s, transform .12s, filter .15s; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 22px; border-radius: var(--r-m); font-size: 14px; font-weight: 600; white-space: nowrap; transition: background .15s, box-shadow .15s, transform .12s, filter .15s; }
 .btn:hover:not(:disabled) { transform: translateY(-1px); }
 .btn:active:not(:disabled) { transform: translateY(0) scale(.99); }
 .btn:disabled { opacity: .4; }
-.btn.small { min-height: 38px; padding: 0 16px; font-size: 13px; border-radius: 10px; }
+.btn.small { min-height: 38px; padding: 0 16px; font-size: 13px; border-radius: var(--r-s); }
 .btn.primary { color: var(--on-accent); background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 80%, #fff) 0%, var(--accent) 100%); box-shadow: inset 0 1px 0 rgb(255 255 255 / .28), 0 1px 2px rgb(0 0 0 / .3); }
 .btn.primary:hover:not(:disabled) { filter: brightness(1.1); box-shadow: inset 0 1px 0 rgb(255 255 255 / .32), 0 6px 16px color-mix(in srgb, var(--accent) 40%, transparent); }
 .btn.ok { color: var(--on-live); background: linear-gradient(180deg, color-mix(in srgb, var(--live) 78%, #fff) 0%, var(--live) 100%); box-shadow: inset 0 1px 0 rgb(255 255 255 / .45), 0 1px 2px rgb(0 0 0 / .3); }
@@ -170,12 +170,10 @@ button.row2:hover, .row2.click:hover { background: var(--surface); }
 .scrim { position: fixed; inset: 0; background: var(--scrim); display: grid; place-items: center; z-index: 50; animation: fade .12s; }
 .scrim.end { place-items: end center; }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-.dialog { width: min(440px, calc(100vw - 48px)); max-height: calc(100vh - 80px); display: flex; flex-direction: column; background: var(--surface2); border-radius: var(--r-m); padding: 24px 24px 16px; box-shadow: 0 0 0 1px var(--border-strong), var(--lift); animation: pop .14s var(--ease); }
+.dialog { width: min(440px, calc(100vw - 48px)); max-height: calc(100vh - 80px); display: flex; flex-direction: column; background: var(--surface2); border-radius: var(--r-l); padding: 24px 24px 20px; box-shadow: 0 0 0 1px var(--border-strong), var(--lift); animation: pop .14s var(--ease); }
 .dialog h2 { margin: 0 0 8px; font-family: var(--serif); font-size: 22px; }
 .dialog .body-t { color: var(--muted); white-space: pre-wrap; overflow: auto; }
 .dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
-.dialog .actions button { padding: 10px 16px; border-radius: var(--r-s); font-weight: 600; font-size: 13px; }
-.dialog .actions button:hover { background: var(--surface3); }
 @keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .sheet { width: min(560px, 100vw); max-height: 86vh; overflow: auto; background: var(--surface); border-radius: var(--r-l) var(--r-l) 0 0; padding: 0 0 12px; box-shadow: 0 0 0 1px var(--border-strong), var(--lift); animation: rise .2s var(--ease); }
 .sheet.center { border-radius: var(--r-l); margin: auto; }
@@ -241,11 +239,11 @@ button.listrow:hover, .listrow.click:hover { background: var(--surface); }
 /* ---------- intro tour ---------- */
 .intro { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; padding: 0 24px 20px; overflow-y: auto; }
 .intro-top { align-self: stretch; display: flex; justify-content: flex-end; padding: 12px 0; }
-.intro-card { flex: 1; width: 100%; max-width: 1100px; max-height: 640px; min-height: 360px; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); background: var(--surface); border-radius: 20px; box-shadow: inset 0 0 0 1px var(--border); overflow: hidden; }
+.intro-card { flex: 1; width: 100%; max-width: 1100px; max-height: 640px; min-height: 360px; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); background: var(--surface); border-radius: var(--r-l); box-shadow: inset 0 0 0 1px var(--border); overflow: hidden; }
 .intro-text { display: flex; flex-direction: column; justify-content: center; padding: 40px 48px; animation: pagein .2s var(--ease); }
 .intro-text h1 { margin: 10px 0 0; font-size: 38px; }
 .intro-text p { margin: 16px 0 0; font-size: 16px; line-height: 25px; color: var(--muted); max-width: 420px; }
-.intro-art { position: relative; margin: 10px; border-radius: 14px; background: var(--surface2); overflow: hidden; display: grid; place-items: center; }
+.intro-art { position: relative; margin: 10px; border-radius: var(--r-m); background: var(--surface2); overflow: hidden; display: grid; place-items: center; }
 .intro-art img { position: relative; border-radius: 36px; box-shadow: var(--lift); }
 .intro-dots { display: flex; gap: 2px; padding-top: 14px; }
 .intro-dots button { width: 24px; height: 24px; display: grid; place-items: center; }
@@ -257,3 +255,5 @@ button.listrow:hover, .listrow.click:hover { background: var(--surface); }
   .intro-art { grid-row: 2; }
 }
 @media (prefers-reduced-motion: reduce) { .intro-text { animation: none; } }
+
+.pagebar { max-width: 720px; margin: 6px 0 6px max(0px, calc((100% - 880px) / 2)); padding: 0 32px; }

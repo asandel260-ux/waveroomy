@@ -21,7 +21,7 @@ export function VoiceFxPanel() {
         {FX_PRESETS.map((p) => {
           const on = s.fxPreset === p.id;
           return (
-            <button key={p.id} style={{ width: 150, textAlign: "left", borderRadius: 10, padding: 12, background: on ? "var(--accent-30)" : "var(--surface2)", boxShadow: `inset 0 0 0 1px ${on ? "rgb(82 255 31 / .7)" : "var(--border)"}` }} onClick={() => upd((x) => ({ ...x, fxPreset: p.id, fxEnabled: available }))}>
+            <button key={p.id} style={{ width: 150, textAlign: "left", borderRadius: 12, padding: 12, background: on ? "var(--accent-30)" : "var(--surface2)", boxShadow: `inset 0 0 0 1px ${on ? "rgb(82 255 31 / .7)" : "var(--border)"}` }} onClick={() => upd((x) => ({ ...x, fxPreset: p.id, fxEnabled: available }))}>
               <div style={{ color: on ? "var(--accent-bright)" : "var(--text)", fontSize: 14, fontWeight: 600 }}>{p.name}</div>
               <Muted size={11}>{p.desc}</Muted>
             </button>
