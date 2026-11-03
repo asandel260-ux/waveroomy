@@ -284,7 +284,7 @@ export class RoomSession implements EngineIO, LanHost {
     if (gone.sharing) this.toast(`${gone.displayName} stopped sharing`);
     if (s.engineSid() === this.mySid) {
       this.engine = new RoomEngine(this);
-      this.toast("The host left — you are hosting now");
+      this.toast("The host left. You are hosting now");
       this.core.mesh.hintProvider = (sid) => { const v = s.participants.get(sid)?.via; return v ? v : null; };
       this.startLan();
       this.engine.reconcile();
@@ -593,7 +593,7 @@ export class RoomSession implements EngineIO, LanHost {
   toggleDeafen() {
     this.deafened.value = !this.deafened.value;
     this.core.audio.refresh();
-    this.toast(this.deafened.value ? "Deafened — you can't hear the room" : "Listening again");
+    this.toast(this.deafened.value ? "Deafened. You can't hear the room" : "Listening again");
   }
 
   raiseHand(on: boolean) { this.request("room:hand", { raised: on }); }

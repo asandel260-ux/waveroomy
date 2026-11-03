@@ -19,13 +19,13 @@ function TitleBar() {
   const [max, setMax] = useState(false);
   useEffect(() => { native.win.isMaximized().then(setMax); native.win.onState(setMax); }, []);
   return (
-    <div className="titlebar">
+    <header className="titlebar">
       <div className="brand"><Icon name="waveform" size={16} />HoMit</div>
       <div className="grow" />
-      <button className="wc" onClick={() => native.win.minimize()} title="Minimize"><Icon name="minus" size={16} /></button>
-      <button className="wc" onClick={() => native.win.maximize()} title={max ? "Restore" : "Maximize"}><Icon name={max ? "restore" : "square"} size={14} /></button>
-      <button className="wc close" onClick={() => native.win.close()} title="Close"><Icon name="x" size={16} /></button>
-    </div>
+      <button className="wc" onClick={() => native.win.minimize()} title="Minimize" aria-label="Minimize"><Icon name="minus" size={16} /></button>
+      <button className="wc" onClick={() => native.win.maximize()} title={max ? "Restore" : "Maximize"} aria-label={max ? "Restore" : "Maximize"}><Icon name={max ? "restore" : "square"} size={14} /></button>
+      <button className="wc close" onClick={() => native.win.close()} title="Close" aria-label="Close"><Icon name="x" size={16} /></button>
+    </header>
   );
 }
 
@@ -44,7 +44,7 @@ function Sidebar({ route }: { route: Route }) {
     </button>
   );
   return (
-    <div className="sidebar">
+    <nav className="sidebar" aria-label="Main">
       {item(0, "waveform", "Rooms")}
       {item(1, "message", "Chats", unread)}
       {item(2, "user", "You")}
@@ -54,8 +54,8 @@ function Sidebar({ route }: { route: Route }) {
           <Icon name="radio" size={22} color="var(--ok)" />Live
         </button>
       )}
-      {p && <button onClick={() => nav.goHome(2)} title={p.displayName} style={{ height: 64, display: "grid", placeItems: "center", borderTop: "1px solid var(--border)" }}><Avatar avatar={p.avatar} size={32} mine /></button>}
-    </div>
+      {p && <button onClick={() => nav.goHome(2)} title={p.displayName} aria-label={`Your profile, ${p.displayName}`} style={{ height: 56, display: "grid", placeItems: "center" }}><Avatar avatar={p.avatar} size={32} mine /></button>}
+    </nav>
   );
 }
 
@@ -104,20 +104,21 @@ export function AppRoot() {
   const phase = useFlow(core.session.phase);
   const [intro, setIntro] = useState(!welcomed);
   useEffect(() => { native.setPrefs({ closeToTray: settings.closeToTray, startMinimized: settings.startMinimized, notifications: settings.notifications }); }, [settings.closeToTray, settings.startMinimized, settings.notifications]);
-  useEffect(() => { applyTheme(settings); }, [settings.accentColor, settings.bgColor, settings.animations]);
+  useEffect(() => { applyTheme(settings); }, [settings.theme, settings.accentColor, settings.bgColor, settings.animations]);
+  useEffect(() => { if (settings.theme !== "system") return; const mq = window.matchMedia("(prefers-color-scheme: light)"); const f = () => applyTheme(core.settings.state.value); mq.addEventListener("change", f); return () => mq.removeEventListener("change", f); }, [settings.theme]);
   useEffect(() => { if (phase === "joining" || phase === "live") { if (nav.top.t !== "room") nav.push({ t: "room" }); } else nav.removeAll("room"); }, [phase]);
   useEmitter(core.session.toasts, (t) => core.toast(t));
   const route = stack[stack.length - 1];
 
   let body: ReactNode;
-  if (!ready) body = <Backdrop />;
-  else if (!profile) body = intro ? <WelcomeScreen onStart={() => { welcomed = true; try { localStorage.setItem("homit.welcomed", "1"); } catch { /* ignore */ } setIntro(false); }} /> : <Onboarding />;
+  if (!ready) body = <Backdrop css={{}} />;
+  else if (!profile) body = <main style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>{intro ? <WelcomeScreen onStart={() => { welcomed = true; try { localStorage.setItem("homit.welcomed", "1"); } catch { /* ignore */ } setIntro(false); }} /> : <Onboarding />}</main>;
   else body = (
     <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
       {route.t !== "room" && <Sidebar route={route} />}
-      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }} key={route.t + ("uid" in route ? route.uid : "")}>
+      <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }} key={route.t + ("uid" in route ? route.uid : "")}>
         <Screen route={route} />
-      </div>
+      </main>
     </div>
   );
   return (

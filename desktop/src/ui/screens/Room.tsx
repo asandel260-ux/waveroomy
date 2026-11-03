@@ -16,21 +16,21 @@ interface Floating { id: number; emoji: string; name: string; x: number }
 
 function TabChip({ label, icon, on, live, onClick }: { label: string; icon: string; on: boolean; live: boolean; onClick: () => void }) {
   return (
-    <button className="hstack g6" onClick={onClick} style={{ borderRadius: 2, padding: "8px 12px", flex: "none", background: on ? "var(--text)" : "transparent", boxShadow: on ? "none" : "inset 0 0 0 1px var(--border)" }}>
-      <Icon name={icon} size={15} color={on ? "var(--bg)" : "var(--muted)"} />
-      <span style={{ color: on ? "var(--bg)" : "var(--muted)", fontSize: 12, fontWeight: 600 }}>{label}</span>
-      {live && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--neon)" }} />}
+    <button className="hstack g6" onClick={onClick} aria-pressed={on} style={{ borderRadius: 6, padding: "8px 12px", flex: "none", background: on ? "var(--accent-soft)" : "transparent", boxShadow: `inset 0 0 0 1px ${on ? "var(--accent)" : "var(--border)"}`, transition: "background .12s" }}>
+      <Icon name={icon} size={15} color={on ? "var(--accent-bright)" : "var(--muted)"} />
+      <span style={{ color: on ? "var(--text)" : "var(--muted)", fontSize: 13, fontWeight: 500 }}>{label}</span>
+      {live && <span role="img" aria-label="active" style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--live)" }} />}
     </button>
   );
 }
 
 function CtlButton({ icon, onClick, on, danger, badge = 0, title }: { icon: string; onClick: () => void; on?: boolean; danger?: boolean; badge?: number; title: string }) {
   return (
-    <button onClick={onClick} title={title} style={{ position: "relative", width: 44, height: 44, borderRadius: 2, display: "grid", placeItems: "center", flex: "none",
-      background: danger ? "transparent" : on ? "var(--accent)" : "transparent",
-      boxShadow: on ? "none" : `inset 0 0 0 1px ${danger ? "var(--danger)" : "var(--border-strong)"}` }}>
+    <button onClick={onClick} title={title} aria-label={title} aria-pressed={on} style={{ position: "relative", width: 44, height: 44, borderRadius: 6, display: "grid", placeItems: "center", flex: "none",
+      background: danger ? "var(--danger-soft)" : on ? "var(--accent)" : "transparent",
+      boxShadow: on || danger ? "none" : "inset 0 0 0 1px var(--border-strong)" }}>
       <Icon name={icon} size={20} color={danger ? "var(--danger)" : on ? "var(--on-accent)" : "var(--text)"} />
-      {badge > 0 && <span style={{ position: "absolute", top: 3, right: 3, width: 17, height: 17, borderRadius: 2, background: "var(--accent)", color: "var(--on-accent)", fontSize: 9, fontWeight: 700, display: "grid", placeItems: "center" }}>{badge > 9 ? "9+" : badge}</span>}
+      {badge > 0 && <span style={{ position: "absolute", top: 3, right: 3, width: 17, height: 17, borderRadius: 10, background: "var(--accent)", color: "var(--on-accent)", fontSize: 9, fontWeight: 700, display: "grid", placeItems: "center" }}>{badge > 9 ? "9+" : badge}</span>}
     </button>
   );
 }
@@ -46,11 +46,11 @@ function MicButton({ muted, ptt }: { muted: boolean; ptt: boolean }) {
     : { onClick: () => (muted ? unmute() : session.setMuted(true)) };
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch", width: d, flex: "none", gap: 6 }}>
-      <button {...handlers} title={ptt ? "Hold to talk" : muted ? "Unmute" : "Mute"} style={{ width: d, height: d, borderRadius: 2, display: "grid", placeItems: "center",
-        background: muted ? "transparent" : "var(--text)", boxShadow: muted ? "inset 0 0 0 2px var(--text)" : "none", transition: "background .12s" }}>
-        <Icon name={muted ? "mic-off" : "mic"} size={30} color={muted ? "var(--text)" : "var(--bg)"} />
+      <button {...handlers} aria-label={ptt ? "Hold to talk" : muted ? "Unmute microphone" : "Mute microphone"} aria-pressed={!muted} title={ptt ? "Hold to talk" : muted ? "Unmute" : "Mute"} style={{ width: d, height: d, borderRadius: 10, display: "grid", placeItems: "center",
+        background: muted ? "var(--surface2)" : "var(--live)", boxShadow: muted ? "inset 0 0 0 1px var(--border-strong)" : "0 0 18px color-mix(in srgb, var(--live) 45%, transparent)", transition: "background .12s, box-shadow .12s" }}>
+        <Icon name={muted ? "mic-off" : "mic"} size={30} color={muted ? "var(--text)" : "var(--on-live)"} />
       </button>
-      <div style={{ height: 3, background: "var(--border)" }}><div style={{ height: "100%", width: muted ? 0 : `${Math.round(ring * 100)}%`, background: "var(--ok)", transition: "width .08s linear" }} /></div>
+      <div style={{ height: 3, background: "var(--border)" }}><div style={{ height: "100%", width: muted ? 0 : `${Math.round(ring * 100)}%`, background: "var(--live)", transition: "width .08s linear" }} /></div>
     </div>
   );
 }
@@ -58,16 +58,16 @@ function MicButton({ muted, ptt }: { muted: boolean; ptt: boolean }) {
 function StageTile({ p, speaking, online, onClick }: { p: Participant; speaking: boolean; online: boolean; onClick: () => void }) {
   const mine = p.sid === core.session.mySid;
   return (
-    <button onClick={onClick} style={{ width: 108, padding: "4px 0", borderRadius: 4, display: "flex", flexDirection: "column", alignItems: "center" }}>
+    <button onClick={onClick} style={{ width: 108, padding: "4px 0", borderRadius: 10, display: "flex", flexDirection: "column", alignItems: "center" }}>
       <div style={{ position: "relative", width: 92, height: 92, display: "grid", placeItems: "center" }}>
-        <div style={{ width: 82, height: 82, borderRadius: "50%", padding: 4, display: "grid", placeItems: "center", boxShadow: speaking ? "0 0 0 3px var(--ok)" : "0 0 0 1px var(--border-strong)", transition: "box-shadow .12s" }}>
+        <div style={{ width: 82, height: 82, borderRadius: "50%", padding: 4, display: "grid", placeItems: "center", boxShadow: speaking ? "0 0 0 3px var(--live), 0 0 16px color-mix(in srgb, var(--live) 40%, transparent)" : "0 0 0 1px var(--border-strong)", transition: "box-shadow .15s" }}>
           <div style={{ opacity: online ? 1 : 0.55 }}><Avatar avatar={p.avatar} size={74} uid={p.uid} mine={mine} /></div>
         </div>
         {p.muted && <span style={{ position: "absolute", right: 4, bottom: 4, width: 26, height: 26, borderRadius: "50%", background: "var(--surface3)", boxShadow: "inset 0 0 0 1px rgb(255 90 90 / .5)", display: "grid", placeItems: "center" }}><Icon name="mic-off" size={14} color="var(--danger)" /></span>}
-        {p.sharing && <span style={{ position: "absolute", right: 4, top: 4, width: 24, height: 24, borderRadius: 2, background: "var(--accent)", display: "grid", placeItems: "center" }}><Icon name="monitor" size={13} color="var(--on-accent)" /></span>}
+        {p.sharing && <span style={{ position: "absolute", right: 4, top: 4, width: 24, height: 24, borderRadius: 6, background: "var(--accent)", display: "grid", placeItems: "center" }}><Icon name="monitor" size={13} color="var(--on-accent)" /></span>}
         {!online && <span style={{ position: "absolute" }}><Spinner size={24} /></span>}
       </div>
-      <div className="hstack g4" style={{ marginTop: 4, borderRadius: 2, padding: "3px 10px", background: speaking ? "var(--text)" : "var(--surface2)", color: speaking ? "var(--bg)" : "var(--text)", maxWidth: "100%" }}>
+      <div className="hstack g4" style={{ marginTop: 4, borderRadius: 6, padding: "3px 10px", background: "var(--surface2)", color: "var(--text)", maxWidth: "100%" }}>
         {p.role === "host" && <Icon name="crown" size={12} color="var(--warn)" />}
         <span className="ellipsis" style={{ fontSize: 13, fontWeight: 500 }}>{mine ? "You" : p.displayName}</span>
       </div>
@@ -172,7 +172,7 @@ export function RoomScreen({ nav }: ScreenProps) {
     default: main = (
       <div className="scroll"><div style={{ maxWidth: 980, margin: "0 auto", padding: "14px 16px" }}>
         {sharer && (
-          <button className="hstack g12" onClick={() => setMode("screen")} style={{ width: "100%", textAlign: "left", borderRadius: 4, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 14, marginBottom: 14 }}>
+          <button className="hstack g12" onClick={() => setMode("screen")} style={{ width: "100%", textAlign: "left", borderRadius: 10, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 14, marginBottom: 14 }}>
             <Icon name="monitor" size={22} color="var(--accent-bright)" />
             <div className="grow"><div style={{ fontSize: 14, fontWeight: 500 }}>{iShare ? "You are" : sharer.displayName + " is"} sharing a screen</div><Muted size={12}>{sharer.sharing?.res}p · {sharer.sharing?.fps} fps</Muted></div>
             <Chip text={iShare ? "Preview" : "Watch"} selected />
@@ -252,7 +252,7 @@ export function RoomScreen({ nav }: ScreenProps) {
       {reactOpen && (
         <Sheet title="React" center onDismiss={() => setReactOpen(false)}>
           <div className="hstack" style={{ flexWrap: "wrap", gap: 10, padding: "0 16px 8px", justifyContent: "center" }}>
-            {REACTIONS.map((e) => <button key={e} style={{ width: 56, height: 56, borderRadius: 2, background: "var(--surface2)", fontSize: 26 }} onClick={() => { session.react(e); setReactOpen(false); }}>{e}</button>)}
+            {REACTIONS.map((e) => <button key={e} aria-label={`React with ${e}`} style={{ width: 56, height: 56, borderRadius: 6, background: "var(--surface2)", fontSize: 26 }} onClick={() => { session.react(e); setReactOpen(false); }}>{e}</button>)}
           </div>
         </Sheet>
       )}
@@ -262,7 +262,7 @@ export function RoomScreen({ nav }: ScreenProps) {
       {shareSheet && <ShareSheet onDismiss={() => setShareSheet(false)} onStarted={() => setMode("screen")} />}
       {person && (() => { const p = s.participants.get(person); return p ? <PersonSheet p={p} nav={nav} onDismiss={() => setPerson(null)} /> : null; })()}
       {leaveConfirm && (isHost
-        ? <ConfirmDialog title="Leave room?" text={participants.length > 1 ? "You can hand the room over by leaving — the longest-present member becomes host. Or end it for everyone from Room settings." : "You're the only one here. The room will be saved on this computer."} confirm="Leave" onDismiss={() => setLeaveConfirm(false)} onConfirm={() => session.leave()} />
+        ? <ConfirmDialog title="Leave room?" text={participants.length > 1 ? "You can hand the room over by leaving. The longest-present member becomes host. Or end it for everyone from Room settings." : "You're the only one here. The room will be saved on this computer."} confirm="Leave" onDismiss={() => setLeaveConfirm(false)} onConfirm={() => session.leave()} />
         : <ConfirmDialog danger title="Leave room?" text="You can rejoin with a new invite." confirm="Leave" onDismiss={() => setLeaveConfirm(false)} onConfirm={() => session.leave()} />)}
       {reportRoom && <ReportDialog type="room" id={s.meta.id} label={s.meta.title} excerpt="" onDismiss={() => setReportRoom(false)} />}
     </Backdrop>

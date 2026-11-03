@@ -161,7 +161,7 @@ export class ChessGame {
     const bi = this.boardOf(seat);
     const b = this.boards[bi];
     if (b.pos.turn !== this.colorOf(seat)) return "It is not your turn.";
-    if (ply !== b.moves.length) return "The board changed — try again.";
+    if (ply !== b.moves.length) return "The board changed. Try again.";
     const mv = Move.parse(uci);
     if (!mv) return "Illegal move.";
     const legal = b.pos.legalMoves();
@@ -255,7 +255,7 @@ export class ChessGame {
       sb += `HoMit Bughouse ${this.timeLabel} · ${date}\n`;
       const team = (t: number) => `Team ${t + 1}: ` + [0, 1, 2, 3].filter((i) => this.teamOf(i) === t).map((i) => this.seats[i]?.name ?? "?").join(" & ");
       sb += team(0) + "\n" + team(1) + "\n";
-      if (this.over) sb += `Result: ${this.winner === 2 ? "draw" : `Team ${this.winner + 1} won`} — ${this.reason}\n`;
+      if (this.over) sb += `Result: ${this.winner === 2 ? "draw" : `Team ${this.winner + 1} won`}. ${this.reason}\n`;
       sb += `\nBoard A (${this.seats[0]?.name ?? "?"} / ${this.seats[1]?.name ?? "?"}):\n` + this.moveText(0);
       sb += `\n\nBoard B (${this.seats[2]?.name ?? "?"} / ${this.seats[3]?.name ?? "?"}):\n` + this.moveText(1);
     }

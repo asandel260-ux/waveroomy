@@ -146,10 +146,10 @@ export function ChessBoardView({ pos, flipped, lastFrom, lastTo, myColor, intera
       </svg>
       {promo && (
         <div style={{ position: "absolute", inset: 0, background: "rgb(0 0 0 / .45)", display: "grid", placeItems: "center" }} onClick={() => setPromo(null)}>
-          <div className="hstack g6" style={{ background: "var(--surface)", borderRadius: 2, padding: 8, boxShadow: "inset 0 0 0 1px var(--border-strong)" }}>
+          <div className="hstack g6" style={{ background: "var(--surface)", borderRadius: 6, padding: 8, boxShadow: "inset 0 0 0 1px var(--border-strong)" }}>
             {promo.map((m) => {
               const col = colorOf(pos.sq[promo[0].from]);
-              return <button key={m.promo} title={`Promote to ${pieceName(m.promo)} on ${sqName(promo[0].to)}`} style={{ width: 52, height: 52, borderRadius: 2, display: "grid", placeItems: "center", background: col === WHITE ? SQ_DARK : SQ_LIGHT }} onClick={(e) => { e.stopPropagation(); setPromo(null); onMove(m); }}><PieceIcon type={m.promo} color={col} size={42} /></button>;
+              return <button key={m.promo} title={`Promote to ${pieceName(m.promo)} on ${sqName(promo[0].to)}`} style={{ width: 52, height: 52, borderRadius: 6, display: "grid", placeItems: "center", background: col === WHITE ? SQ_DARK : SQ_LIGHT }} onClick={(e) => { e.stopPropagation(); setPromo(null); onMove(m); }}><PieceIcon type={m.promo} color={col} size={42} /></button>;
             })}
           </div>
         </div>

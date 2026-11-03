@@ -114,7 +114,7 @@ export interface Settings {
   ptt: boolean; sounds: boolean; dmPolicy: string; showOnline: boolean; nearby: boolean; useStun: boolean; customStun: string;
   turnUrl: string; turnUser: string; turnPass: string; fxEnabled: boolean; fxPreset: string; fxIntensity: number;
   shareRes: number; shareFps: number; micDeviceId: string; outputDeviceId: string; chatSlidesOpen: boolean;
-  accentColor: number; bgColor: number; animations: boolean; useRelay: boolean; reconnect: boolean; findMe: string; rvUrl: string;
+  theme: string; accentColor: number; bgColor: number; animations: boolean; useRelay: boolean; reconnect: boolean; findMe: string; rvUrl: string;
   chessSounds: boolean; chessLegal: boolean;
   /** desktop-only */
   pttKey: string; startMinimized: boolean; closeToTray: boolean; notifications: boolean;
@@ -123,7 +123,7 @@ export interface Settings {
 export const defaultSettings = (): Settings => ({
   ptt: false, sounds: true, dmPolicy: "everyone", showOnline: true, nearby: true, useStun: true, customStun: "", turnUrl: "", turnUser: "",
   turnPass: "", fxEnabled: false, fxPreset: "studio", fxIntensity: 0.7, shareRes: 720, shareFps: 30, micDeviceId: "", outputDeviceId: "",
-  chatSlidesOpen: false, accentColor: 0, bgColor: 0, animations: true, useRelay: true, reconnect: true, findMe: "everyone", rvUrl: "",
+  chatSlidesOpen: false, theme: "dark", accentColor: 0, bgColor: 0, animations: true, useRelay: true, reconnect: true, findMe: "everyone", rvUrl: "",
   chessSounds: true, chessLegal: true, pttKey: "Space", startMinimized: false, closeToTray: true, notifications: true
 });
 

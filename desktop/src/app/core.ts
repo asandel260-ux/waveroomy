@@ -162,7 +162,7 @@ export class AppCore implements MeshHandler, LanApp {
       }
       case "a": {
         const ok = await this.mesh.applyAnswer(j);
-        return ok ? { kind: "applied" } : { kind: "error", msg: "That answer doesn't match an open invite. It may have expired — create a new invite." };
+        return ok ? { kind: "applied" } : { kind: "error", msg: "That answer doesn't match an open invite. It may have expired. Create a new invite." };
       }
       default: return { kind: "error", msg: "Unknown code." };
     }

@@ -21,7 +21,7 @@ export function VoiceFxPanel() {
         {FX_PRESETS.map((p) => {
           const on = s.fxPreset === p.id;
           return (
-            <button key={p.id} style={{ width: 150, textAlign: "left", borderRadius: 4, padding: 12, background: on ? "var(--accent-30)" : "var(--surface2)", boxShadow: `inset 0 0 0 1px ${on ? "rgb(82 255 31 / .7)" : "var(--border)"}` }} onClick={() => upd((x) => ({ ...x, fxPreset: p.id, fxEnabled: available }))}>
+            <button key={p.id} style={{ width: 150, textAlign: "left", borderRadius: 10, padding: 12, background: on ? "var(--accent-30)" : "var(--surface2)", boxShadow: `inset 0 0 0 1px ${on ? "rgb(82 255 31 / .7)" : "var(--border)"}` }} onClick={() => upd((x) => ({ ...x, fxPreset: p.id, fxEnabled: available }))}>
               <div style={{ color: on ? "var(--accent-bright)" : "var(--text)", fontSize: 14, fontWeight: 600 }}>{p.name}</div>
               <Muted size={11}>{p.desc}</Muted>
             </button>
@@ -62,7 +62,7 @@ export function SettingsScreen({ nav, back }: ScreenProps) {
 
   const exportBackup = async () => {
     const bytes = new TextEncoder().encode(JSON.stringify(core.profile.exportBackup(), null, 2));
-    core.toast((await native.saveFile("homit-identity.json", bytes)) ? "Backup saved — keep it private" : "Not saved");
+    core.toast((await native.saveFile("homit-identity.json", bytes)) ? "Backup saved. Keep it private" : "Not saved");
   };
   const restore = async () => {
     const f = await native.pickFile("application/json,.json");
@@ -77,9 +77,10 @@ export function SettingsScreen({ nav, back }: ScreenProps) {
       <div className="scroll"><div style={{ maxWidth: 720, margin: "0 0 0 max(0px, calc((100% - 880px) / 2))", paddingBottom: 32 }}>
         <SectionTitle>Appearance</SectionTitle>
         <Pad><div className="stack g12">
-          <SwitchRow title="Animations" subtitle="Screen transitions, pulses and other motion. Turn off for a calmer, faster app." checked={s.animations} onChange={(v) => set({ animations: v })} />
-          <ColorPickerCard title="Buttons & accents" subtitle="Buttons, highlights, switches and sliders." value={s.accentColor} def={0xFF2E5BFF | 0} presets={ACCENT_PRESETS} onChange={(c) => set({ accentColor: c })} />
-          <ColorPickerCard title="Background" subtitle="The dark base of the app. Panels and borders follow it automatically." value={s.bgColor} def={0xFF0A0A0A | 0} presets={BG_PRESETS} onChange={(c) => set({ bgColor: c })} />
+          <div><Tiny>Theme</Tiny><div style={{ height: 8 }} /><Segmented options={[["dark", "Dark"], ["light", "Light"], ["system", "Match Windows"]]} selected={s.theme} onSelect={(v) => set({ theme: v, bgColor: 0 })} /></div>
+          <SwitchRow title="Animations" subtitle="Fades and slides between screens. Turn off for a calmer app." checked={s.animations} onChange={(v) => set({ animations: v })} />
+          <ColorPickerCard title="Buttons & accents" subtitle="Buttons, highlights, switches and sliders." value={s.accentColor} def={0xFF7C3AED | 0} presets={ACCENT_PRESETS} onChange={(c) => set({ accentColor: c })} />
+          <ColorPickerCard title="Background" subtitle="Overrides the theme base colour. Panels and borders follow it." value={s.bgColor} def={0xFF0B0713 | 0} presets={BG_PRESETS} onChange={(c) => set({ bgColor: c })} />
         </div></Pad>
 
         <SectionTitle>Voice</SectionTitle>
@@ -118,7 +119,7 @@ export function SettingsScreen({ nav, back }: ScreenProps) {
         <SectionTitle>Network</SectionTitle>
         <div style={{ padding: "0 16px" }}><Card><div style={{ padding: "8px 16px" }}>
           <SwitchRow title="Show rooms on this Wi-Fi" subtitle="Listen for rooms hosted on the same network and list them under Rooms." checked={s.nearby} onChange={(v) => set({ nearby: v })} />
-          <SwitchRow title="Use public STUN servers" subtitle="Helps two devices on different networks find a direct path. It only reveals your IP address to the STUN server — no audio or content. Turn off to stay strictly on the local network." checked={s.useStun} onChange={(v) => set({ useStun: v })} />
+          <SwitchRow title="Use public STUN servers" subtitle="Helps two devices on different networks find a direct path. It only reveals your IP address to the STUN server. No audio or content. Turn off to stay strictly on the local network." checked={s.useStun} onChange={(v) => set({ useStun: v })} />
           <SwitchRow title="Relay helper (recommended)" subtitle="Lets devices on different networks (mobile data, strict Wi-Fi) connect when a direct path is impossible. A public relay carries only encrypted packets and is used as a last resort. Turn off to never touch any outside server." checked={s.useRelay} onChange={(v) => set({ useRelay: v })} />
           <SwitchRow title="Reconnect helper (recommended)" subtitle="Lets saved friends find each other again over the internet without scanning anything. Only tiny encrypted notes, readable only by the two of you, pass through a public message board (ntfy.sh by default). Turn off to reconnect on the same Wi-Fi only." checked={s.reconnect} onChange={(v) => set({ reconnect: v })} />
           {s.reconnect && <>
@@ -141,7 +142,7 @@ export function SettingsScreen({ nav, back }: ScreenProps) {
 
         <SectionTitle>Identity & data</SectionTitle>
         <Pad><div className="stack g10">
-          <Muted size={12}>Your identity is a key stored only on this computer. Export a backup to use the same name, handle and followers on another device — import it there to be the same account.</Muted>
+          <Muted size={12}>Your identity is a key stored only on this computer. Export a backup to use the same name, handle and followers on another device. Import it there to be the same account.</Muted>
           <Button block kind="secondary" icon="download" text="Export identity backup" onClick={exportBackup} />
           <Button block kind="secondary" icon="copy" text="Restore from backup" onClick={restore} />
           <Button block kind="danger" icon="trash" text="Delete everything on this computer" onClick={() => setWipe(true)} />

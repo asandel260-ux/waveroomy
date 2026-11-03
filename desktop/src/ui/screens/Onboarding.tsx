@@ -39,8 +39,7 @@ export function Onboarding() {
       <div className="scroll" style={{ position: "relative" }}>
         <div style={{ maxWidth: 1040, margin: "0 auto", padding: "72px 32px 56px", display: "grid", gridTemplateColumns: "repeat(12, 1fr)", columnGap: 24, rowGap: 48 }}>
           <div style={{ gridColumn: "1 / span 5" }}>
-            <Tiny>Step 1 of 1 · Identity</Tiny>
-            <h1 className="display" style={{ fontSize: 56, margin: "16px 0 0", letterSpacing: "-.05em" }}>Create your identity.</h1>
+            <h1 className="display" style={{ fontSize: 48, margin: 0 }}>Create your identity.</h1>
             <p className="muted" style={{ fontSize: 15, lineHeight: "22px", margin: "20px 0 0", maxWidth: 340 }}>Your identity is a key that lives only on this computer. There is no account, no email and no server to sign in to.</p>
             <div style={{ borderTop: "2px solid var(--text)", marginTop: 40 }}>
               {[["Back up", "Export it from Settings; the same file restores it on your phone."], ["Private", "Voice, messages and files go device to device."]].map(([t, d]) => (
@@ -56,17 +55,17 @@ export function Onboarding() {
             <div>
               <Tiny>Avatar</Tiny>
               <div className="hstack g8" style={{ marginTop: 8 }}>
-                {HUES.map((h) => <button key={h} onClick={() => setHue(h)} style={{ width: 22, height: 22, borderRadius: "50%", background: hsl(h, 0.55, 0.42), boxShadow: h === hue ? "0 0 0 2px var(--text)" : "none" }} />)}
+                {HUES.map((h) => <button key={h} onClick={() => setHue(h)} aria-label={`Avatar colour ${h}`} aria-pressed={h === hue} style={{ width: 22, height: 22, borderRadius: "50%", background: hsl(h, 0.55, 0.42), boxShadow: h === hue ? "0 0 0 2px var(--text)" : "none" }} />)}
               </div>
             </div>
           </div>
           <div className="hstack wrap g8" style={{ marginTop: 14 }}>
             {AVATAR_EMOJIS.map((e) => (
-              <button key={e} onClick={() => setEmoji(e)} style={{ width: 42, height: 42, borderRadius: "50%", fontSize: 20, background: e === emoji ? "var(--accent-soft)" : "var(--surface2)", boxShadow: `inset 0 0 0 ${e === emoji ? 1.5 : 1}px ${e === emoji ? "var(--text)" : "var(--border)"}` }}>{e}</button>
+              <button key={e} onClick={() => setEmoji(e)} aria-label={`Avatar ${e}`} aria-pressed={e === emoji} style={{ width: 42, height: 42, borderRadius: "50%", fontSize: 20, background: e === emoji ? "var(--accent-soft)" : "var(--surface2)", boxShadow: `inset 0 0 0 ${e === emoji ? 1.5 : 1}px ${e === emoji ? "var(--text)" : "var(--border)"}` }}>{e}</button>
             ))}
           </div>
-          <Field style={{ marginTop: 24 }} label="Display name" placeholder="Ada Lovelace" value={name} onChange={(v) => { setName(v.slice(0, 30)); if (!edited) setHandle(cleanHandle(v.replace(/ /g, ""))); }} />
-          <Field style={{ marginTop: 14 }} label="Username" placeholder="ada" leadingIcon="user" value={handle} onChange={(v) => { setHandle(cleanHandle(v)); setEdited(true); }} onEnter={create} />
+          <Field style={{ marginTop: 24 }} label="Display name" placeholder="Your name" value={name} onChange={(v) => { setName(v.slice(0, 30)); if (!edited) setHandle(cleanHandle(v.replace(/ /g, ""))); }} />
+          <Field style={{ marginTop: 14 }} label="Username" placeholder="yourname" leadingIcon="user" value={handle} onChange={(v) => { setHandle(cleanHandle(v)); setEdited(true); }} onEnter={create} />
           {error && <div style={{ color: "var(--danger)", fontSize: 13, marginTop: 10 }}>{error}</div>}
           <div style={{ marginTop: 24 }}><Button block text="Create my identity" onClick={create} /></div>
           <div style={{ marginTop: 10 }}><Button block kind="secondary" text="Restore from a backup file" onClick={restore} /></div>

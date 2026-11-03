@@ -15,7 +15,7 @@ async function readClipboard(): Promise<string> {
 function Step({ n, text }: { n: number; text: string }) {
   return (
     <div className="hstack g10">
-      <div style={{ width: 26, height: 26, borderRadius: 2, display: "grid", placeItems: "center", background: "var(--accent)", boxShadow: "0 0 0 1px var(--border-strong)", color: "var(--neon)", fontSize: 12, fontWeight: 700 }}>{n}</div>
+      <div style={{ width: 26, height: 26, borderRadius: 6, display: "grid", placeItems: "center", background: "var(--accent)", boxShadow: "0 0 0 1px var(--border-strong)", color: "#fff", fontSize: 12, fontWeight: 700 }}>{n}</div>
       <span style={{ fontSize: 15, fontWeight: 500 }}>{text}</span>
     </div>
   );
@@ -33,7 +33,7 @@ export function ConnectionReport() {
   return (
     <div style={{ width: "100%" }}>
       <button style={{ color: "var(--accent-bright)", fontSize: 12, padding: "6px 0" }} onClick={() => setOpen(!open)}>{open ? "Hide connection details" : "Connection details"}</button>
-      {open && <div className="mono" style={{ fontSize: 12, color: "var(--muted)", background: "var(--surface)", borderRadius: 2, padding: 10, whiteSpace: "pre-wrap" }}>{r}</div>}
+      {open && <div className="mono" style={{ fontSize: 12, color: "var(--muted)", background: "var(--surface)", borderRadius: 6, padding: 10, whiteSpace: "pre-wrap" }}>{r}</div>}
     </div>
   );
 }
@@ -59,19 +59,19 @@ export function CreateRoomScreen({ back }: ScreenProps) {
       <div className="scroll"><div style={{ maxWidth: 560, margin: "0 0 0 max(0px, calc((100% - 880px) / 2))", padding: "24px 32px" }}>
         <HeroCard>
           <div className="hstack" style={{ padding: 18, gap: 14 }}>
-            <div style={{ width: 52, height: 52, borderRadius: 2, display: "grid", placeItems: "center", background: "var(--accent)", boxShadow: "0 0 0 1px var(--border-strong)" }}><Icon name="mic" size={24} color="var(--neon)" /></div>
-            <div><div className="display" style={{ fontSize: 20, color: "#fff" }}>Start talking</div><div style={{ color: "rgb(255 255 255 / .72)", fontSize: 13 }}>Name it, and invite people with a QR code.</div></div>
+            <div style={{ width: 52, height: 52, borderRadius: 6, display: "grid", placeItems: "center", background: "var(--accent)", boxShadow: "0 0 0 1px var(--border-strong)" }}><Icon name="mic" size={24} color="#fff" /></div>
+            <div><div className="display" style={{ fontSize: 20, color: "var(--text)" }}>Start talking</div><div style={{ color: "var(--muted)", fontSize: 13 }}>Name it, and invite people with a QR code.</div></div>
           </div>
         </HeroCard>
         <div style={{ height: 18 }} />
-        <Field label="Title" placeholder="Friday night jam" value={title} onChange={(v) => { setTitle(v); setError(null); }} maxLength={60} onEnter={start} autoFocus />
+        <Field label="Title" placeholder="Room name" value={title} onChange={(v) => { setTitle(v); setError(null); }} maxLength={60} onEnter={start} autoFocus />
         <div style={{ height: 14 }} />
         <Field label="Topic (optional)" placeholder="What is this about?" value={topic} onChange={setTopic} multiline rows={3} maxLength={140} />
         <div style={{ height: 14 }} />
-        <Field label="Tags (comma separated)" placeholder="music, chill" value={tags} onChange={setTags} />
+        <Field label="Tags (comma separated)" placeholder="Tags, separated by commas" value={tags} onChange={setTags} />
         <div style={{ height: 20 }} />
         <SwitchRow title="Unlisted" subtitle="Don't announce this room on the local network. People need your QR code." checked={unlisted} onChange={setUnlisted} />
-        <Muted size={12}>You are the host. If you leave, hosting passes to the person who has been here longest — the room keeps going.</Muted>
+        <Muted size={12}>You are the host. If you leave, hosting passes to the person who has been here longest. The room keeps going.</Muted>
         {error && <div style={{ color: "var(--danger)", fontSize: 13, marginTop: 10 }}>{error}</div>}
         <div style={{ height: 20 }} />
         <Button block icon="mic" text="Start room" onClick={start} />
@@ -138,7 +138,7 @@ export function InviteScreen({ nav, route, back }: ScreenProps) {
           : <>
             <Step n={1} text="They scan this code" />
             <div style={{ height: 4 }} />
-            <Muted size={12} style={{ textAlign: "center" }}>On the same Wi-Fi that is all it takes — the link comes up by itself.</Muted>
+            <Muted size={12} style={{ textAlign: "center" }}>On the same Wi-Fi that is all it takes. The link comes up by itself.</Muted>
             <div style={{ height: 10 }} />
             <QrDisplay code={code} />
             <div style={{ height: 12 }} />
@@ -159,7 +159,7 @@ export function InviteScreen({ nav, route, back }: ScreenProps) {
             </>}
             {error && <div style={{ color: "var(--danger)", fontSize: 13, marginTop: 10, whiteSpace: "pre-wrap" }}>{error}</div>}
             <div style={{ height: 18 }} />
-            <Muted size={12} style={{ textAlign: "center" }}>This code works once and expires in 10 minutes. It carries only connection details — nothing about you beyond your display name.</Muted>
+            <Muted size={12} style={{ textAlign: "center" }}>This code works once and expires in 10 minutes. It carries only connection details. Nothing about you beyond your display name.</Muted>
           </>}
       </Column>
       {scanning && <ScannerOverlay title="Scan their reply" hint="Point at the reply code shown on their screen" onCode={(c) => { setScanning(false); void applyReply(c); }} onClose={() => setScanning(false)} />}
@@ -251,7 +251,7 @@ export function JoinScreen({ nav, route, back }: ScreenProps) {
           <div style={{ height: 8 }} />
           <div className="hstack g8"><Button small kind="secondary" icon="copy" text="Paste" onClick={async () => setText(await readClipboard())} /></div>
           {isOffer && preview && (
-            <div style={{ width: "100%", marginTop: 16, borderRadius: 4, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 16 }}>
+            <div style={{ width: "100%", marginTop: 16, borderRadius: 10, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 16 }}>
               <Tiny>{str(parsed!, "p") === "dm" ? "Friend invite" : str(parsed!, "p") === "sync" ? "Your other device" : "Room"}</Tiny>
               <div style={{ fontSize: 18, fontWeight: 600, marginTop: 4 }}>{str(preview, "t") || "Someone"}</div>
               {str(parsed!, "p") !== "dm" && str(parsed!, "p") !== "sync" && <Muted>Hosted by {str(preview, "h")} · {int(preview, "n")} here{bool(preview, "l") ? " · locked" : ""}</Muted>}

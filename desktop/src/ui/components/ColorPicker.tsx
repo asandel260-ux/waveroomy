@@ -18,13 +18,13 @@ const css = (argb: number) => "#" + (argb & 0xffffff).toString(16).padStart(6, "
 const hexOf = (argb: number) => css(argb).toUpperCase();
 const parseHex = (s: string): number | null => { const t = s.trim().replace(/^#/, ""); return /^[0-9a-fA-F]{6}$/.test(t) ? (0xff000000 | parseInt(t, 16)) | 0 : null; };
 
-export const ACCENT_PRESETS = [0xFF2E5BFF, 0xFF4F46E5, 0xFF06B6D4, 0xFF10B981, 0xFFF59E0B, 0xFFEF4444, 0xFFEC4899, 0xFF7C3AED, 0xFFFAFAFA].map((x) => x | 0);
-export const BG_PRESETS = [0xFF0A0A0A, 0xFF000000, 0xFF0B1220, 0xFF0A1A14, 0xFF1A0B14, 0xFF1B1B1F, 0xFF2B2B33, 0xFFF4F4F6].map((x) => x | 0);
+export const ACCENT_PRESETS = [0xFF7C3AED, 0xFF3B82F6, 0xFF06B6D4, 0xFF10B981, 0xFFF59E0B, 0xFFEF4444, 0xFFEC4899, 0xFFA855F7, 0xFFFAFAFA].map((x) => x | 0);
+export const BG_PRESETS = [0xFF0B0713, 0xFF000000, 0xFF0B1220, 0xFF0A1A14, 0xFF1A0B14, 0xFF1B1B1F, 0xFF2B2B33, 0xFFF4F4F6].map((x) => x | 0);
 
 function Swatch({ c, selected, onClick }: { c: number; selected: boolean; onClick: () => void }) {
   const lum = (((c >> 16) & 255) * 0.3 + ((c >> 8) & 255) * 0.6 + (c & 255) * 0.1) / 255;
   return (
-    <button onClick={onClick} style={{ width: 34, height: 34, borderRadius: "50%", background: css(c), display: "grid", placeItems: "center", boxShadow: `inset 0 0 0 ${selected ? 2 : 1}px ${selected ? "var(--text)" : "var(--border-strong)"}` }}>
+    <button onClick={onClick} aria-label={`Colour ${css(c)}`} aria-pressed={selected} style={{ width: 34, height: 34, borderRadius: "50%", background: css(c), display: "grid", placeItems: "center", boxShadow: `inset 0 0 0 ${selected ? 2 : 1}px ${selected ? "var(--text)" : "var(--border-strong)"}` }}>
       {selected && <Icon name="check" size={16} color={lum > 0.55 ? "#000" : "#fff"} />}
     </button>
   );
@@ -43,7 +43,7 @@ export function ColorPickerCard({ title, subtitle, value, def, presets, onChange
     <div><Tiny>{label}</Tiny><input type="range" min={0} max={max} step={max / 360} value={val} style={{ width: "100%", accentColor: css(shown) }} onChange={(e) => { const x = parseFloat(e.target.value); set(x); f(x); }} /></div>
   );
   return (
-    <div style={{ borderRadius: 4, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 14 }}>
+    <div style={{ borderRadius: 10, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 14 }}>
       <div className="hstack g10">
         <div className="grow"><div style={{ fontSize: 15, fontWeight: 600 }}>{title}</div><Muted size={12}>{subtitle}</Muted></div>
         <span style={{ width: 30, height: 30, borderRadius: "50%", background: css(shown), boxShadow: "inset 0 0 0 1px var(--border-strong)" }} />
@@ -51,7 +51,7 @@ export function ColorPickerCard({ title, subtitle, value, def, presets, onChange
       <div className="hstack" style={{ flexWrap: "wrap", gap: 10, marginTop: 12 }}>
         <Swatch c={def} selected={value === 0} onClick={() => { onChange(0); sync(def); }} />
         {presets.map((p) => <Swatch key={p} c={p} selected={value !== 0 && (value & 0xffffff) === (p & 0xffffff)} onClick={() => { onChange(p); sync(p); }} />)}
-        <button onClick={() => setCustom(!custom)} style={{ width: 34, height: 34, borderRadius: "50%", display: "grid", placeItems: "center", boxShadow: `inset 0 0 0 1px ${custom ? "var(--accent-bright)" : "var(--border-strong)"}` }}><Icon name="sliders" size={16} /></button>
+        <button onClick={() => setCustom(!custom)} aria-label="Custom colour" style={{ width: 34, height: 34, borderRadius: "50%", display: "grid", placeItems: "center", boxShadow: `inset 0 0 0 1px ${custom ? "var(--accent-bright)" : "var(--border-strong)"}` }}><Icon name="sliders" size={16} /></button>
       </div>
       {custom ? (
         <div style={{ marginTop: 10 }}>

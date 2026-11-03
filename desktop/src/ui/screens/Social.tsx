@@ -7,7 +7,7 @@ import { native } from "../../core/native";
 import { useFlow } from "../hooks";
 import { hsl } from "../theme";
 import { squareJpeg } from "../image";
-import { Avatar, Backdrop, Button, Chip, ConfirmDialog, EmptyState, Field, HeroCard, Muted, NeonWave, ScreenHeader, Segmented, Tiny } from "../components/kit";
+import { asButton, Avatar, Backdrop, Button, Chip, ConfirmDialog, EmptyState, Field, HeroCard, Muted, NeonWave, ScreenHeader, Segmented, Tiny } from "../components/kit";
 import { HUES, cleanHandle } from "./Onboarding";
 import type { ScreenProps } from "./registry";
 
@@ -86,7 +86,7 @@ export function PeopleScreen({ nav, back }: ScreenProps) {
             const c = contacts[uid];
             const f = following.includes(uid);
             return (
-              <div key={uid} className="listrow" style={{ cursor: "pointer" }} onClick={() => nav.push({ t: "profile", uid })}>
+              <div key={uid} className="listrow" style={{ cursor: "pointer" }} {...asButton(() => nav.push({ t: "profile", uid }), `Open profile of ${c?.displayName ?? "this person"}`)}>
                 <Avatar avatar={c?.avatar ?? defaultAvatar()} size={44} uid={uid} />
                 <div className="grow"><div style={{ fontSize: 15, fontWeight: 500 }}>{c?.displayName ?? "Unknown"}</div><Muted size={12}>@{c?.username ?? ""}{connected.has(uid) ? " · connected" : ""}</Muted></div>
                 {tab === "blocked" ? <Button small kind="secondary" text="Unblock" onClick={(e) => { e.stopPropagation(); core.block(uid, false); }} />

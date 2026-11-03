@@ -4,7 +4,7 @@ import { CHESS_MARK } from "../../chess/game";
 import { ChatMsg, Participant, REACTIONS, canSpeak } from "../../core/models";
 import { fmtClock } from "../../core/util";
 import { useFlow, useTick } from "../hooks";
-import { Avatar, Button, Chip, ConfirmDialog, Dialog, EmptyState, Field, Icon, IconButton, Muted, RichText, Row2, Sheet, SwitchRow, Tiny } from "../components/kit";
+import { asButton, Avatar, Button, Chip, ConfirmDialog, Dialog, EmptyState, Field, Icon, IconButton, Muted, RichText, Row2, Sheet, SwitchRow, Tiny } from "../components/kit";
 import type { Nav } from "../nav";
 import { ChessChallengeCard } from "../panels/Chess";
 
@@ -35,7 +35,7 @@ export function ChatPanel({ nav, onOpenChess, onClose }: { nav: Nav; onOpenChess
               const hidden = blocked.includes(m.uid) && !mine;
               const chess = m.text.startsWith(CHESS_MARK);
               return (
-                <div key={m.id} className="hstack" style={{ alignItems: "flex-start", gap: 10, cursor: !m.deleted && !hidden && !chess ? "pointer" : "default" }} onClick={() => { if (!m.deleted && !hidden && !chess) setActionFor(m); }}>
+                <div key={m.id} className="hstack" style={{ alignItems: "flex-start", gap: 10, cursor: !m.deleted && !hidden && !chess ? "pointer" : "default" }} {...(!m.deleted && !hidden && !chess ? asButton(() => setActionFor(m), "Message actions") : {})}>
                   <Avatar avatar={m.avatar} size={34} uid={m.uid} mine={mine} />
                   <div className="grow" style={{ minWidth: 0 }}>
                     <div className="hstack g8"><span style={{ fontSize: 13, fontWeight: 600, color: mine ? "var(--accent-bright)" : "var(--text)" }}>{mine ? "You" : m.displayName}</span><Tiny>{fmtClock(m.at)}</Tiny></div>
@@ -148,7 +148,7 @@ export function ReportDialog({ type, id, label, excerpt, onDismiss }: { type: st
       <Button kind="ghost" text="Cancel" onClick={onDismiss} />
       <Button text="Send report" onClick={() => { core.session.fileReport(type, id, label, cat, details, excerpt, (ok) => core.toast(ok ? "Report sent to the host" : "Could not send the report")); onDismiss(); }} />
     </>}>
-      <Muted size={12}>Goes to the room's host. There is no central moderator — the host decides.</Muted>
+      <Muted size={12}>Goes to the room's host. There is no central moderator. The host decides.</Muted>
       <div className="hstack" style={{ flexWrap: "wrap", gap: 6, margin: "10px 0" }}>{REPORT_CATEGORIES.map(([k, v]) => <Chip key={k} text={v} selected={cat === k} onClick={() => setCat(k)} />)}</div>
       <Field multiline rows={4} placeholder="Details (optional)" value={details} onChange={setDetails} maxLength={1000} />
     </Dialog>

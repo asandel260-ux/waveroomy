@@ -115,7 +115,7 @@ ipcMain.on("app:notify", (_e, title: string, body: string) => {
   n.on("click", showWindow);
   n.show();
 });
-ipcMain.on("app:badge", (_e, n: number) => { tray?.setToolTip(n > 0 ? `HoMit — ${n} unread` : "HoMit"); });
+ipcMain.on("app:badge", (_e, n: number) => { tray?.setToolTip(n > 0 ? `HoMit: ${n} unread` : "HoMit"); });
 ipcMain.on("app:prefs", (_e, p: typeof prefs) => { Object.assign(prefs, p); });
 
 /* ---------------- window ---------------- */

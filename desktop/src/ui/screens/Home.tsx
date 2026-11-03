@@ -48,31 +48,42 @@ function RoomsTab({ nav }: { nav: Nav }) {
   return (
     <div className="scroll">
       <div className="col" style={{ paddingBottom: 24 }}>
-        <PageHead label="Voice rooms" title="Rooms" text="Open a room, or connect to one with a code or on the same Wi-Fi. Everyone in it can speak.">
-          <Button text="Join" icon="scan" kind="secondary" onClick={() => nav.push({ t: "join", code: "" })} />
+        <PageHead label="Voice rooms" title="Rooms" text="Rooms on your Wi-Fi, and the rooms you have hosted before.">
+          <Button text="Join with a code" icon="scan" kind="secondary" onClick={() => nav.push({ t: "join", code: "" })} />
           <Button text="New room" icon="plus" onClick={() => nav.push({ t: "create" })} />
         </PageHead>
 
-        {settings.nearby && <>
-          <SectionTitle>Nearby · same network</SectionTitle>
-          {nearby.length === 0 ? (
-            <div className="hstack g10" style={{ padding: "8px 32px" }}><Icon name="wifi" size={18} color="var(--faint)" /><Muted>Listening for rooms on this Wi-Fi… none yet.</Muted></div>
-          ) : nearby.map((r) => <NearbyRow key={r.roomId + r.ip} r={r} busy={joining === r.roomId + r.ip} onJoin={() => joinNearby(r)} />)}
-        </>}
-
-        <SectionTitle>Your rooms</SectionTitle>
-        {saved.length === 0 ? (
-          <EmptyState icon="waveform" title="No rooms yet" text="Rooms you start are remembered here, with their chat and blackboard, so you can open them again." />
-        ) : saved.map((r) => (
-          <div key={r.meta.id} className="listrow click" style={{ cursor: "pointer", paddingRight: 8 }} onClick={() => setRestart(r)} onContextMenu={(e) => { e.preventDefault(); setMenu({ r, x: e.clientX, y: e.clientY }); }}>
-            <div className="pill-orb" style={{ boxShadow: "inset 0 0 0 1px var(--border-strong)" }}><Icon name={r.meta.unlisted ? "lock" : "waveform"} size={18} /></div>
-            <div className="grow">
-              <div className="ellipsis" style={{ fontSize: 16, fontWeight: 500 }}>{r.meta.title}</div>
-              <Muted size={12}>{r.totalJoins} joins · peak {r.peak} · {timeAgo(r.lastActiveAt)}</Muted>
-            </div>
-            <IconButton icon="more-v" color="var(--muted)" onClick={(e) => { e.stopPropagation(); const b = e.currentTarget.getBoundingClientRect(); setMenu({ r, x: b.left - 120, y: b.bottom }); }} />
+        <SectionTitle>On this Wi-Fi</SectionTitle>
+        {!settings.nearby ? (
+          <div className="empty" style={{ paddingTop: 8 }}>
+            <Muted>Nearby rooms are switched off, so rooms on your network are not shown.</Muted>
+            <Button small kind="secondary" text="Open network settings" onClick={() => nav.push({ t: "settings" })} />
           </div>
-        ))}
+        ) : nearby.length === 0 ? (
+          <div className="hstack g10" style={{ padding: "8px 32px" }}><Spinner size={16} /><Muted>Listening for rooms on this Wi-Fi. When someone starts one, it appears here.</Muted></div>
+        ) : nearby.map((r) => <NearbyRow key={r.roomId + r.ip} r={r} busy={joining === r.roomId + r.ip} onJoin={() => joinNearby(r)} />)}
+
+        <SectionTitle>Rooms you have hosted</SectionTitle>
+        {saved.length === 0 ? (
+          <div className="empty" style={{ paddingTop: 8 }}>
+            <Muted>Rooms you start are kept here with their chat and blackboard, so you can open them again.</Muted>
+            <Button small text="Start your first room" onClick={() => nav.push({ t: "create" })} />
+          </div>
+        ) : <>
+          <div className="roomrow head"><span className="tiny">Room</span><span className="tiny num">Joins</span><span className="tiny num">Peak</span><span className="tiny">Last open</span><span /></div>
+          {saved.map((r) => (
+            <div key={r.meta.id} className="roomrow" onContextMenu={(e) => { e.preventDefault(); setMenu({ r, x: e.clientX, y: e.clientY }); }}>
+              <button className="main" onClick={() => setRestart(r)} title={`Open ${r.meta.title} again`}>
+                <Icon name={r.meta.unlisted ? "lock" : "waveform"} size={18} color="var(--accent-bright)" />
+                <span className="ellipsis" style={{ fontSize: 16, fontWeight: 500 }}>{r.meta.title}</span>
+              </button>
+              <span className="num muted">{r.totalJoins}</span>
+              <span className="num muted">{r.peak}</span>
+              <span className="muted ellipsis">{timeAgo(r.lastActiveAt)}</span>
+              <IconButton icon="more-v" color="var(--muted)" title="Room options" onClick={(e) => { const b = e.currentTarget.getBoundingClientRect(); setMenu({ r, x: b.left - 140, y: b.bottom }); }} />
+            </div>
+          ))}
+        </>}
       </div>
       {menu && <Menu at={menu} onDismiss={() => setMenu(null)} entries={[
         { label: "Open again", icon: "play", onClick: () => setRestart(menu.r) },
@@ -90,12 +101,12 @@ function RoomsTab({ nav }: { nav: Nav }) {
 function NearbyRow({ r, busy, onJoin }: { r: NearbyRoom; busy: boolean; onJoin: () => void }) {
   return (
     <button className="listrow" disabled={busy} onClick={onJoin}>
-      <div className="pill-orb" style={{ background: "var(--surface2)", boxShadow: "inset 0 0 0 1px var(--ok)" }}><Icon name="wifi" size={18} color="var(--ok)" /></div>
+      <Icon name="wifi" size={20} color="var(--live)" />
       <div className="grow">
         <div className="hstack g6"><span className="ellipsis" style={{ fontSize: 16, fontWeight: 500 }}>{r.title}</span>{r.locked && <Icon name="lock" size={13} color="var(--faint)" />}</div>
         <Muted size={12}>{r.hostName} · {r.count} here{r.topic ? ` · ${r.topic}` : ""}</Muted>
       </div>
-      <Chip text={busy ? "Connecting…" : "Join"} selected={!busy} />
+      <Chip text={busy ? "Connecting" : "Join"} selected={!busy} />
     </button>
   );
 }
@@ -123,7 +134,7 @@ function MessagesTab({ nav }: { nav: Nav }) {
           <FriendRequests />
           <NearbyPeople nav={nav} />
           <button className="listrow" onClick={() => nav.push({ t: "chat", uid: SAVED })}>
-            <div style={{ width: 48, height: 48, borderRadius: 2, display: "grid", placeItems: "center", background: "var(--accent)", boxShadow: "0 0 0 1px var(--border-strong)" }}><Icon name="bookmark" size={22} color="#fff" /></div>
+            <div style={{ width: 48, height: 48, borderRadius: 6, display: "grid", placeItems: "center", background: "var(--accent)", boxShadow: "0 0 0 1px var(--border-strong)" }}><Icon name="bookmark" size={22} color="#fff" /></div>
             <div className="grow"><div style={{ fontSize: 16, fontWeight: 500 }}>Saved messages</div><Muted><span className="ellipsis" style={{ display: "block" }}>{lastSaved ? core.dmHub.preview(lastSaved) : "Notes, links and files for yourself"}</span></Muted></div>
           </button>
           {list.length === 0 && (

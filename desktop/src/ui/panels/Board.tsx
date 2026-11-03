@@ -17,7 +17,7 @@ const TOOL_HINTS: Record<string, string> = {
   pencil: "Draw freely", pen: "Draw with the pen", highlight: "Highlight with a soft marker",
   eraser: "Drag over drawings to erase them", line: "Drag to draw a line", arrow: "Drag to draw an arrow",
   rect: "Drag to draw a rectangle", ellipse: "Drag to draw an ellipse", text: "Click anywhere to add text",
-  laser: "Press and drag — everyone sees your pointer",
+  laser: "Press and drag. Everyone sees your pointer",
 };
 const TOOLS: [string, string][] = [
   ["select", "select"], ["hand", "hand"], ["|", ""],
@@ -272,7 +272,7 @@ function BoardInner() {
   const style = (patch: Record<string, any>) => { if (sel.length) ctrl.styleSelection(patch); bump(); };
   const cursor = ctrl.tool === "hand" ? "grab" : ctrl.tool === "select" ? "default" : ctrl.tool === "text" ? "text" : "crosshair";
   const empty = board.objects.size === 0 && !ctrl.draft;
-  const pill: React.CSSProperties = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 4, backdropFilter: "blur(8px)" };
+  const pill: React.CSSProperties = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, backdropFilter: "blur(8px)" };
 
   return (
     <div ref={wrap} style={{ position: "relative", flex: 1, minHeight: 0, background: BG, overflow: "hidden" }} onDragOver={(e) => { if ([...e.dataTransfer.types].includes("Files")) e.preventDefault(); }} onDrop={onDropFile}>
@@ -283,35 +283,35 @@ function BoardInner() {
       {/* top-right round actions */}
       <div style={{ position: "absolute", top: 10, right: 10, display: "flex", flexDirection: "column", gap: 8 }}>
         {[["download", true, () => setExportOpen(true), "Export"], ["undo", ctrl.canUndo, () => ctrl.undo(), "Undo (Ctrl+Z)"], ["redo", ctrl.canRedo, () => ctrl.redo(), "Redo (Ctrl+Y)"], ["fit", true, () => ctrl.fitAll(), "Fit everything"]].map(([ic, on, fn, tt]) => (
-          <button key={ic as string} className="ibtn" title={tt as string} disabled={!on} onClick={fn as () => void} style={{ width: 40, height: 40, borderRadius: 4, ...pill, color: on ? "var(--text)" : "var(--faint)" }}><Icon name={ic as string} size={18} /></button>
+          <button key={ic as string} className="ibtn" title={tt as string} disabled={!on} onClick={fn as () => void} style={{ width: 40, height: 40, borderRadius: 10, ...pill, color: on ? "var(--text)" : "var(--faint)" }}><Icon name={ic as string} size={18} /></button>
         ))}
       </div>
-      <button onClick={() => ctrl.resetZoom()} title="Reset zoom" style={{ position: "absolute", top: 10, left: 10, ...pill, borderRadius: 2, padding: "6px 10px", fontSize: 11, color: "var(--muted)", cursor: "pointer" }}>{Math.round(ctrl.zoom * 100)}%</button>
+      <button onClick={() => ctrl.resetZoom()} title="Reset zoom" style={{ position: "absolute", top: 10, left: 10, ...pill, borderRadius: 6, padding: "6px 10px", fontSize: 11, color: "var(--muted)", cursor: "pointer" }}>{Math.round(ctrl.zoom * 100)}%</button>
 
       {/* tool rail */}
       <div style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)" }}>
         {!railOpen ? (
-          <button onClick={() => setRailOpen(true)} style={{ width: 46, height: 46, borderRadius: 4, background: "var(--accent)", border: "1px solid var(--accent-bright)", color: "#fff", cursor: "pointer", display: "grid", placeItems: "center" }}>
+          <button onClick={() => setRailOpen(true)} style={{ width: 46, height: 46, borderRadius: 10, background: "var(--accent)", border: "1px solid var(--accent-bright)", color: "#fff", cursor: "pointer", display: "grid", placeItems: "center" }}>
             <Icon name={TOOLS.find((t) => t[0] === ctrl.tool)?.[1] ?? "pencil"} size={22} />
           </button>
         ) : (
-          <div style={{ ...pill, borderRadius: 4, padding: 4, display: "flex", flexDirection: "column", alignItems: "center", maxHeight: "calc(100vh - 220px)", overflowY: "auto" }}>
-            <button className="ibtn" style={{ width: 42, height: 42, borderRadius: 4, color: "var(--faint)" }} onClick={() => setRailOpen(false)} title="Hide tools"><Icon name="chevron-left" size={18} /></button>
+          <div style={{ ...pill, borderRadius: 10, padding: 4, display: "flex", flexDirection: "column", alignItems: "center", maxHeight: "calc(100vh - 220px)", overflowY: "auto" }}>
+            <button className="ibtn" style={{ width: 42, height: 42, borderRadius: 10, color: "var(--faint)" }} onClick={() => setRailOpen(false)} title="Hide tools"><Icon name="chevron-left" size={18} /></button>
             {TOOLS.map(([id, icon], i) => id === "|" ? <div key={i} style={{ height: 1, width: 24, background: "var(--border)", margin: "4px 0" }} /> : (
               <button key={id} title={id[0].toUpperCase() + id.slice(1)} className="ibtn" onClick={() => { if (id === "image") { pickImage(); return; } ctrl.tool = id; if (id !== "select") ctrl.selection = new Set(); bump(); }}
-                style={{ width: 42, height: 42, borderRadius: 4, background: ctrl.tool === id ? "var(--accent)" : "transparent", color: ctrl.tool === id ? "#fff" : "var(--muted)" }}><Icon name={icon} size={20} /></button>
+                style={{ width: 42, height: 42, borderRadius: 10, background: ctrl.tool === id ? "var(--accent)" : "transparent", color: ctrl.tool === id ? "#fff" : "var(--muted)" }}><Icon name={icon} size={20} /></button>
             ))}
           </div>
         )}
       </div>
 
-      {hint && <div style={{ position: "absolute", top: 14, left: "50%", transform: "translateX(-50%)", ...pill, borderRadius: 2, padding: "8px 14px", fontSize: 12, color: "var(--text)", whiteSpace: "nowrap", pointerEvents: "none" }}>{hint}</div>}
+      {hint && <div style={{ position: "absolute", top: 14, left: "50%", transform: "translateX(-50%)", ...pill, borderRadius: 6, padding: "8px 14px", fontSize: 12, color: "var(--text)", whiteSpace: "nowrap", pointerEvents: "none" }}>{hint}</div>}
       {empty && (
         <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", pointerEvents: "none" }}>
           <div style={{ textAlign: "center", maxWidth: 320 }}>
             <Icon name="pencil" size={26} color="var(--faint)" />
             <div style={{ color: "var(--muted)", fontSize: 15, fontWeight: 500, marginTop: 8 }}>A blank board</div>
-            <div style={{ color: "var(--faint)", fontSize: 12 }}>Draw, type or drop in an image — everyone in the room sees it live.</div>
+            <div style={{ color: "var(--faint)", fontSize: 12 }}>Draw, type or drop in an image. Everyone in the room sees it live.</div>
           </div>
         </div>
       )}
@@ -335,13 +335,13 @@ function BoardInner() {
             {paletteOpen && (
               <div style={{ ...pill, display: "flex", gap: 8, padding: "6px 8px" }}>
                 {BOARD_COLORS.map((c) => (
-                  <button key={c} onClick={() => { ctrl.color = c; style({ color: rgbToHex(c) }); }} style={{ width: 26, height: 26, borderRadius: 4, background: rgbToHex(c), cursor: "pointer", border: `${c === curColor ? 2 : 1}px solid ${c === curColor ? "#fff" : "var(--border-strong)"}` }} />
+                  <button key={c} onClick={() => { ctrl.color = c; style({ color: rgbToHex(c) }); }} style={{ width: 26, height: 26, borderRadius: 10, background: rgbToHex(c), cursor: "pointer", border: `${c === curColor ? 2 : 1}px solid ${c === curColor ? "#fff" : "var(--border-strong)"}` }} />
                 ))}
               </div>
             )}
             <div style={{ ...pill, display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", maxWidth: "calc(100% - 80px)", overflowX: "auto" }}>
               <button onClick={() => setPaletteOpen(!paletteOpen)} title="Colour" style={{ width: 32, height: 32, display: "grid", placeItems: "center", background: "none", border: 0, cursor: "pointer" }}>
-                <span style={{ width: 26, height: 26, borderRadius: 4, background: rgbToHex(curColor), border: "2px solid #fff" }} />
+                <span style={{ width: 26, height: 26, borderRadius: 10, background: rgbToHex(curColor), border: "2px solid #fff" }} />
               </button>
               <Sep />
               {textMode
@@ -363,7 +363,7 @@ function BoardInner() {
 
 const Sep = () => <div style={{ width: 1, height: 22, background: "var(--border)", flex: "none" }} />;
 const Pill = ({ text, on, onClick }: { text: string; on: boolean; onClick: () => void }) => (
-  <button onClick={onClick} style={{ borderRadius: 2, padding: "5px 10px", fontSize: 12, cursor: "pointer", whiteSpace: "nowrap", background: on ? "var(--accent-soft)" : "transparent", border: `1px solid ${on ? "var(--accent)" : "var(--border)"}`, color: on ? "var(--accent-bright)" : "var(--muted)" }}>{text}</button>
+  <button onClick={onClick} style={{ borderRadius: 6, padding: "5px 10px", fontSize: 12, cursor: "pointer", whiteSpace: "nowrap", background: on ? "var(--accent-soft)" : "transparent", border: `1px solid ${on ? "var(--accent)" : "var(--border)"}`, color: on ? "var(--accent-bright)" : "var(--muted)" }}>{text}</button>
 );
 
 function overlay(ctx: CanvasRenderingContext2D, ctrl: BoardController) {

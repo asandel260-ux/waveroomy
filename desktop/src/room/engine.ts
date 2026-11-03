@@ -88,7 +88,7 @@ export class RoomEngine {
       const next = [...m.values()].sort((a, b) => a.joinedAt - b.joinedAt || (a.sid < b.sid ? -1 : 1))[0];
       m.set(next.sid, { ...next, role: "host" });
       st.participants = m;
-      this.io.emit("room:role", { role: "host", reason: "The host left — you are now hosting." }, next.sid);
+      this.io.emit("room:role", { role: "host", reason: "The host left. You are now hosting." }, next.sid);
     }
     this.broadcastState();
     this.io.emit("room:peer-left", { sid });
@@ -459,7 +459,7 @@ export class RoomEngine {
       if (!ChessModes.valid(mode)) return err("Unknown game mode.");
       const base = int(d, "base"), inc = int(d, "inc");
       if (base < 30 || base > 10800 || inc < 0 || inc > 180) return err("That time control is not available.");
-      if (st.chess.active) return err("A game is already open — finish or cancel it first.");
+      if (st.chess.active) return err("A game is already open. Finish or cancel it first.");
       const g = new ChessGame(Ids.id("g_"), mode, base, inc, me.uid, now);
       g.seats[0] = { uid: me.uid, name: me.displayName };
       this.pushGame(g);
@@ -709,7 +709,7 @@ export class RoomEngine {
     switch (str(d, "action")) {
       case "request": {
         if (this.browseCan(me)) return ok({ already: true });
-        if (!this.limiter.allow("navreq:" + me.uid, 5, 60_000)) return err("You already asked — give it a moment.");
+        if (!this.limiter.allow("navreq:" + me.uid, 5, 60_000)) return err("You already asked. Give it a moment.");
         const rq = b.requests.some((r) => r.uid === me.uid) ? b.requests : [...b.requests, { uid: me.uid, name: me.displayName, at: nowMs() }];
         this.io.emit("browse:state", browseJson({ ...b, requests: rq }));
         for (const h of [...st.participants.values()].filter((p) => p.role === "host")) this.io.emit("notify", { text: `${me.displayName} asked to control the browser.` }, h.sid);

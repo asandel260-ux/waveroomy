@@ -19,8 +19,8 @@ export function HelpScreen({ back }: ScreenProps) {
       <H t="How does it work without a server?" />
       <P t="HoMit connects devices directly to each other (peer to peer). There is no account system and no server relaying your voice, chat or screen. A room is simply the group of devices that are connected to each other." />
       <H t="Starting and joining" />
-      <P t="Start a room, then use the invite button to add someone. Friends in your list can join straight away; anyone else can scan the QR code or paste a code (on different networks they may also show you a reply code). The two devices link up directly. After that, anyone already in the room can invite more people — new people connect to everyone through the people already there." />
-      <P t="On the same Wi-Fi, rooms appear under “Nearby” and you can join with a single click — no codes." />
+      <P t="Start a room, then use the invite button to add someone. Friends in your list can join straight away; anyone else can scan the QR code or paste a code (on different networks they may also show you a reply code). The two devices link up directly. After that, anyone already in the room can invite more people. New people connect to everyone through the people already there." />
+      <P t="On the same Wi-Fi, rooms appear under “Nearby” and you can join with a single click. No codes." />
       <H t="Phone and computer in one account" />
       <P t="Export an identity backup on one device and restore it on the other to be the same person on both. Then use Settings → Your devices to link them so chats, contacts and rooms stay in step." />
       <H t="The host" />
@@ -30,7 +30,7 @@ export function HelpScreen({ back }: ScreenProps) {
       <H t="Size of a room" />
       <P t="Everyone connects to everyone, so each extra person adds load. Voice works well up to about 8–10 people; screen sharing is best with a few viewers. Up to 24 people can join." />
       <H t="Finding and adding people" />
-      <P t="Use the add-person button in Messages. Search a friend's @username, or paste their link, and send a request. When they accept, your devices are friends and reconnect on their own whenever you are both online — on the same Wi-Fi or across the internet — with no codes. You can limit who can find you in Settings → Privacy." />
+      <P t="Use the add-person button in Messages. Search a friend's @username, or paste their link, and send a request. When they accept, your devices are friends and reconnect on their own whenever you are both online. On the same Wi-Fi or across the internet. With no codes. You can limit who can find you in Settings → Privacy." />
       <P t="Reconnecting across networks uses a public message board (ntfy.sh by default) for tiny encrypted notes that only you and your friend can read. You can turn this off or point it at another board in Settings → Network." />
       <H t="Messages" />
       <P t="Chats are saved on your computer. When your friend is online the message is delivered at once; otherwise it waits and is sent as soon as you are both online. Groups catch up whenever two members connect." />
@@ -48,7 +48,7 @@ export function LegalScreen({ back }: ScreenProps) {
   return (
     <Page title="Privacy & terms" back={back}>
       <H t="Privacy" />
-      <P t="HoMit has no servers and collects nothing. Your profile, contacts, messages and room history are stored only on your devices. When you connect to someone, they receive your display name, username, avatar, bio and photo — that is how they see you." />
+      <P t="HoMit has no servers and collects nothing. Your profile, contacts, messages and room history are stored only on your devices. When you connect to someone, they receive your display name, username, avatar, bio and photo. That is how they see you." />
       <P t="Voice, chat, screen and board content flows directly between participants and is encrypted in transit by WebRTC. People in a room you join can record or screenshot what they receive; only share what you are comfortable sharing with them." />
       <P t="If STUN is enabled, your computer contacts public STUN servers (Google and Cloudflare by default) to discover its public network address. They learn that address and nothing else. Disable it in Settings → Network to stay on the local network only." />
       <P t="The shared browser and Watch Together load websites and YouTube directly on your computer, subject to those sites' own terms and privacy policies." />
@@ -63,7 +63,7 @@ export function AboutScreen({ back }: ScreenProps) {
   return (
     <Page title="About" back={back}>
       <H t="HoMit for Windows" />
-      <P t="Server-free voice rooms: stage and audience, hand-raising, room chat and reactions, direct messages, screen sharing, Watch Together, a shared browser, a shared infinite blackboard, chess and voice effects — all peer to peer, and compatible with HoMit on Android." />
+      <P t="Server-free voice rooms: stage and audience, hand-raising, room chat and reactions, direct messages, screen sharing, Watch Together, a shared browser, a shared infinite blackboard, chess and voice effects. All peer to peer, and compatible with HoMit on Android." />
       <H t="Built with" />
       <P t="Electron, React and the browser's WebRTC, with qrcode and jsQR for codes, and the Lucide icon set." />
       <H t="Design" />

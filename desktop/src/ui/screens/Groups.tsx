@@ -128,7 +128,7 @@ export function GroupInfoScreen({ nav, route, back }: ScreenProps) {
             {Object.values(contacts).filter((c) => !g.members[c.uid]).map((c) => (
               <button key={c.uid} className="listrow" onClick={() => { core.dmHub.addMember(g.id, c.uid); setAdd(false); }}>
                 <Avatar avatar={c.avatar} size={40} uid={c.uid} />
-                <div className="grow"><div style={{ fontSize: 15 }}>{c.displayName}</div><Muted size={12}>{connected.has(c.uid) ? "connected — added instantly" : "added when you next connect"}</Muted></div>
+                <div className="grow"><div style={{ fontSize: 15 }}>{c.displayName}</div><Muted size={12}>{connected.has(c.uid) ? "connected. Added instantly" : "added when you next connect"}</Muted></div>
               </button>
             ))}
           </div>

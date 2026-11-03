@@ -43,7 +43,7 @@ export function Avatar({ avatar, size = 40, uid = "", mine = false, ring }: { av
   const inner = photo ? (
     <img src={photo} alt="" draggable={false} />
   ) : (
-    <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", fontSize: size * 0.46, background: hsl(avatar.hue, 0.3, 0.26) }}>{avatar.emoji}</div>
+    <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", fontSize: size * 0.46, background: "var(--surface3)" }}>{avatar.emoji}</div>
   );
   if (ring) return <div className="avatar ring" style={{ width: size, height: size, ["--ring" as any]: ring }}><div className="in">{inner}</div></div>;
   return <div className="avatar" style={{ width: size, height: size }}>{inner}</div>;
@@ -101,12 +101,19 @@ export function Field({ value, onChange, label, placeholder, multiline, rows = 3
   );
 }
 
+/** Props that make a container with nested controls behave as one button (keyboard included). */
+export const asButton = (fn: () => void, label?: string) => ({
+  role: "button" as const, tabIndex: 0, "aria-label": label,
+  onClick: fn,
+  onKeyDown: (e: React.KeyboardEvent) => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); fn(); } },
+});
+
 export function SwitchRow({ title, subtitle, checked, onChange, disabled }: { title: string; subtitle?: string; checked: boolean; onChange: (b: boolean) => void; disabled?: boolean }) {
   return (
-    <div className="switch-row" onClick={() => !disabled && onChange(!checked)} role="switch" aria-checked={checked}>
+    <button type="button" className="switch-row" onClick={() => !disabled && onChange(!checked)} role="switch" aria-checked={checked} aria-disabled={disabled} style={{ width: "100%", textAlign: "left" }}>
       <div className="t"><div style={{ fontSize: 15 }}>{title}</div>{subtitle && <Muted size={12}>{subtitle}</Muted>}</div>
-      <span className={`switch ${checked ? "on" : ""}`} aria-disabled={disabled} />
-    </div>
+      <span className={`switch ${checked ? "on" : ""}`} aria-hidden="true" />
+    </button>
   );
 }
 
@@ -124,7 +131,7 @@ export function ScreenHeader({ title, onBack, subtitle, actions }: { title: stri
   return (
     <div className="header">
       <div className="bar" style={{ flexDirection: "column", alignItems: "stretch", gap: 12, padding: "20px 32px 24px" }}>
-        {onBack && <button className="hstack g4 tiny" onClick={onBack} style={{ alignSelf: "flex-start", marginLeft: -4 }} title="Back"><Icon name="chevron-left" size={14} />Back</button>}
+        {onBack && <button className="back" onClick={onBack} style={{ alignSelf: "flex-start" }}><Icon name="chevron-left" size={16} />Back</button>}
         <div className="hstack g8">
           <div className="title" style={{ padding: 0 }}>
             <h1 className="ellipsis">{title}</h1>
@@ -288,7 +295,7 @@ export function ToastHost() {
     const b = core.session.toasts.on(add);
     return () => { a(); b(); };
   }, []);
-  return <div className="toasts">{items.map((t) => <div key={t.id} className={`toast ${t.out ? "out" : ""}`}>{t.text}</div>)}</div>;
+  return <div className="toasts" role="status" aria-live="polite">{items.map((t) => <div key={t.id} className={`toast ${t.out ? "out" : ""}`}>{t.text}</div>)}</div>;
 }
 
 /* ---------------- silk background ---------------- */
@@ -404,7 +411,7 @@ export function HeroCard({ children, style }: { children: ReactNode; radius?: nu
 
 export function GroupAvatar({ emoji, hue, size }: { emoji: string; hue: number; size: number }) {
   return (
-    <div style={{ width: size, height: size, borderRadius: 2, display: "grid", placeItems: "center", flex: "none", fontSize: size * 0.5, background: hsl(hue, 0.3, 0.26) }}>
+    <div style={{ width: size, height: size, borderRadius: 6, display: "grid", placeItems: "center", flex: "none", fontSize: size * 0.5, background: "var(--surface3, var(--surface2))" }}>
       {emoji === "👥" ? "💬" : emoji}
     </div>
   );
