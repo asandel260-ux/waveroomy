@@ -16,9 +16,9 @@ interface Floating { id: number; emoji: string; name: string; x: number }
 
 function TabChip({ label, icon, on, live, onClick }: { label: string; icon: string; on: boolean; live: boolean; onClick: () => void }) {
   return (
-    <button className="hstack g6" onClick={onClick} aria-pressed={on} style={{ borderRadius: 6, padding: "8px 12px", flex: "none", background: on ? "var(--accent-soft)" : "transparent", boxShadow: `inset 0 0 0 1px ${on ? "var(--accent)" : "var(--border)"}`, transition: "background .12s" }}>
-      <Icon name={icon} size={15} color={on ? "var(--accent-bright)" : "var(--muted)"} />
-      <span style={{ color: on ? "var(--text)" : "var(--muted)", fontSize: 13, fontWeight: 500 }}>{label}</span>
+    <button className="hstack g8" onClick={onClick} aria-pressed={on} style={{ borderRadius: 999, padding: "10px 18px", flex: "none", background: on ? "var(--accent-soft)" : "transparent", boxShadow: `inset 0 0 0 1px ${on ? "var(--accent)" : "var(--border)"}`, transition: "background .12s" }}>
+      <Icon name={icon} size={17} color={on ? "var(--accent-bright)" : "var(--muted)"} />
+      <span style={{ color: on ? "var(--text)" : "var(--muted)", fontSize: 14, fontWeight: 500 }}>{label}</span>
       {live && <span role="img" aria-label="active" style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--live)" }} />}
     </button>
   );
@@ -55,22 +55,66 @@ function MicButton({ muted, ptt }: { muted: boolean; ptt: boolean }) {
   );
 }
 
-function StageTile({ p, speaking, online, onClick }: { p: Participant; speaking: boolean; online: boolean; onClick: () => void }) {
-  const mine = p.sid === core.session.mySid;
+/** Fills the stage with equal rectangles. The column count is whichever fits the space best, so one person gets the whole page and more people shrink the tiles evenly. */
+function TileGrid({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const n = Array.isArray(children) ? children.flat().length : 1;
+  const [box, setBox] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const ro = new ResizeObserver(() => setBox({ w: el.clientWidth, h: el.clientHeight }));
+    ro.observe(el); setBox({ w: el.clientWidth, h: el.clientHeight });
+    return () => ro.disconnect();
+  }, []);
+  const gap = 6;
+  let best = 1, bestScore = Infinity;
+  for (let c = 1; c <= Math.max(1, n); c++) {
+    const rows = Math.ceil(n / c);
+    const cw = (box.w - gap * (c - 1)) / c, ch = (box.h - gap * (rows - 1)) / rows;
+    if (cw <= 0 || ch <= 0) continue;
+    const score = Math.abs(Math.log(cw / ch / 1.6)) + (rows * c - n) * 0.08;
+    if (score < bestScore) { bestScore = score; best = c; }
+  }
+  const rows = Math.ceil(n / best);
+  const lastCount = n - best * (rows - 1);
+  const items = (Array.isArray(children) ? children.flat() : [children]) as ReactNode[];
+  // Two grid columns per tile lets a short last row sit centred instead of leaving a hole at the end.
   return (
-    <button onClick={onClick} style={{ width: 108, padding: "4px 0", borderRadius: 10, display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <div style={{ position: "relative", width: 92, height: 92, display: "grid", placeItems: "center" }}>
-        <div style={{ width: 82, height: 82, borderRadius: "50%", padding: 4, display: "grid", placeItems: "center", boxShadow: speaking ? "0 0 0 3px var(--live), 0 0 16px color-mix(in srgb, var(--live) 40%, transparent)" : "0 0 0 1px var(--border-strong)", transition: "box-shadow .15s" }}>
-          <div style={{ opacity: online ? 1 : 0.55 }}><Avatar avatar={p.avatar} size={74} uid={p.uid} mine={mine} /></div>
-        </div>
-        {p.muted && <span style={{ position: "absolute", right: 4, bottom: 4, width: 26, height: 26, borderRadius: "50%", background: "var(--surface3)", boxShadow: "inset 0 0 0 1px rgb(255 90 90 / .5)", display: "grid", placeItems: "center" }}><Icon name="mic-off" size={14} color="var(--danger)" /></span>}
-        {p.sharing && <span style={{ position: "absolute", right: 4, top: 4, width: 24, height: 24, borderRadius: 6, background: "var(--accent)", display: "grid", placeItems: "center" }}><Icon name="monitor" size={13} color="var(--on-accent)" /></span>}
-        {!online && <span style={{ position: "absolute" }}><Spinner size={24} /></span>}
+    <div ref={ref} style={{ flex: 1, minHeight: 0, display: "grid", gap, gridTemplateColumns: `repeat(${best * 2}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))` }}>
+      {items.map((c, i) => {
+        const inLast = i >= best * (rows - 1);
+        const col = inLast ? (best - lastCount) + (i - best * (rows - 1)) * 2 + 1 : (i % best) * 2 + 1;
+        return <div key={i} style={{ gridColumn: `${col} / span 2`, gridRow: Math.floor(i / best) + 1, display: "grid", minWidth: 0, minHeight: 0 }}>{c}</div>;
+      })}
+    </div>
+  );
+}
+
+function StageTile({ p, speaking, online, alone, onClick }: { p: Participant; speaking: boolean; online: boolean; alone: boolean; onClick: () => void }) {
+  const mine = p.sid === core.session.mySid;
+  const ref = useRef<HTMLButtonElement>(null);
+  const [d, setD] = useState(96);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const ro = new ResizeObserver(() => setD(Math.max(48, Math.min(160, Math.min(el.clientWidth, el.clientHeight) * 0.42))));
+    ro.observe(el); return () => ro.disconnect();
+  }, []);
+  return (
+    <button ref={ref} onClick={onClick} aria-label={`${mine ? "You" : p.displayName}${p.muted ? ", muted" : ""}${speaking ? ", speaking" : ""}`}
+      style={{ position: "relative", minWidth: 0, minHeight: 0, borderRadius: 10, overflow: "hidden", display: "grid", placeItems: "center",
+        background: `color-mix(in srgb, hsl(${p.avatar.hue} 55% 50%) 14%, var(--surface2))`,
+        boxShadow: speaking ? "inset 0 0 0 3px var(--live), 0 0 16px color-mix(in srgb, var(--live) 35%, transparent)" : "inset 0 0 0 1px var(--border)", transition: "box-shadow .15s" }}>
+      <div style={{ opacity: online ? 1 : 0.55, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+        <Avatar avatar={p.avatar} size={d} uid={p.uid} mine={mine} />
+        {alone && <span style={{ color: "var(--muted)", fontSize: 13 }}>Waiting for others. Invite them from the top right.</span>}
       </div>
-      <div className="hstack g4" style={{ marginTop: 4, borderRadius: 6, padding: "3px 10px", background: "var(--surface2)", color: "var(--text)", maxWidth: "100%" }}>
+      {!online && <span style={{ position: "absolute", top: 10, left: 10 }}><Spinner size={20} /></span>}
+      {p.sharing && <span style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: 6, background: "var(--accent)", display: "grid", placeItems: "center" }}><Icon name="monitor" size={14} color="var(--on-accent)" /></span>}
+      <div className="hstack g6" style={{ position: "absolute", left: 8, bottom: 8, maxWidth: "calc(100% - 52px)", borderRadius: 6, padding: "4px 10px", background: "var(--surface)", color: "var(--text)", fontSize: 13, fontWeight: 500 }}>
         {p.role === "host" && <Icon name="crown" size={12} color="var(--warn)" />}
-        <span className="ellipsis" style={{ fontSize: 13, fontWeight: 500 }}>{mine ? "You" : p.displayName}</span>
+        <span className="ellipsis">{mine ? "You" : p.displayName}</span>
       </div>
+      {p.muted && <span style={{ position: "absolute", right: 8, bottom: 8, width: 28, height: 28, borderRadius: "50%", background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--danger)", display: "grid", placeItems: "center" }}><Icon name="mic-off" size={15} color="var(--danger)" /></span>}
     </button>
   );
 }
@@ -170,27 +214,18 @@ export function RoomScreen({ nav }: ScreenProps) {
     case "browse": main = <BrowsePanel />; break;
     case "chess": main = <ChessPanel land={false} focus={chessFocus} setFocus={setChessFocus} onExit={exitToStage} onCreate={() => setChessCreate(true)} />; break;
     default: main = (
-      <div className="scroll"><div style={{ maxWidth: 980, margin: "0 auto", padding: "14px 16px" }}>
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", padding: 6, gap: 6 }}>
         {sharer && (
-          <button className="hstack g12" onClick={() => setMode("screen")} style={{ width: "100%", textAlign: "left", borderRadius: 10, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 14, marginBottom: 14 }}>
+          <button className="hstack g12" onClick={() => setMode("screen")} style={{ width: "100%", textAlign: "left", borderRadius: 10, background: "var(--surface)", boxShadow: "inset 0 0 0 1px var(--border)", padding: 12, flex: "none" }}>
             <Icon name="monitor" size={22} color="var(--accent-bright)" />
             <div className="grow"><div style={{ fontSize: 14, fontWeight: 500 }}>{iShare ? "You are" : sharer.displayName + " is"} sharing a screen</div><Muted size={12}>{sharer.sharing?.res}p · {sharer.sharing?.fps} fps</Muted></div>
             <Chip text={iShare ? "Preview" : "Watch"} selected />
           </button>
         )}
-        <Tiny>In the room · {participants.length}</Tiny>
-        <div style={{ height: 12 }} />
-        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "14px 4px" }}>
-          {speakers.map((p) => <StageTile key={p.sid} p={p} speaking={speaking.has(p.sid)} online={p.sid === session.mySid || connected.has(p.uid)} onClick={() => setPerson(p.sid)} />)}
-        </div>
-        {participants.length === 1 && (
-          <div style={{ marginTop: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-            <Muted size={14}>Nobody else is here yet.</Muted>
-            <Button small icon="user-plus" text="Invite someone" onClick={() => nav.push({ t: "invite", purpose: "room" })} />
-          </div>
-        )}
-        <div style={{ height: 24 }} />
-      </div></div>
+        <TileGrid>
+          {speakers.map((p) => <StageTile key={p.sid} p={p} alone={speakers.length === 1} speaking={speaking.has(p.sid)} online={p.sid === session.mySid || connected.has(p.uid)} onClick={() => setPerson(p.sid)} />)}
+        </TileGrid>
+      </div>
     );
   }
 
@@ -213,20 +248,24 @@ export function RoomScreen({ nav }: ScreenProps) {
                 <Muted size={12}>{participants.length} in room{live < participants.length ? ` · connecting ${participants.length - live}` : ""}</Muted>
               </div>
               <IconButton icon="user-plus" onClick={() => nav.push({ t: "invite", purpose: "room" })} title="Invite" />
-              <IconButton icon="more-v" onClick={(e) => { const b = e.currentTarget.getBoundingClientRect(); setMenu({ x: b.right - 200, y: b.bottom }); }} />
+              <IconButton icon="more-v" title="More" onClick={(e) => { const b = e.currentTarget.getBoundingClientRect(); setMenu({ x: b.right - 200, y: b.bottom }); }} />
             </div>
-            <div className="hstack g8" style={{ padding: "6px 12px", overflowX: "auto" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8, padding: "8px 12px" }}>
+              <div />
+              <div className="hstack g8" role="group" aria-label="Room views" style={{ overflowX: "auto", maxWidth: "100%" }}>
               <TabChip label="Stage" icon="users" on={mode === "stage"} live={false} onClick={() => setMode("stage")} />
               {sharer && <TabChip label="Screen" icon="monitor" on={mode === "screen"} live onClick={() => setMode("screen")} />}
               <TabChip label="Watch" icon="youtube" on={mode === "watch"} live={watching} onClick={() => setMode("watch")} />
               <TabChip label="Board" icon="board" on={mode === "board"} live={s.board.objects.size > 0} onClick={() => setMode("board")} />
               <TabChip label="Browser" icon="globe" on={mode === "browse"} live={browsing} onClick={() => setMode("browse")} />
               <TabChip label="Chess" icon="chess" on={mode === "chess"} live={s.chess.active != null} onClick={() => setMode("chess")} />
-              <div className="grow" />
+              </div>
+              <div className="hstack g8" style={{ justifyContent: "flex-end" }}>
               {mode !== "stage" && <Button small kind="ghost" icon="arrow-left" text="Exit to stage" onClick={exitToStage} />}
               {mode === "screen" && iShare && <Button small kind="danger" text="Stop sharing" onClick={() => { core.screen.stop(true); setMode("stage"); }} />}
               {mode === "watch" && watching && session.canWatchControl() && <Button small kind="danger" text="End Watch" onClick={() => { session.watchEnd(); setMode("stage"); }} />}
               {mode === "browse" && browsing && session.canBrowseControl() && <Button small kind="danger" text="Close browser" onClick={() => { session.browseEnd(); setMode("stage"); }} />}
+              </div>
             </div>
             <div className="hairline" />
           </>}
