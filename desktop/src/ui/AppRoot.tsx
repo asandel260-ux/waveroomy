@@ -6,7 +6,7 @@ import { useFlow, useEmitter } from "./hooks";
 import { avatarFrom } from "../core/models";
 import { applyTheme } from "./theme";
 import { Avatar, Button, Dialog, Icon, ScreenHeader, ToastHost, Backdrop, Muted } from "./components/kit";
-import { DoodleBackdrop } from "./components/Doodle";
+import { DoodleBackdrop, type SceneId } from "./components/Doodle";
 import { WelcomeScreen } from "./screens/Welcome";
 import { Onboarding } from "./screens/Onboarding";
 import { HomeScreen } from "./screens/Home";
@@ -97,6 +97,17 @@ function Globals() {
   );
 }
 
+function sceneOf(r: Route, tab: number, signedIn: boolean): SceneId {
+  if (!signedIn) return "intro";
+  switch (r.t) {
+    case "home": return (["rooms", "chats", "you"] as const)[tab] ?? "rooms";
+    case "room": return "room";
+    case "create": case "join": case "invite": return "create";
+    case "chat": case "profile": case "people": case "newGroup": case "groupInfo": return "social";
+    default: return "quiet";
+  }
+}
+
 export function AppRoot() {
   const ready = useFlow(core.ready);
   const profile = useFlow(core.profile.profile);
@@ -110,6 +121,8 @@ export function AppRoot() {
   useEffect(() => { if (phase === "joining" || phase === "live") { if (nav.top.t !== "room") nav.push({ t: "room" }); } else nav.removeAll("room"); }, [phase]);
   useEmitter(core.session.toasts, (t) => core.toast(t));
   const route = stack[stack.length - 1];
+  const homeTab = useFlow(nav.homeTab);
+  const scene = sceneOf(route, homeTab, !!profile);
 
   let body: ReactNode;
   if (!ready) body = <Backdrop css={{}} />;
@@ -123,8 +136,8 @@ export function AppRoot() {
     </div>
   );
   return (
-    <div className="shell" style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", background: "transparent" }}>
-      <DoodleBackdrop />
+    <div className="shell" data-scene={scene} style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column" }}>
+      <DoodleBackdrop scene={scene} />
       <TitleBar />
       {body}
       {profile && <Globals />}

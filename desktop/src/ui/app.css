@@ -25,7 +25,7 @@
 .light { color-scheme: light; }
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
-body { background: var(--atmos, none), var(--bg); background-attachment: fixed; color: var(--text); font: 14px/1.5 var(--sans); overflow: hidden; -webkit-font-smoothing: antialiased; user-select: none; }
+body { background: var(--bg); color: var(--text); font: 14px/1.5 var(--sans); overflow: hidden; -webkit-font-smoothing: antialiased; user-select: none; }
 input, textarea, [contenteditable], .selectable { user-select: text; }
 button { font: inherit; color: inherit; border: 0; background: none; padding: 0; }
 /* R-39: every enabled control says it is clickable, every disabled one says it is not */
@@ -271,15 +271,46 @@ button.listrow:hover, .listrow.click:hover { background: var(--surface); }
 @media (prefers-reduced-motion: reduce) { .eq i { animation: none !important; } }
 
 /* ---------- identity: green line work on purple ---------- */
-.doodle-bg { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: .8; }
-.light .doodle-bg { opacity: .55; }
-.shell > .titlebar, .shell > .body, .shell > main, .shell > div { position: relative; z-index: 1; }
-.firefly { opacity: .5; animation: twinkle 4.5s ease-in-out infinite; }
-@keyframes twinkle { 0%, 100% { opacity: .15; } 50% { opacity: .7; } }
-.doodle-draw path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 1.4s var(--delay, 0s) cubic-bezier(.3, .6, .3, 1) forwards; }
-@keyframes draw { to { stroke-dashoffset: 0; } }
-.no-anim .firefly, .no-anim .doodle-draw path { animation: none; }
-.no-anim .doodle-draw path { stroke-dashoffset: 0; }
-@media (prefers-reduced-motion: reduce) { .firefly { animation: none; } .doodle-draw path { animation: none; stroke-dashoffset: 0; } .btn { transition: none; transform: none !important; } }
-.shell main { background: rgb(34 10 70 / .42); }
-.light .shell main { background: rgb(255 255 255 / .45); }
+:root { --doodle-pale: #d3c0ff; --doodle-bright: #b9ff9e; --band-light: #ffffff; --band-dark: #1a0536; }
+.light { --doodle-pale: #8a6bd8; --doodle-bright: #3cb824; --band-light: #ffffff; --band-dark: #8c63e0; }
+.doodle-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; animation: scenein 1.1s ease-out both; }
+@keyframes scenein { from { opacity: 0; } to { opacity: 1; } }
+.doodle-stack { position: absolute; inset: 0; }
+.dl { position: absolute; inset: 0; }
+.doodle-svg { position: absolute; inset: -4%; width: 108%; height: 108%; }
+.doodle-svg path { stroke: none; }
+.dl { will-change: transform; }
+.dl0 { animation: driftA 70s ease-in-out infinite alternate; }
+.dl1 { animation: driftB 52s ease-in-out infinite alternate; }
+.dl2 { animation: driftC 38s ease-in-out infinite alternate; }
+@keyframes driftA { from { transform: translate(-18px, 10px) rotate(-.6deg); } to { transform: translate(22px, -16px) rotate(.8deg); } }
+@keyframes driftB { from { transform: translate(26px, 14px) rotate(.5deg); } to { transform: translate(-30px, -22px) rotate(-.9deg); } }
+@keyframes driftC { from { transform: translate(-40px, -16px) rotate(-1deg); } to { transform: translate(44px, 26px) rotate(1.2deg); } }
+.turn { animation: turn linear infinite alternate; transform-box: view-box; }
+@keyframes turn { from { transform: rotate(-24deg); } to { transform: rotate(24deg); } }
+.tracer { fill: none !important; stroke: var(--live) !important; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 26 974; stroke-dashoffset: 1000; opacity: .9; animation: run linear infinite; }
+@keyframes run { to { stroke-dashoffset: 0; } }
+.firefly { fill: var(--doodle-bright); opacity: .2; animation: twinkle ease-in-out infinite, floaty 11s ease-in-out infinite alternate; }
+@keyframes twinkle { 0%, 100% { opacity: .1; } 50% { opacity: .85; } }
+@keyframes floaty { from { transform: translate(-14px, 8px); } to { transform: translate(18px, -20px); } }
+.doodle-art { position: absolute; inset: 0; overflow: hidden; }
+.doodle-art .doodle-svg { inset: -4%; }
+.wipe { animation: wipe 1.7s cubic-bezier(.3, .6, .3, 1) both; }
+@keyframes wipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.shell > .titlebar, .shell > .body, .shell > main, .shell > div:not(.doodle-bg) { position: relative; z-index: 1; }
+.shell main { background: rgb(34 10 70 / .4); }
+.light .shell main { background: rgb(255 255 255 / .42); }
+/* every screen has its own light */
+.shell[data-scene=rooms] { --atmos: radial-gradient(900px 700px at 55% 40%, rgb(150 95 215 / .55), transparent 70%), radial-gradient(ellipse at 50% 50%, transparent 45%, rgb(24 4 52 / .6) 100%); }
+.shell[data-scene=chats] { --atmos: radial-gradient(800px 650px at 18% 30%, rgb(120 110 235 / .55), transparent 70%), radial-gradient(700px 500px at 95% 100%, rgb(82 255 31 / .16), transparent 70%), radial-gradient(ellipse at 50% 50%, transparent 45%, rgb(18 6 56 / .6) 100%); }
+.shell[data-scene=you] { --atmos: radial-gradient(900px 600px at 50% 105%, rgb(200 80 190 / .45), transparent 70%), radial-gradient(700px 500px at 90% 0%, rgb(130 90 230 / .4), transparent 70%), radial-gradient(ellipse at 50% 50%, transparent 45%, rgb(34 4 48 / .6) 100%); }
+.shell[data-scene=social] { --atmos: radial-gradient(800px 600px at 80% 25%, rgb(160 100 230 / .5), transparent 70%), radial-gradient(ellipse at 50% 50%, transparent 45%, rgb(24 4 52 / .6) 100%); }
+.shell[data-scene=create] { --atmos: radial-gradient(700px 600px at 85% 85%, rgb(82 255 31 / .24), transparent 70%), radial-gradient(800px 600px at 20% 20%, rgb(140 80 220 / .5), transparent 70%), radial-gradient(ellipse at 50% 50%, transparent 45%, rgb(24 4 52 / .6) 100%); }
+.shell[data-scene=room] { --atmos: radial-gradient(1000px 700px at 50% 50%, rgb(110 60 190 / .5), transparent 72%), radial-gradient(ellipse at 50% 50%, transparent 40%, rgb(16 2 40 / .7) 100%); }
+.shell[data-scene=quiet] { --atmos: radial-gradient(900px 700px at 30% 60%, rgb(120 80 200 / .4), transparent 70%), radial-gradient(ellipse at 50% 50%, transparent 45%, rgb(24 4 52 / .55) 100%); }
+.shell[data-scene=intro] { --atmos: radial-gradient(900px 700px at 70% 50%, rgb(160 100 230 / .55), transparent 70%), radial-gradient(500px 400px at 5% 100%, rgb(82 255 31 / .2), transparent 70%), radial-gradient(ellipse at 50% 50%, transparent 45%, rgb(24 4 52 / .6) 100%); }
+.no-anim .dl, .no-anim .turn, .no-anim .tracer, .no-anim .firefly, .no-anim .wipe, .no-anim .doodle-bg { animation: none !important; }
+.no-anim .tracer { display: none; }
+@media (prefers-reduced-motion: reduce) { .dl, .turn, .tracer, .firefly, .wipe, .doodle-bg { animation: none !important; } .tracer { display: none; } .btn { transition: none; transform: none !important; } }
+.shell { background: var(--atmos, none), var(--bg); }
+.light .shell[data-scene] { --atmos: radial-gradient(900px 700px at 50% 42%, rgb(255 255 255 / .65), transparent 70%), radial-gradient(ellipse at 50% 50%, transparent 50%, rgb(150 110 220 / .32) 100%); }
