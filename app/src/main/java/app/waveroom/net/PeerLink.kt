@@ -90,6 +90,8 @@ class PeerLink(
     private val pendingCandidates = ArrayList<IceCandidate>()
     private var gatherCb: (() -> Unit)? = null
     private var gatherTimeout: Runnable? = null
+    private var gatherSoon: Runnable? = null
+    private var gatherSettle: Runnable? = null
     private var closed = false
     val log = ArrayList<String>()
     private val localTypes = HashMap<String, Int>()
@@ -157,7 +159,11 @@ class PeerLink(
             override fun onIceCandidate(p0: IceCandidate?) {
                 val c = p0 ?: return
                 val ty = Regex(" typ (\\w+)").find(c.sdp)?.groupValues?.get(1) ?: "?"
-                onMain { localTypes[ty] = (localTypes[ty] ?: 0) + 1 }
+                onMain {
+                    localTypes[ty] = (localTypes[ty] ?: 0) + 1
+                    // a public (server-reflexive) or relay address is the last thing worth waiting for
+                    if (gatherCb != null && (ty == "srflx" || ty == "relay") && gatherSoon == null) gatherSoon = later(1000) { fireGather() }
+                }
                 if (trickle) onMain { if (!closed) listener.onLocalCandidate(this@PeerLink, c.sdpMid ?: "", c.sdpMLineIndex, c.sdp) }
             }
 
@@ -390,18 +396,22 @@ class PeerLink(
         pendingCandidates.clear()
     }
 
-    /** Non-trickle: invoke [cb] once candidate gathering is complete (or after [timeoutMs]). */
+    /**
+     * Non-trickle: invoke [cb] once the candidate list is worth sending: gathering complete, a second after
+     * the first public address, 4 s in if any local address exists (blocked STUN servers), or after [timeoutMs].
+     */
     fun whenGathered(timeoutMs: Long, cb: () -> Unit) {
         if (pc?.iceGatheringState() == PeerConnection.IceGatheringState.COMPLETE) return cb()
         gatherCb = cb
         gatherTimeout = later(timeoutMs) { fireGather() }
+        gatherSettle = later(4000) { if (localTypes.isNotEmpty()) fireGather() }
     }
 
     private fun fireGather() {
         val cb = gatherCb ?: return
         gatherCb = null
-        cancelLater(gatherTimeout)
-        gatherTimeout = null
+        cancelLater(gatherTimeout); cancelLater(gatherSoon); cancelLater(gatherSettle)
+        gatherTimeout = null; gatherSoon = null; gatherSettle = null
         cb()
     }
 
@@ -463,7 +473,7 @@ class PeerLink(
     fun close() {
         if (closed) return
         closed = true
-        cancelLater(gatherTimeout)
+        cancelLater(gatherTimeout); cancelLater(gatherSoon); cancelLater(gatherSettle)
         try {
             ctl?.unregisterObserver()
             fast?.unregisterObserver()

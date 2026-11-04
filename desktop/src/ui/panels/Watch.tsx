@@ -22,17 +22,7 @@ async function fetchMeta(id: string): Promise<{ title: string; author: string }>
   } catch { return { title: "YouTube video", author: "" }; }
 }
 
-let apiPromise: Promise<void> | null = null;
-function loadApi(): Promise<void> {
-  if ((window as any).YT?.Player) return Promise.resolve();
-  if (!apiPromise) apiPromise = new Promise((res) => {
-    (window as any).onYouTubeIframeAPIReady = () => res();
-    const s = document.createElement("script"); s.src = "https://www.youtube.com/iframe_api"; document.head.appendChild(s);
-  });
-  return apiPromise;
-}
-
-/** Fallback: play the watch page itself and drive its <video> element (works for videos whose owner blocked embedding). */
+/** The watch page is played in a real browser view and its <video> element is driven from here. The embedded iframe player refuses to run from an app, so it is not used. */
 const PAGE_JS = `(function(){if(window.__wr)return;window.__wr=1;
 var st=document.createElement('style');st.textContent='html,body{overflow:hidden!important;background:#000!important}body *{visibility:hidden!important}video{visibility:visible!important;position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;z-index:2147483647!important;object-fit:contain!important;background:#000!important;pointer-events:none!important}';document.documentElement.appendChild(st);
 function V(){return document.querySelector('video')}
@@ -47,17 +37,13 @@ export function WatchPanel() {
   const [ready, setReady] = useState(false);
   const [cur, setCur] = useState(0);
   const [dur, setDur] = useState(0);
-  const [fallback, setFallback] = useState(false);
   const [drag, setDrag] = useState<number | null>(null);
   const [url, setUrl] = useState("");
   const [perms, setPerms] = useState(false);
   const [speed, setSpeed] = useState<{ x: number; y: number } | null>(null);
   const [muted, setMuted] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const host = useRef<HTMLDivElement>(null);
-  const player = useRef<any>(null);
   const web = useRef<any>(null);
-  const loadedId = useRef<string | null>(null);
   const lastFix = useRef(0);
   const wRef = useRef(s?.watch);
   wRef.current = s?.watch;
@@ -67,12 +53,7 @@ export function WatchPanel() {
 
   /** Run a command on whichever player is active. */
   const cmd = (name: string, arg?: number) => {
-    if (fallback) { web.current?.executeJavaScript?.(`window.__w&&window.__w.${name}(${arg ?? ""})`).catch?.(() => {}); return; }
-    const p = player.current; if (!p) return;
-    try {
-      if (name === "play") p.playVideo(); else if (name === "pause") p.pauseVideo(); else if (name === "seek") p.seekTo(arg, true);
-      else if (name === "rate") p.setPlaybackRate(arg); else if (name === "vol") p.setVolume(arg);
-    } catch { /* ignore */ }
+    web.current?.executeJavaScript?.(`window.__w&&window.__w.${name}(${arg ?? ""})`)?.catch?.(() => {});
   };
 
   const onTick = (c: number, d: number, st: number, r: number) => {
@@ -89,59 +70,31 @@ export function WatchPanel() {
   };
   const tickRef = useRef(onTick); tickRef.current = onTick;
 
-  // embedded player
-  useEffect(() => {
-    if (fallback) return;
-    let dead = false; let iv: any;
-    void loadApi().then(() => {
-      if (dead || !host.current) return;
-      const el = document.createElement("div"); host.current.innerHTML = ""; host.current.appendChild(el);
-      const YT = (window as any).YT;
-      player.current = new YT.Player(el, {
-        width: "100%", height: "100%",
-        playerVars: { controls: 0, disablekb: 1, rel: 0, iv_load_policy: 3, playsinline: 1, fs: 0, modestbranding: 1, origin: "https://www.youtube.com" },
-        events: {
-          onReady: () => setReady(true),
-          onStateChange: (e: any) => { if (e.data === 0 && session.isHost && wRef.current?.playing) session.watchControl("skip"); },
-          onError: (e: any) => { setFallback(true); loadedId.current = null; setReady(false); setErrorMsg(null); void e; }
-        }
-      });
-      iv = setInterval(() => { const p = player.current; if (p?.getCurrentTime) tickRef.current(p.getCurrentTime(), p.getDuration() || 0, p.getPlayerState(), p.getPlaybackRate()); }, 500);
-    });
-    return () => { dead = true; clearInterval(iv); try { player.current?.destroy(); } catch { /* ignore */ } player.current = null; setReady(false); };
-  }, [fallback]);
+  const vid = w?.video?.id ?? null;
 
-  // fallback webview
+  // the browser view: inject the controller after every page load, then read the player twice a second
   useEffect(() => {
-    if (!fallback) return;
     const wv = web.current; if (!wv) return;
     const onLoad = () => { void wv.executeJavaScript(PAGE_JS).then(() => setReady(true)).catch(() => {}); };
+    const onFail = (e: any) => { if (e?.errorCode && e.errorCode !== -3 && e.isMainFrame !== false) setErrorMsg("Couldn't load YouTube. Check your internet connection."); };
     wv.addEventListener("did-finish-load", onLoad);
+    wv.addEventListener("did-fail-load", onFail);
     const iv = setInterval(async () => {
-      try { const r = await wv.executeJavaScript("window.__w&&window.__w.read()"); if (r) tickRef.current(r[0], r[1], r[2], r[3]); } catch { /* not ready */ }
+      try { const r = await wv.executeJavaScript("window.__w&&window.__w.read()"); if (r) { setErrorMsg(null); tickRef.current(r[0], r[1], r[2], r[3]); } } catch { /* not ready */ }
     }, 500);
-    return () => { wv.removeEventListener("did-finish-load", onLoad); clearInterval(iv); };
-  }, [fallback]);
-
-  // load whichever video the room is on
-  const vid = w?.video?.id ?? null;
+    return () => { wv.removeEventListener("did-finish-load", onLoad); wv.removeEventListener("did-fail-load", onFail); clearInterval(iv); };
+  }, []);
+  // a new video means a new page
+  useEffect(() => { setReady(false); setErrorMsg(null); }, [vid]);
+  // nothing shows up for 20 seconds: say so instead of staying black
   useEffect(() => {
-    const cw = wRef.current;
-    if (fallback) {
-      if (vid && vid !== loadedId.current) { loadedId.current = vid; setReady(false); setErrorMsg(null); try { web.current?.loadURL(`https://m.youtube.com/watch?v=${vid}`); } catch { /* ignore */ } }
-      if (!vid) loadedId.current = null;
-      return;
-    }
-    if (ready && vid && vid !== loadedId.current && cw) {
-      loadedId.current = vid; setErrorMsg(null);
-      const p = player.current; const t = expectedPosition(cw);
-      try { if (cw.playing) p.loadVideoById({ videoId: vid, startSeconds: t }); else p.cueVideoById({ videoId: vid, startSeconds: t }); } catch { /* ignore */ }
-    }
-    if (!vid) loadedId.current = null;
-  }, [vid, ready, fallback]);
+    if (!vid || ready) return;
+    const t = setTimeout(() => setErrorMsg((m) => m ?? "This video is taking a long time to start. It may be blocked or age-restricted, or YouTube may need a moment. Try another link."), 20_000);
+    return () => clearTimeout(t);
+  }, [vid, ready]);
   // keep playing state in step even between ticks
   useEffect(() => {
-    if (ready && loadedId.current && w) { cmd(w.playing ? "play" : "pause"); cmd("seek", expectedPosition(w)); }
+    if (ready && vid && w) { cmd(w.playing ? "play" : "pause"); cmd("seek", expectedPosition(w)); }
   }, [w?.playing, w?.position, w?.anchorMs]);
 
   if (!s || !w) return null;
@@ -161,9 +114,7 @@ export function WatchPanel() {
     <div style={{ flex: 1, minHeight: 0, display: "flex", background: "var(--bg)" }}>
       <div style={{ flex: 1.4, minWidth: 0, background: "var(--bg)", display: "grid", placeItems: "center" }}>
         <div style={{ position: "relative", width: "100%", maxHeight: "100%", aspectRatio: "16/9" }}>
-          {fallback
-            ? React.createElement("webview", { ref: web, src: "about:blank", partition: "persist:browse", style: { position: "absolute", inset: 0, width: "100%", height: "100%" } })
-            : <div ref={host} style={{ position: "absolute", inset: 0 }} />}
+          {React.createElement("webview", { ref: web, src: vid ? `https://m.youtube.com/watch?v=${vid}` : "about:blank", partition: "persist:browse", style: { position: "absolute", inset: 0, width: "100%", height: "100%" } })}
           {!v && (
             <div style={{ position: "absolute", inset: 0, background: "var(--bg)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
               <Icon name="youtube" size={36} color="var(--faint)" />

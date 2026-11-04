@@ -428,7 +428,7 @@ class LanService(private val ctx: Context, private val mySid: () -> String) {
             try {
                 val s = Socket()
                 s.connect(InetSocketAddress(room.ip, room.port), 6000)
-                s.soTimeout = 25_000
+                s.soTimeout = 40_000
                 val rd = BufferedReader(InputStreamReader(s.getInputStream(), Charsets.UTF_8))
                 val wr = PrintWriter(s.getOutputStream(), true)
                 myHello.put("t", kind).put("roomId", room.roomId)
@@ -443,7 +443,7 @@ class LanService(private val ctx: Context, private val mySid: () -> String) {
                     mainHandler.post {
                         accept(resp.str("code")) { a -> answer = a; latch.countDown() }
                     }
-                    latch.await(15, TimeUnit.SECONDS)
+                    latch.await(30, TimeUnit.SECONDS)
                     val a = answer
                     if (a == null) {
                         err = "Could not prepare a connection."

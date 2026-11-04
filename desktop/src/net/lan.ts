@@ -127,7 +127,7 @@ export class LanService {
       st = { stage: "hello", hello: null, who: "host" };
       this.incoming.set(id, st);
       // slow or silent peers don't get to hold a slot
-      later(30_000, () => { if (this.incoming.has(id)) native.lan.close(id); });
+      later(60_000, () => { if (this.incoming.has(id)) native.lan.close(id); });
     }
     const j = parse(line);
     if (!j) { native.lan.close(id); return; }
@@ -218,11 +218,11 @@ export class LanService {
     });
     try {
       native.lan.send(id, JSON.stringify({ ...myHello, t: kind, roomId: room.roomId }));
-      const resp = parse(await next(25_000));
+      const resp = parse(await next(40_000));
       if (!resp) return "Could not reach the host on this network.";
       if (str(resp, "t") === "deny") return str(resp, "error", "The host refused the connection.");
       if (str(resp, "t") !== "offer") return "Unexpected reply.";
-      const answer = await Promise.race([accept(str(resp, "code")), new Promise<null>((r) => setTimeout(() => r(null), 15_000))]);
+      const answer = await Promise.race([accept(str(resp, "code")), new Promise<null>((r) => setTimeout(() => r(null), 30_000))]);
       if (!answer) return "Could not prepare a connection.";
       native.lan.send(id, JSON.stringify({ t: "answer", code: answer }));
       await next(8000);

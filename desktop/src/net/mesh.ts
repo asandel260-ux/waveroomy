@@ -83,7 +83,7 @@ export class Mesh implements LinkListener {
       this.pending.delete(id); l.close();
       return { id, code: null };
     }
-    await new Promise<void>((res) => l.whenGathered(6000, res));
+    await new Promise<void>((res) => l.whenGathered(10_000, res));
     const sdp = l.localSdp();
     if (!sdp) {
       this.pending.delete(id); l.close();
@@ -133,7 +133,7 @@ export class Mesh implements LinkListener {
       this.links.delete(remote); l.close();
       return { answer: null, remoteSid: remote };
     }
-    await new Promise<void>((res) => l.whenGathered(6000, res));
+    await new Promise<void>((res) => l.whenGathered(10_000, res));
     const sdp = l.localSdp();
     if (!sdp) {
       this.links.delete(remote); l.close();

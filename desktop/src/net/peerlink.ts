@@ -51,6 +51,8 @@ export class PeerLink {
   private pending: RTCIceCandidateInit[] = [];
   private gatherCb: (() => void) | null = null;
   private gatherTimeout: Timer = null;
+  private gatherSoon: Timer = null;
+  private gatherSettle: Timer = null;
   private closed = false;
   private localTypes: Record<string, number> = {};
   private remoteTypes: Record<string, number> = {};
@@ -118,6 +120,8 @@ export class PeerLink {
       if (!c) return;
       const ty = / typ (\w+)/.exec(c.candidate)?.[1] ?? "?";
       this.localTypes[ty] = (this.localTypes[ty] ?? 0) + 1;
+      // a public (server-reflexive) or relay address is the last thing worth waiting for
+      if (this.gatherCb && (ty === "srflx" || ty === "relay") && !this.gatherSoon) this.gatherSoon = later(1000, () => this.fireGather());
       if (this.trickle && !this.closed) this.listener.onLocalCandidate(this, c.sdpMid ?? "", c.sdpMLineIndex ?? 0, c.candidate);
     };
     p.onicegatheringstatechange = () => { if (p.iceGatheringState === "complete") this.fireGather(); };
@@ -271,19 +275,24 @@ export class PeerLink {
     this.pending = [];
   }
 
-  /** Non-trickle: invoke [cb] once candidate gathering is complete (or after [timeoutMs]). */
+  /**
+   * Non-trickle: invoke [cb] once the candidate list is worth sending. That is when gathering
+   * completes, a second after the first public address shows up, after 4 s if at least a local
+   * address exists (blocked STUN servers would otherwise make everyone wait), or after [timeoutMs].
+   */
   whenGathered(timeoutMs: number, cb: () => void) {
     if (this.pc?.iceGatheringState === "complete") return cb();
     this.gatherCb = cb;
     this.gatherTimeout = later(timeoutMs, () => this.fireGather());
+    this.gatherSettle = later(4000, () => { if (Object.keys(this.localTypes).length) this.fireGather(); });
   }
 
   private fireGather() {
     const cb = this.gatherCb;
     if (!cb) return;
     this.gatherCb = null;
-    cancelLater(this.gatherTimeout);
-    this.gatherTimeout = null;
+    cancelLater(this.gatherTimeout); cancelLater(this.gatherSoon); cancelLater(this.gatherSettle);
+    this.gatherTimeout = null; this.gatherSoon = null; this.gatherSettle = null;
     cb();
   }
 
@@ -332,7 +341,7 @@ export class PeerLink {
   close() {
     if (this.closed) return;
     this.closed = true;
-    cancelLater(this.gatherTimeout);
+    cancelLater(this.gatherTimeout); cancelLater(this.gatherSoon); cancelLater(this.gatherSettle);
     try { this.ctl?.close(); this.fast?.close(); } catch { /* ignore */ }
     try { this.pc?.close(); } catch { /* ignore */ }
     this.pc = null; this.ctl = null; this.fast = null;

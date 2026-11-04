@@ -106,7 +106,7 @@ class Mesh(
             if (!ok) {
                 pending.remove(id); l.close(); cb(id, null)
             } else {
-                l.whenGathered(6000) {
+                l.whenGathered(10_000) {
                     val sdp = l.localSdp()
                     if (sdp == null) {
                         pending.remove(id); l.close(); cb(id, null)
@@ -160,7 +160,7 @@ class Mesh(
             if (!ok) {
                 links.remove(remote); l.close(); cb(null, remote)
             } else {
-                l.whenGathered(6000) {
+                l.whenGathered(10_000) {
                     val sdp = l.localSdp()
                     if (sdp == null) {
                         links.remove(remote); l.close(); cb(null, remote)
