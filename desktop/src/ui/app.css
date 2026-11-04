@@ -311,3 +311,5 @@ button.listrow:hover, .listrow.click:hover { background: var(--surface); }
 @media (prefers-reduced-motion: reduce) { .dl, .turn, .tracer, .firefly, .wipe, .doodle-bg { animation: none !important; } .tracer { display: none; } .btn { transition: none; transform: none !important; } }
 .shell { background: var(--atmos, none), var(--bg); }
 .light .shell[data-scene] { --atmos: radial-gradient(900px 700px at 50% 42%, rgb(255 255 255 / .65), transparent 70%), radial-gradient(ellipse at 50% 50%, transparent 50%, rgb(150 110 220 / .32) 100%); }
+
+.paused .dl, .paused .turn, .paused .tracer, .paused .firefly { animation-play-state: paused !important; }

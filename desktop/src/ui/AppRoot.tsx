@@ -120,6 +120,10 @@ export function AppRoot() {
   useEffect(() => { if (settings.theme !== "system") return; const mq = window.matchMedia("(prefers-color-scheme: light)"); const f = () => applyTheme(core.settings.state.value); mq.addEventListener("change", f); return () => mq.removeEventListener("change", f); }, [settings.theme]);
   useEffect(() => { if (phase === "joining" || phase === "live") { if (nav.top.t !== "room") nav.push({ t: "room" }); } else nav.removeAll("room"); }, [phase]);
   useEmitter(core.session.toasts, (t) => core.toast(t));
+  useEffect(() => {
+    const f = () => document.documentElement.classList.toggle("paused", document.hidden);
+    f(); document.addEventListener("visibilitychange", f); return () => document.removeEventListener("visibilitychange", f);
+  }, []);
   const route = stack[stack.length - 1];
   const homeTab = useFlow(nav.homeTab);
   const scene = sceneOf(route, homeTab, !!profile);
