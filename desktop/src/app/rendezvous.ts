@@ -26,6 +26,9 @@ export class Rendezvous {
   private lastOffer = new Map<string, number>();
   private started = false;
   private inbox = "";
+  private topicList = "";
+  private pollSince = 0;
+  private polling = false;
 
   constructor(private core: AppCore, private disc: Discovery) {}
 
@@ -33,6 +36,33 @@ export class Rendezvous {
     if (this.started) return;
     this.started = true;
     later(4000, () => void this.tick());
+    later(9000, () => void this.pollLoop());
+  }
+
+  /**
+   * The live stream is cut by some networks and proxies, so the mailboxes are also read the plain way
+   * every 12 s. Notes seen twice are ignored (seenIds), so both paths can run side by side.
+   */
+  private async pollLoop() {
+    if (!this.polling && this.topicList && this.core.settings.state.value.reconnect) {
+      this.polling = true;
+      try {
+        const since = this.pollSince > 0 ? String(this.pollSince) : "5m";
+        const r = await fetch(`${this.baseUrl()}/${this.topicList}/json?poll=1&since=${since}`, { signal: AbortSignal.timeout(10000) });
+        if (r.ok) {
+          for (const line of (await r.text()).split("\n").slice(0, 300)) {
+            if (!line.trim()) continue;
+            let j: J; try { j = JSON.parse(line); } catch { continue; }
+            if (str(j, "event") !== "message") continue;
+            const tm = lng(j, "time");
+            if (tm > this.pollSince) this.pollSince = tm;
+            void this.onEvent(str(j, "id"), str(j, "topic"), str(j, "message"));
+          }
+        }
+      } catch { /* try again next round */ }
+      this.polling = false;
+    }
+    later(12_000, () => void this.pollLoop());
   }
   lost(uid: string) { this.tries.delete(uid); later(2500, () => void this.tick(true)); }
   kick() { this.tries.clear(); later(500, () => void this.tick(true)); }
@@ -135,7 +165,7 @@ export class Rendezvous {
 
   /* ---- subscribe (server-sent events over fetch) ---- */
 
-  private stopSub() { this.subGen++; this.abort?.abort(); this.abort = null; this.subKey = ""; }
+  private stopSub() { this.topicList = ""; this.subGen++; this.abort?.abort(); this.abort = null; this.subKey = ""; }
 
   private async ensureSub(fl: Peer[]) {
     this.peers = new Map(fl.map((p) => [p.topic, p]));
@@ -143,6 +173,7 @@ export class Rendezvous {
     const all = [...fl.map((p) => p.topic), ...(this.inbox ? [this.inbox] : [])];
     if (all.length === 0) { this.status.value = "nobody to look for yet"; this.stopSub(); return; }
     const topics = [...all].sort().join(",");
+    this.topicList = topics;
     const key = this.baseUrl() + "|" + topics;
     if (key === this.subKey && this.abort) return;
     this.stopSub();

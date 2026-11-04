@@ -36,13 +36,16 @@ function RoomsTab({ nav }: { nav: Nav }) {
   const joinNearby = async (r: NearbyRoom) => {
     const p = core.profile.profile.value;
     if (!p) return;
+    if (core.session.phase.value !== "idle") { core.toast("Leave your current room before joining another."); return; }
     setJoining(r.roomId + r.ip);
+    let why = "";
     const err = await core.lan.join(r, { uid: core.profile.uid, name: p.displayName }, async (code) => {
       const res = await core.handleCode(code, false);
+      if (res.kind === "error") why = res.msg;
       return res.kind === "answer" ? res.code : null;
     });
     setJoining(null);
-    if (err) core.toast(err);
+    if (err) core.toast(why || err);
   };
 
   return (

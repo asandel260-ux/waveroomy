@@ -150,6 +150,7 @@ private fun RoomsTab(nav: Nav) {
 
     fun joinNearby(r: NearbyRoom) {
         val p = AppCore.profile.profile.value ?: return
+        if (AppCore.session.phase.value != "idle") { AppCore.toast("Leave your current room before joining another."); return }
         joining = r.roomId + r.ip
         AppCore.platform?.requestMic { }
         AppCore.lan.join(

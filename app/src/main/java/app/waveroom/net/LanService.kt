@@ -354,7 +354,7 @@ class LanService(private val ctx: Context, private val mySid: () -> String) {
                     var fc: String? = null
                     val l2 = CountDownLatch(1)
                     mainHandler.post { app?.issueFriendInvite { c -> fc = c; l2.countDown() } ?: l2.countDown() }
-                    l2.await(10, TimeUnit.SECONDS)
+                    l2.await(25, TimeUnit.SECONDS)
                     val offer0 = fc
                     if (offer0 == null) { wr.println(jsonOf("t" to "deny", "error" to "Could not prepare a connection.").toString()); return }
                     wr.println(jsonOf("t" to "offer", "code" to offer0).toString())
@@ -382,7 +382,7 @@ class LanService(private val ctx: Context, private val mySid: () -> String) {
                 if (hh == null) latch.countDown()
                 else hh.issueInvite(hello.str("roomId")) { _, c -> code = c; latch.countDown() }
             }
-            latch.await(10, TimeUnit.SECONDS)
+            latch.await(25, TimeUnit.SECONDS)
             val offer = code
             if (offer == null) {
                 wr.println(jsonOf("t" to "deny", "error" to "Could not prepare a connection.").toString()); return

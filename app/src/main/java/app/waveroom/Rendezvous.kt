@@ -54,6 +54,39 @@ object Rendezvous {
         if (started) return
         started = true
         later(4000) { tick() }
+        later(9000) { pollLoop() }
+    }
+
+    @Volatile private var topicList = ""
+    @Volatile private var pollSince = 0L
+    @Volatile private var polling = false
+
+    /** The live stream is cut by some networks, so the mailboxes are also read the plain way every 12 s. Notes seen twice are ignored. */
+    private fun pollLoop() {
+        if (!polling && topicList.isNotEmpty() && enabled()) {
+            polling = true
+            val topics = topicList
+            Thread {
+                try {
+                    val since = if (pollSince > 0) pollSince.toString() else "5m"
+                    val c = URL("${baseUrl()}/$topics/json?poll=1&since=$since").openConnection() as HttpURLConnection
+                    c.connectTimeout = 10000; c.readTimeout = 10000
+                    if (c.responseCode in 200..299) {
+                        c.inputStream.bufferedReader().useLines { lines ->
+                            for (line in lines.take(300)) {
+                                val j = try { JSONObject(line) } catch (e: Exception) { continue }
+                                if (j.optString("event") != "message") continue
+                                val tm = j.optLong("time", 0L)
+                                if (tm > pollSince) pollSince = tm
+                                mainHandler.post { onEvent(j.optString("id"), j.optString("topic"), j.optString("message")) }
+                            }
+                        }
+                    }
+                } catch (e: Exception) { }
+                polling = false
+            }.also { it.isDaemon = true; it.start() }
+        }
+        later(12_000) { pollLoop() }
     }
 
     /** Call when a link to a friend ends so we start looking for them again. */
@@ -208,6 +241,7 @@ object Rendezvous {
     /* ------------------------------ subscribe ------------------------------ */
 
     private fun stopSub() {
+        topicList = ""
         subGen++
         sub = null
         subKey = ""
@@ -226,6 +260,7 @@ object Rendezvous {
         val key = baseUrl() + "|" + all.sorted().joinToString(",")
         if (key == subKey && sub?.isAlive == true) return
         subKey = key
+        topicList = all.sorted().joinToString(",")
         val gen = ++subGen
         val base = baseUrl()
         val topics = all.sorted().joinToString(",")
