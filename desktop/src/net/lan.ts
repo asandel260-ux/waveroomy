@@ -162,8 +162,8 @@ export class LanService {
         const h = this.host;
         const deny = h ? h.admit(hello) : "This room is closed.";
         if (deny) { this.reply(id, { t: "deny", error: deny }); native.lan.close(id); return; }
-        const { code } = await h!.issueInvite(str(hello, "roomId"));
-        if (!code) { this.reply(id, { t: "deny", error: "Could not prepare a connection." }); native.lan.close(id); return; }
+        const { code, why } = await h!.issueInvite(str(hello, "roomId"));
+        if (!code) { this.reply(id, { t: "deny", error: "The host could not prepare a connection" + (why ? ` (${why})` : "") + "." }); native.lan.close(id); return; }
         st.who = "host";
         st.stage = "answer";
         this.reply(id, { t: "offer", code });
@@ -184,20 +184,30 @@ export class LanService {
 
   /* ---- joiner side ---- */
 
-  /** Push our answer code straight to the inviter when it is on the same network. */
+  /**
+   * Push our answer code straight to the inviter when it is on the same network. All of their addresses are
+   * tried at once and each gets 2.5 s to connect: when the inviter is somewhere else, those private addresses
+   * lead nowhere, and waiting for each of them in turn used to hold the reply back for many seconds.
+   */
   async deliverAnswer(addrs: string[], code: string): Promise<boolean> {
-    for (const a of addrs) {
+    const one = async (a: string): Promise<boolean> => {
       const i = a.lastIndexOf(":");
-      const id = await native.lan.connect(a.slice(0, i), parseInt(a.slice(i + 1), 10)).catch(() => -1);
-      if (id < 0) continue;
+      const conn = native.lan.connect(a.slice(0, i), parseInt(a.slice(i + 1), 10)).catch(() => -1);
+      const id = await Promise.race([conn, new Promise<number>((r) => setTimeout(() => r(-2), 2500))]);
+      if (id === -2) { void conn.then((late) => { if (late >= 0) native.lan.close(late); }); return false; }
+      if (id < 0) return false;
       const r = await new Promise<J | null>((res) => {
         const t = setTimeout(() => { this.outHandlers.delete(id); native.lan.close(id); res(null); }, 8000);
         this.outHandlers.set(id, (line) => { clearTimeout(t); this.outHandlers.delete(id); native.lan.close(id); res(parse(line)); });
         native.lan.send(id, JSON.stringify({ t: "ans", code }));
       });
-      if (r && str(r, "t") === "ok") return true;
-    }
-    return false;
+      return !!r && str(r, "t") === "ok";
+    };
+    return new Promise<boolean>((resolve) => {
+      let left = addrs.length;
+      if (!left) { resolve(false); return; }
+      for (const a of addrs) void one(a).catch(() => false).then((ok) => { if (ok) resolve(true); else if (--left === 0) resolve(false); });
+    });
   }
 
   connectPerson(p: NearbyPerson, myHello: J, accept: (offer: string) => Promise<string | null>): Promise<string | null> {

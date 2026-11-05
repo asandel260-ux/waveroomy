@@ -30,7 +30,7 @@ export interface SessionCore {
 export interface LanHost {
   beacon(): J | null;
   admit(hello: J): string | null;
-  issueInvite(roomId: string): Promise<{ id: string; code: string | null }>;
+  issueInvite(roomId: string): Promise<{ id: string; code: string | null; why?: string }>;
   acceptAnswer(answer: J): Promise<boolean>;
 }
 
@@ -562,7 +562,7 @@ export class RoomSession implements EngineIO, LanHost {
     return null;
   }
 
-  async issueInvite(_roomId: string): Promise<{ id: string; code: string | null }> {
+  async issueInvite(_roomId: string): Promise<{ id: string; code: string | null; why?: string }> {
     const s = this.st;
     if (!s) return { id: "", code: null };
     return this.core.mesh.createInvite("room", s.meta.id, this.previewJson());

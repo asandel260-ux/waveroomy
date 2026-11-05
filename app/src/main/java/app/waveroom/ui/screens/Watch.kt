@@ -222,6 +222,21 @@ fun WatchPanel(modifier: Modifier = Modifier, land: Boolean = false) {
         }
         if (v == null) loadedId = null
     }
+    // the embedded player never reported in (its script blocked or slow, or embedding refused without an error):
+    // play the watch page itself instead
+    LaunchedEffect(w.video?.id, fallback) {
+        if (w.video != null && !fallback) {
+            kotlinx.coroutines.delay(9000)
+            if (!ready) { fallback = true; loadedId = null; errorMsg = null }
+        }
+    }
+    // and if even that shows nothing, say so instead of leaving a black box
+    LaunchedEffect(w.video?.id, fallback, ready) {
+        if (w.video != null && fallback && !ready) {
+            kotlinx.coroutines.delay(25000)
+            if (!ready) errorMsg = "This video isn't starting. It may be blocked or age-restricted, or YouTube can't be reached from this network. Try another link."
+        }
+    }
     // keep playing state in step even between ticks
     LaunchedEffect(w.playing, w.position, w.anchorMs) {
         if (ready && loadedId != null) {

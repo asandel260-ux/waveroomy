@@ -90,8 +90,8 @@ class PeerLink(
     private val pendingCandidates = ArrayList<IceCandidate>()
     private var gatherCb: (() -> Unit)? = null
     private var gatherTimeout: Runnable? = null
-    private var gatherSoon: Runnable? = null
-    private var gatherSettle: Runnable? = null
+    private var gatherPoll: Runnable? = null
+    private var lastCandAt = 0L
     private var closed = false
     val log = ArrayList<String>()
     private val localTypes = HashMap<String, Int>()
@@ -161,8 +161,7 @@ class PeerLink(
                 val ty = Regex(" typ (\\w+)").find(c.sdp)?.groupValues?.get(1) ?: "?"
                 onMain {
                     localTypes[ty] = (localTypes[ty] ?: 0) + 1
-                    // a public (server-reflexive) or relay address is the last thing worth waiting for
-                    if (gatherCb != null && (ty == "srflx" || ty == "relay") && gatherSoon == null) gatherSoon = later(1000) { fireGather() }
+                    lastCandAt = System.currentTimeMillis()
                 }
                 if (trickle) onMain { if (!closed) listener.onLocalCandidate(this@PeerLink, c.sdpMid ?: "", c.sdpMLineIndex, c.sdp) }
             }
@@ -397,21 +396,36 @@ class PeerLink(
     }
 
     /**
-     * Non-trickle: invoke [cb] once the candidate list is worth sending: gathering complete, a second after
-     * the first public address, 4 s in if any local address exists (blocked STUN servers), or after [timeoutMs].
+     * Non-trickle: invoke [cb] once the candidate list is worth sending, so nobody waits for servers that never
+     * answer: gathering complete, or no new address for a moment, or [timeoutMs]. The moment is longer while a
+     * relay address is still expected, because people on different networks cannot do without it.
      */
     fun whenGathered(timeoutMs: Long, cb: () -> Unit) {
         if (pc?.iceGatheringState() == PeerConnection.IceGatheringState.COMPLETE) return cb()
         gatherCb = cb
         gatherTimeout = later(timeoutMs) { fireGather() }
-        gatherSettle = later(4000) { if (localTypes.isNotEmpty()) fireGather() }
+        fun check() {
+            if (gatherCb == null) return
+            if (gatherReady()) fireGather() else gatherPoll = later(250) { check() }
+        }
+        gatherPoll = later(250) { check() }
+    }
+
+    private fun gatherReady(): Boolean {
+        val have = localTypes.keys
+        if (have.isEmpty()) return false
+        val quiet = System.currentTimeMillis() - lastCandAt
+        val wantsRelay = rtc.iceServers().any { sv -> sv.urls.any { it.startsWith("turn") } }
+        if (wantsRelay && !have.contains("relay")) return quiet > 6000
+        if (have.contains("srflx") || have.contains("relay")) return quiet > 1200
+        return quiet > 2500
     }
 
     private fun fireGather() {
         val cb = gatherCb ?: return
         gatherCb = null
-        cancelLater(gatherTimeout); cancelLater(gatherSoon); cancelLater(gatherSettle)
-        gatherTimeout = null; gatherSoon = null; gatherSettle = null
+        cancelLater(gatherTimeout); cancelLater(gatherPoll)
+        gatherTimeout = null; gatherPoll = null
         cb()
     }
 
@@ -473,7 +487,7 @@ class PeerLink(
     fun close() {
         if (closed) return
         closed = true
-        cancelLater(gatherTimeout); cancelLater(gatherSoon); cancelLater(gatherSettle)
+        cancelLater(gatherTimeout); cancelLater(gatherPoll)
         try {
             ctl?.unregisterObserver()
             fast?.unregisterObserver()

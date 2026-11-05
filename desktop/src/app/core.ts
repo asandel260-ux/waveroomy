@@ -148,10 +148,10 @@ export class AppCore implements MeshHandler, LanApp {
         const uid = str(j, "u");
         if (this.social.isBlocked(uid)) return { kind: "error", msg: "You blocked this person." };
         if (uid === this.profile.uid && purpose !== "sync") return { kind: "error", msg: "That's your own code." };
-        const { answer, remoteSid } = await this.mesh.acceptInvite(j);
+        const { answer, remoteSid, why } = await this.mesh.acceptInvite(j);
         if (!answer) {
           if (remoteSid && this.mesh.link(remoteSid)?.authed) return { kind: "error", msg: "You are already connected to this person." };
-          return { kind: "error", msg: "Could not prepare a connection. Try again." };
+          return { kind: "error", msg: "Could not prepare a connection" + (why ? ` (${why})` : "") + ". Try again." };
         }
         if (purpose === "room") this.session.expectJoin = remoteSid;
         const title = str(obj(j, "v") ?? {}, "t") || str(j, "n");

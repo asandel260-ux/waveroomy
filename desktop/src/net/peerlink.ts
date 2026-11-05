@@ -40,6 +40,8 @@ export class PeerLink {
   state = "new";
   lastRoomSig = 0;
   iceState = "new";
+  /** why the last step failed, in the browser's own words (shown when a connection can't be prepared) */
+  lastError = "";
   readonly log: string[] = [];
 
   private pc: RTCPeerConnection | null = null;
@@ -51,8 +53,8 @@ export class PeerLink {
   private pending: RTCIceCandidateInit[] = [];
   private gatherCb: (() => void) | null = null;
   private gatherTimeout: Timer = null;
-  private gatherSoon: Timer = null;
-  private gatherSettle: Timer = null;
+  private gatherPoll: Timer = null;
+  private lastCandAt = 0;
   private closed = false;
   private localTypes: Record<string, number> = {};
   private remoteTypes: Record<string, number> = {};
@@ -107,6 +109,7 @@ export class PeerLink {
       p = new RTCPeerConnection({ iceServers: this.rtc.iceServers(), bundlePolicy: "max-bundle", rtcpMuxPolicy: "require" });
     } catch (e) {
       console.warn("RTCPeerConnection failed", e);
+      this.lastError = "could not start WebRTC: " + String((e as any)?.message ?? e).slice(0, 120);
       return false;
     }
     this.pc = p;
@@ -120,8 +123,7 @@ export class PeerLink {
       if (!c) return;
       const ty = / typ (\w+)/.exec(c.candidate)?.[1] ?? "?";
       this.localTypes[ty] = (this.localTypes[ty] ?? 0) + 1;
-      // a public (server-reflexive) or relay address is the last thing worth waiting for
-      if (this.gatherCb && (ty === "srflx" || ty === "relay") && !this.gatherSoon) this.gatherSoon = later(1000, () => this.fireGather());
+      this.lastCandAt = nowMs();
       if (this.trickle && !this.closed) this.listener.onLocalCandidate(this, c.sdpMid ?? "", c.sdpMLineIndex ?? 0, c.candidate);
     };
     p.onicegatheringstatechange = () => { if (p.iceGatheringState === "complete") this.fireGather(); };
@@ -216,6 +218,7 @@ export class PeerLink {
       return true;
     } catch (e) {
       console.warn("createOffer failed", e);
+      this.lastError = "could not create the offer: " + String((e as any)?.message ?? e).slice(0, 120);
       return false;
     }
   }
@@ -244,6 +247,7 @@ export class PeerLink {
       return true;
     } catch (e) {
       console.warn("acceptOffer failed", e);
+      this.lastError = "their offer was refused: " + String((e as any)?.message ?? e).slice(0, 120);
       return false;
     }
   }
@@ -276,23 +280,38 @@ export class PeerLink {
   }
 
   /**
-   * Non-trickle: invoke [cb] once the candidate list is worth sending. That is when gathering
-   * completes, a second after the first public address shows up, after 4 s if at least a local
-   * address exists (blocked STUN servers would otherwise make everyone wait), or after [timeoutMs].
+   * Non-trickle: invoke [cb] once the candidate list is worth sending, so nobody waits for servers that
+   * never answer: when gathering completes, or when no new address has shown up for a moment, or after
+   * [timeoutMs]. The moment is longer while a relay address is still expected, because that is the one
+   * address people on different networks cannot do without.
    */
   whenGathered(timeoutMs: number, cb: () => void) {
     if (this.pc?.iceGatheringState === "complete") return cb();
     this.gatherCb = cb;
     this.gatherTimeout = later(timeoutMs, () => this.fireGather());
-    this.gatherSettle = later(4000, () => { if (Object.keys(this.localTypes).length) this.fireGather(); });
+    const check = () => {
+      if (!this.gatherCb) return;
+      if (this.gatherReady()) this.fireGather(); else this.gatherPoll = later(250, check);
+    };
+    this.gatherPoll = later(250, check);
+  }
+
+  private gatherReady(): boolean {
+    const have = Object.keys(this.localTypes);
+    if (have.length === 0) return false;
+    const quiet = nowMs() - this.lastCandAt;
+    const wantsRelay = this.rtc.iceServers().some((sv) => [sv.urls].flat().some((u) => /^turns?:/i.test(u)));
+    if (wantsRelay && !have.includes("relay")) return quiet > 6000;
+    if (have.includes("srflx") || have.includes("relay")) return quiet > 1200;
+    return quiet > 2500;
   }
 
   private fireGather() {
     const cb = this.gatherCb;
     if (!cb) return;
     this.gatherCb = null;
-    cancelLater(this.gatherTimeout); cancelLater(this.gatherSoon); cancelLater(this.gatherSettle);
-    this.gatherTimeout = null; this.gatherSoon = null; this.gatherSettle = null;
+    cancelLater(this.gatherTimeout); cancelLater(this.gatherPoll);
+    this.gatherTimeout = null; this.gatherPoll = null;
     cb();
   }
 
@@ -341,7 +360,7 @@ export class PeerLink {
   close() {
     if (this.closed) return;
     this.closed = true;
-    cancelLater(this.gatherTimeout); cancelLater(this.gatherSoon); cancelLater(this.gatherSettle);
+    cancelLater(this.gatherTimeout); cancelLater(this.gatherPoll);
     try { this.ctl?.close(); this.fast?.close(); } catch { /* ignore */ }
     try { this.pc?.close(); } catch { /* ignore */ }
     this.pc = null; this.ctl = null; this.fast = null;

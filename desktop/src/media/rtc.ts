@@ -46,7 +46,7 @@ export class RtcEngine {
     if (stun.length) out.push({ urls: stun });
     if (s.useRelay && !s.turnUrl.trim()) {
       // last-resort relay so devices on different networks can still connect; it only sees encrypted packets
-      out.push({ urls: ["turn:openrelay.metered.ca:80", "turn:openrelay.metered.ca:443", "turn:openrelay.metered.ca:443?transport=tcp"], username: "openrelayproject", credential: "openrelayproject" });
+      out.push({ urls: ["turn:openrelay.metered.ca:80", "turn:openrelay.metered.ca:443", "turn:openrelay.metered.ca:443?transport=tcp", "turns:openrelay.metered.ca:443?transport=tcp"], username: "openrelayproject", credential: "openrelayproject" });
     }
     const turn = s.turnUrl.trim();
     if (turn) out.push({ urls: turn.split(/[,\n ]/).map((x) => x.trim()).filter(Boolean), username: s.turnUser, credential: s.turnPass });

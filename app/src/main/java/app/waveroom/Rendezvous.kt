@@ -317,7 +317,7 @@ object Rendezvous {
         val plain = open(p.key, arr.joinToString("")) ?: return
         val note = try { JSONObject(plain) } catch (e: Exception) { return }
         if (note.str("from") != p.uid) return
-        if (kotlin.math.abs(nowMs() - note.lng("ts")) > 4 * 60_000L) return
+        if (kotlin.math.abs(nowMs() - note.lng("ts")) > 2 * 3600_000L) return
         if (AppCore.connected.value.contains(p.uid)) return
         val me = AppCore.profile.uid
         when (note.str("t")) {

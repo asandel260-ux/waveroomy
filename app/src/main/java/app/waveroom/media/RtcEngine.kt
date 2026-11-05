@@ -131,7 +131,7 @@ class RtcEngine(private val ctx: Context, private val settings: SettingsStore) {
             // last-resort relay so phones on different networks can still connect; it only sees encrypted packets
             out.add(
                 PeerConnection.IceServer.builder(
-                    listOf("turn:openrelay.metered.ca:80", "turn:openrelay.metered.ca:443", "turn:openrelay.metered.ca:443?transport=tcp")
+                    listOf("turn:openrelay.metered.ca:80", "turn:openrelay.metered.ca:443", "turn:openrelay.metered.ca:443?transport=tcp", "turns:openrelay.metered.ca:443?transport=tcp")
                 ).setUsername("openrelayproject").setPassword("openrelayproject").createIceServer()
             )
         }

@@ -71,23 +71,23 @@ export class Mesh implements LinkListener {
    * ==================================================================== */
 
   /** Issue an invite code. [preview] is shown to whoever opens it (room name etc.). */
-  async createInvite(purpose: string, roomId: string, preview: J | null): Promise<{ id: string; code: string | null }> {
+  async createInvite(purpose: string, roomId: string, preview: J | null): Promise<{ id: string; code: string | null; why?: string }> {
     const id = Ids.rand(8);
     const l = new PeerLink(this.rtc, "pending-" + id, true, false, this);
     l.purpose = purpose;
     l.joinRoomId = roomId;
     l.inviteId = id;
-    if (!l.start()) return { id, code: null };
+    if (!l.start()) return { id, code: null, why: l.lastError };
     this.pending.set(id, l);
     if (!(await l.createOffer(false))) {
       this.pending.delete(id); l.close();
-      return { id, code: null };
+      return { id, code: null, why: l.lastError };
     }
     await new Promise<void>((res) => l.whenGathered(10_000, res));
     const sdp = l.localSdp();
     if (!sdp) {
       this.pending.delete(id); l.close();
-      return { id, code: null };
+      return { id, code: null, why: "this computer found no network address" };
     }
     const j: J = {
       k: "o", i: id, s: this.mySid, u: this.profile.uid, n: this.profile.profile.value?.displayName ?? "",
@@ -115,8 +115,8 @@ export class Mesh implements LinkListener {
     if (l.remoteSid.startsWith("pending-")) l.close();
   }
 
-  /** Accept somebody's invite; resolves with our answer code (to hand back) or null. */
-  async acceptInvite(code: J): Promise<{ answer: string | null; remoteSid: string }> {
+  /** Accept somebody's invite; resolves with our answer code (to hand back) or null (and why). */
+  async acceptInvite(code: J): Promise<{ answer: string | null; remoteSid: string; why?: string }> {
     if (str(code, "k") !== "o") return { answer: null, remoteSid: "" };
     const remote = str(code, "s");
     if (!remote || remote === this.mySid) return { answer: null, remoteSid: "" };
@@ -127,17 +127,17 @@ export class Mesh implements LinkListener {
     l.purpose = str(code, "p", "room");
     l.joinRoomId = str(code, "r");
     l.inviteId = str(code, "i");
-    if (!l.start()) return { answer: null, remoteSid: remote };
+    if (!l.start()) return { answer: null, remoteSid: remote, why: l.lastError };
     this.links.set(remote, l);
     if (!(await l.acceptOffer(str(code, "d")))) {
       this.links.delete(remote); l.close();
-      return { answer: null, remoteSid: remote };
+      return { answer: null, remoteSid: remote, why: l.lastError };
     }
     await new Promise<void>((res) => l.whenGathered(10_000, res));
     const sdp = l.localSdp();
     if (!sdp) {
       this.links.delete(remote); l.close();
-      return { answer: null, remoteSid: remote };
+      return { answer: null, remoteSid: remote, why: "this computer found no network address" };
     }
     const j: J = { k: "a", i: l.inviteId, s: this.mySid, u: this.profile.uid, n: this.profile.profile.value?.displayName ?? "", d: filterCandidates(sdp) };
     this.armWatchdog(l, 11 * 60_000);

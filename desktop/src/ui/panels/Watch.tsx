@@ -16,7 +16,7 @@ export function parseYouTube(url: string): string | null {
 
 async function fetchMeta(id: string): Promise<{ title: string; author: string }> {
   try {
-    const r = await fetch(`https://www.youtube.com/oembed?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D${id}&format=json`);
+    const r = await fetch(`https://www.youtube.com/oembed?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D${id}&format=json`, { signal: AbortSignal.timeout(3500) });
     const j = await r.json();
     return { title: j.title || "YouTube video", author: j.author_name || "" };
   } catch { return { title: "YouTube video", author: "" }; }
@@ -73,6 +73,7 @@ export function WatchPanel() {
   const vid = w?.video?.id ?? null;
 
   // the browser view: inject the controller after every page load, then read the player twice a second
+  const hasWatch = !!(s && w);
   useEffect(() => {
     const wv = web.current; if (!wv) return;
     const onLoad = () => { void wv.executeJavaScript(PAGE_JS).then(() => setReady(true)).catch(() => {}); };
@@ -83,7 +84,7 @@ export function WatchPanel() {
       try { const r = await wv.executeJavaScript("window.__w&&window.__w.read()"); if (r) { setErrorMsg(null); tickRef.current(r[0], r[1], r[2], r[3]); } } catch { /* not ready */ }
     }, 500);
     return () => { wv.removeEventListener("did-finish-load", onLoad); wv.removeEventListener("did-fail-load", onFail); clearInterval(iv); };
-  }, []);
+  }, [hasWatch]);
   // a new video means a new page
   useEffect(() => { setReady(false); setErrorMsg(null); }, [vid]);
   // nothing shows up for 20 seconds: say so instead of staying black

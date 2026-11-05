@@ -1,4 +1,4 @@
-import { Flow, J, b64decode, b64encode, hex, later, lng, nowMs, sha256, str, unutf8, utf8 } from "../core/util";
+import { Flow, J, Timer, b64decode, b64encode, cancelLater, hex, later, lng, nowMs, sha256, str, unutf8, utf8 } from "../core/util";
 import { unpack } from "../net/sdp";
 import type { AppCore } from "./core";
 import { Discovery, inboxTopic } from "./discovery";
@@ -29,6 +29,8 @@ export class Rendezvous {
   private topicList = "";
   private pollSince = 0;
   private polling = false;
+  private fastUntil = 0;
+  private pollTimer: Timer = null;
 
   constructor(private core: AppCore, private disc: Discovery) {}
 
@@ -41,15 +43,24 @@ export class Rendezvous {
 
   /**
    * The live stream is cut by some networks and proxies, so the mailboxes are also read the plain way
-   * every 12 s. Notes seen twice are ignored (seenIds), so both paths can run side by side.
+   * every 12 s (4 s while a connection is being set up). Notes seen twice are ignored (seenIds), so both paths can run side by side.
    */
   private async pollLoop() {
+    await this.pollOnce();
+    cancelLater(this.pollTimer);
+    this.pollTimer = later(nowMs() < this.fastUntil ? 4000 : 12_000, () => void this.pollLoop());
+  }
+
+  private async pollOnce() {
     if (!this.polling && this.topicList && this.core.settings.state.value.reconnect) {
       this.polling = true;
       try {
-        const since = this.pollSince > 0 ? String(this.pollSince) : "5m";
+        // a little overlap, so a note stamped in the same second as the last one is never missed (repeats are ignored)
+        const since = this.pollSince > 0 ? String(this.pollSince - 20) : "5m";
         const r = await fetch(`${this.baseUrl()}/${this.topicList}/json?poll=1&since=${since}`, { signal: AbortSignal.timeout(10000) });
-        if (r.ok) {
+        if (r.status === 429) this.status.value = "the message board is limiting us, will retry later";
+        else if (r.ok) {
+          if (this.status.value === "can't reach the message board") this.status.value = "checking the message board every few seconds";
           for (const line of (await r.text()).split("\n").slice(0, 300)) {
             if (!line.trim()) continue;
             let j: J; try { j = JSON.parse(line); } catch { continue; }
@@ -62,10 +73,9 @@ export class Rendezvous {
       } catch { /* try again next round */ }
       this.polling = false;
     }
-    later(12_000, () => void this.pollLoop());
   }
   lost(uid: string) { this.tries.delete(uid); later(2500, () => void this.tick(true)); }
-  kick() { this.tries.clear(); later(500, () => void this.tick(true)); }
+  kick() { this.tries.clear(); this.fastUntil = nowMs() + 90_000; later(500, () => void this.tick(true)); cancelLater(this.pollTimer); this.pollTimer = later(1500, () => void this.pollLoop()); }
   resume() { this.kick(); }
 
   private baseUrl(): string {
@@ -173,11 +183,11 @@ export class Rendezvous {
     const all = [...fl.map((p) => p.topic), ...(this.inbox ? [this.inbox] : [])];
     if (all.length === 0) { this.status.value = "nobody to look for yet"; this.stopSub(); return; }
     const topics = [...all].sort().join(",");
-    this.topicList = topics;
     const key = this.baseUrl() + "|" + topics;
     if (key === this.subKey && this.abort) return;
     this.stopSub();
     this.subKey = key;
+    this.topicList = topics;
     const gen = ++this.subGen;
     const base = this.baseUrl();
     const ac = new AbortController();
@@ -248,7 +258,8 @@ export class Rendezvous {
     let note: J;
     try { note = JSON.parse(plain); } catch { return; }
     if (str(note, "from") !== p.uid) return;
-    if (Math.abs(nowMs() - lng(note, "ts")) > 4 * 60_000) return;
+    // a generous window: a computer whose clock is a few minutes (or an hour) off would otherwise ignore every note
+    if (Math.abs(nowMs() - lng(note, "ts")) > 2 * 3600_000) return;
     if (this.core.connected.value.has(p.uid)) return;
     const me = this.core.profile.uid;
     const once = async (code: string) => {
