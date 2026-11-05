@@ -51,6 +51,7 @@ import app.waveroom.core.bool
 import app.waveroom.net.Sdp
 import app.waveroom.ui.Nav
 import app.waveroom.ui.Route
+import app.waveroom.ui.components.AvatarView
 import app.waveroom.ui.components.BtnKind
 import app.waveroom.ui.components.Muted
 import app.waveroom.ui.components.QrDisplay
@@ -228,6 +229,7 @@ fun InviteScreen(nav: Nav, purpose: String) {
                     }
                     else -> {
                         val c = code!!
+                        if (purpose == "room") InviteFriends()
                         Step(1, "They scan this code")
                         Spacer(Modifier.height(4.dp))
                         Muted("On the same Wi-Fi that is all it takes — the link comes up by itself.", size = 12, align = TextAlign.Center)
@@ -431,5 +433,30 @@ fun ConnectionReport() {
     Column(Modifier.fillMaxWidth()) {
         Text(if (open) "Hide connection details" else "Connection details", color = WR.accentBright, fontSize = 12.sp, modifier = Modifier.clickable { open = !open }.padding(vertical = 6.dp))
         if (open) Text(r, color = WR.muted, fontSize = 12.sp, fontFamily = WR.mono, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(WR.surface).padding(10.dp))
+    }
+}
+
+
+/** Connected friends: one tap sends them an invitation over the connection you already have. */
+@Composable
+private fun InviteFriends() {
+    val connected by AppCore.connected.collectAsState()
+    val contacts by AppCore.social.contacts.collectAsState()
+    var sent by remember { mutableStateOf(setOf<String>()) }
+    val list = connected.mapNotNull { contacts[it] }
+    if (list.isEmpty()) return
+    Column(Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
+        Step(0, "Connected friends")
+        for (c in list) {
+            Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                AvatarView(c.avatar, 38.dp, uid = c.uid)
+                Spacer(Modifier.width(12.dp))
+                Text(c.displayName, color = WR.text, fontSize = 15.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                if (sent.contains(c.uid)) Muted("Invited", size = 13)
+                else WrButton("Invite", {
+                    if (AppCore.inviteFriend(c.uid)) { sent = sent + c.uid; AppCore.toast("Invited ${c.displayName}") } else AppCore.toast("Couldn't reach them.")
+                }, small = true, icon = "user-plus")
+            }
+        }
     }
 }

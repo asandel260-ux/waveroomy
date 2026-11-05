@@ -64,6 +64,12 @@ import app.waveroom.ui.screens.ProfileScreen
 import app.waveroom.ui.screens.RoomScreen
 import app.waveroom.ui.screens.SettingsScreen
 import app.waveroom.ui.theme.WR
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
 
 @Composable
 fun AppRoot() {
@@ -76,6 +82,7 @@ fun AppRoot() {
             }
         } else MainShell()
         IncomingCallOverlay()
+        if (profile != null) NoticeBanners(Modifier.align(Alignment.TopCenter))
         ToastHost(Modifier.align(Alignment.TopCenter))
     }
 }
@@ -241,4 +248,45 @@ private fun IncomingCallOverlay() {
         confirmButton = { androidx.compose.material3.TextButton(onClick = { AppCore.dmHub.acceptCall() }) { androidx.compose.material3.Text("Answer", color = WR.ok, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold) } },
         dismissButton = { androidx.compose.material3.TextButton(onClick = { AppCore.dmHub.declineCall() }) { androidx.compose.material3.Text("Decline", color = WR.danger) } }
     )
+}
+
+
+/** Friend requests and room invitations, as a banner at the top of any screen (also inside a room). */
+@Composable
+private fun NoticeBanners(modifier: Modifier = Modifier) {
+    val reqs by app.waveroom.Discovery.requests.collectAsState()
+    val invs by AppCore.roomInvites.collectAsState()
+    if (reqs.isEmpty() && invs.isEmpty()) return
+    androidx.compose.foundation.layout.Column(
+        modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)).padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+    ) {
+        for (i in invs) NoticeCard(
+            AppCore.social.contact(i.uid)?.avatar ?: app.waveroom.core.Avatar(), i.uid, i.name,
+            "invited you to " + (if (i.title.isNotEmpty()) "“${i.title}”" else "their room"),
+            "Join", { AppCore.joinInvite(i) }, { AppCore.dismissInvite(i) }
+        )
+        for (r in reqs) NoticeCard(
+            r.card.avatar, "", r.card.name, "@${r.card.username} wants to connect",
+            "Accept", { app.waveroom.Discovery.accept(r) }, { app.waveroom.Discovery.decline(r) }
+        )
+    }
+}
+
+@Composable
+private fun NoticeCard(avatar: app.waveroom.core.Avatar, uid: String, name: String, sub: String, yes: String, onYes: () -> Unit, onNo: () -> Unit) {
+    androidx.compose.foundation.layout.Row(
+        Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp)).background(WR.surface2)
+            .border(1.dp, WR.neon.copy(alpha = 0.5f), androidx.compose.foundation.shape.RoundedCornerShape(16.dp)).padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        app.waveroom.ui.components.AvatarView(avatar, 40.dp, uid = uid)
+        androidx.compose.foundation.layout.Spacer(Modifier.width(12.dp))
+        androidx.compose.foundation.layout.Column(Modifier.weight(1f)) {
+            androidx.compose.material3.Text(name, color = WR.text, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            androidx.compose.material3.Text(sub, color = WR.muted, fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        }
+        androidx.compose.material3.TextButton(onClick = onNo) { androidx.compose.material3.Text("Dismiss", color = WR.muted) }
+        androidx.compose.material3.TextButton(onClick = onYes) { androidx.compose.material3.Text(yes, color = WR.ok, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold) }
+    }
 }

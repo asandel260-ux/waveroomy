@@ -342,9 +342,43 @@ object AppCore : MeshHandler, app.waveroom.net.LanApp {
         refreshConnected()
     }
 
+    /** A connected friend asking us into their room. Shown as a banner on any screen. */
+    data class RoomInvite(val uid: String, val sid: String, val name: String, val roomId: String, val title: String, val at: Long)
+
+    val roomInvites = MutableStateFlow<List<RoomInvite>>(emptyList())
+
+    /** Invites the room we are in to a friend over the connection we already have to them. */
+    fun inviteFriend(uid: String): Boolean {
+        val r = session.room ?: return false
+        val l = mesh.linkForUid(uid) ?: return false
+        if (!session.live) return false
+        return mesh.sendTo(l.remoteSid, jsonOf("t" to "rinv", "room" to r.meta.id, "title" to r.meta.title))
+    }
+
+    private fun onRoomInvite(link: PeerLink, m: JSONObject) {
+        val roomId = m.str("room")
+        if (roomId.isEmpty() || social.blocked.value.contains(link.uid) || social.contact(link.uid) == null) return
+        val inv = RoomInvite(link.uid, link.remoteSid, contactName(link.uid), roomId, m.str("title").take(60), nowMs())
+        roomInvites.value = (roomInvites.value.filter { !(it.uid == inv.uid && it.roomId == roomId) } + inv).takeLast(5)
+        try { sfx.play("join") } catch (_: Throwable) {}
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ dismissInvite(inv) }, 5 * 60_000L)
+    }
+
+    fun dismissInvite(inv: RoomInvite) { roomInvites.value = roomInvites.value.filter { it != inv } }
+
+    fun joinInvite(inv: RoomInvite) {
+        dismissInvite(inv)
+        if (session.phase.value != "idle") { toast("Leave your current room before joining another."); return }
+        val l = mesh.link(inv.sid)
+        if (l == null || !l.authed) { toast("You are not connected to them any more."); return }
+        platform?.requestMic { }
+        session.beginJoin(l, inv.roomId)
+    }
+
     override fun onMessage(fromSid: String, msg: JSONObject, link: PeerLink?) {
         if (link != null && link.uid == profile.uid) { sync.onMessage(msg); return }
         when (msg.str("t")) {
+            "rinv" -> if (link != null) onRoomInvite(link, msg)
             "m", "mr", "mq", "mb", "dmack", "fol", "gh", "gr", "gi", "gu", "gl", "call", "callr", "callx" -> if (link != null) dmHub.onMessage(link, msg)
             else -> session.onMessage(fromSid, msg, link)
         }
