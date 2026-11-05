@@ -125,7 +125,7 @@ export function InviteScreen({ nav, route, back }: ScreenProps) {
     const res: CodeResult = await core.handleCode(text);
     if (res.kind === "applied") setApplying(true);
     else if (res.kind === "error") setError(res.msg);
-    else setError("That is an invite, not a reply. Ask them to show their reply code.");
+    else setError("That is an invite, not a reply. Ask them to show their reply code.");  // an invite (or a room joined directly)
   };
   const gname = isGroup ? core.groups.get(purpose.slice(6))?.name ?? "" : "";
 
@@ -195,6 +195,7 @@ export function JoinScreen({ nav, route, back }: ScreenProps) {
     const res = await core.handleCode(raw);
     if (res.kind === "answer") { setAnswer(res); setWaiting(true); }
     else if (res.kind === "applied") setWaiting(true);
+    else if (res.kind === "joined") core.toast(res.title ? `Joining ${res.title}…` : "Joining the room…");  // the room screen takes over
     else setError(res.msg);
   };
 

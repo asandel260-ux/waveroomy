@@ -56,6 +56,8 @@ sealed class CodeResult {
     data class Answer(val code: String, val from: String, val title: String, val purpose: String, val auto: Boolean = false) : CodeResult()
     /** We applied an answer to one of our invites: the link is coming up. */
     object Applied : CodeResult()
+    /** Already connected to the host: the room is being joined over that connection, nothing to show or scan. */
+    data class Joined(val title: String) : CodeResult()
     data class Error(val msg: String) : CodeResult()
 }
 
@@ -201,6 +203,16 @@ object AppCore : MeshHandler, app.waveroom.net.LanApp {
                 }
                 val uid = j.str("u")
                 if (social.blocked.value.contains(uid)) return cb(CodeResult.Error("You blocked this person."))
+                if (purpose == "room") {
+                    // already connected to the host (friends, or an earlier room): join over that connection, no second one is needed
+                    val hostLink = mesh.link(j.str("s"))
+                    if (hostLink != null && hostLink.authed && hostLink.uid == uid) {
+                        val rid = j.str("r")
+                        if (rid.isEmpty()) return cb(CodeResult.Error("That code doesn't point to a room."))
+                        session.beginJoin(hostLink, rid)
+                        return cb(CodeResult.Joined(j.obj("v")?.str("t") ?: j.str("n")))
+                    }
+                }
                 mesh.acceptInvite(j) { answer, remoteSid ->
                     if (answer == null) {
                         if (remoteSid.isNotEmpty() && mesh.link(remoteSid)?.authed == true) cb(CodeResult.Error("You are already connected to this person."))

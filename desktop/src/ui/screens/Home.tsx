@@ -37,15 +37,19 @@ function RoomsTab({ nav }: { nav: Nav }) {
     const p = core.profile.profile.value;
     if (!p) return;
     if (core.session.phase.value !== "idle") { core.toast("Leave your current room before joining another."); return; }
+    // already connected to the host (friends): join over that connection, no handshake needed
+    const hostLink = r.sid ? core.mesh.link(r.sid) : undefined;
+    if (hostLink && hostLink.authed) { core.session.beginJoin(hostLink, r.roomId); return; }
     setJoining(r.roomId + r.ip);
-    let why = "";
+    let why = "", direct = false;
     const err = await core.lan.join(r, { uid: core.profile.uid, name: p.displayName }, async (code) => {
       const res = await core.handleCode(code, false);
       if (res.kind === "error") why = res.msg;
+      if (res.kind === "joined") direct = true;
       return res.kind === "answer" ? res.code : null;
     });
     setJoining(null);
-    if (err) core.toast(why || err);
+    if (!direct && err) core.toast(why || err);
   };
 
   return (

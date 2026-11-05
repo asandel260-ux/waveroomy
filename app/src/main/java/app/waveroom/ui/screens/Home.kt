@@ -151,14 +151,25 @@ private fun RoomsTab(nav: Nav) {
     fun joinNearby(r: NearbyRoom) {
         val p = AppCore.profile.profile.value ?: return
         if (AppCore.session.phase.value != "idle") { AppCore.toast("Leave your current room before joining another."); return }
-        joining = r.roomId + r.ip
         AppCore.platform?.requestMic { }
+        // already connected to the host (friends): join over that connection, no handshake needed
+        val hostLink = if (r.sid.isNotEmpty()) AppCore.mesh.link(r.sid) else null
+        if (hostLink != null && hostLink.authed) { AppCore.session.beginJoin(hostLink, r.roomId); return }
+        joining = r.roomId + r.ip
+        var why = ""
+        var direct = false
         AppCore.lan.join(
             r, jsonOf("uid" to AppCore.profile.uid, "name" to p.displayName),
-            accept = { code, cb -> AppCore.handleCode(code, autoDeliver = false) { res -> cb((res as? CodeResult.Answer)?.code) } },
+            accept = { code, cb ->
+                AppCore.handleCode(code, autoDeliver = false) { res ->
+                    if (res is CodeResult.Error) why = res.msg
+                    if (res is CodeResult.Joined) direct = true
+                    cb((res as? CodeResult.Answer)?.code)
+                }
+            },
             done = { err ->
                 joining = null
-                if (err != null) AppCore.toast(err)
+                if (!direct && err != null) AppCore.toast(why.ifEmpty { err })
             }
         )
     }

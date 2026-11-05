@@ -131,7 +131,7 @@ class LanService(private val ctx: Context, private val mySid: () -> String) {
                         roomId = j.str("room"), title = j.str("title"), topic = j.str("topic"),
                         tags = j.arr("tags")?.strings() ?: emptyList(), hostName = j.str("host"),
                         count = j.int("n"), speakers = j.int("spk"), locked = j.bool("lock"),
-                        ip = ip, port = j.int("port"), seenAt = nowMs()
+                        ip = ip, port = j.int("port"), seenAt = nowMs(), sid = j.str("sid")
                     )
                     mainHandler.post { onBeacon(r) }
                 }

@@ -67,6 +67,7 @@ export class RoomSession implements EngineIO, LanHost {
   expectJoin = "";
 
   private joinTarget = "";
+  private joinOwnsLink = true;
   private joinTimeout: Timer = null;
   private waiting = new Map<string, (r: J) => void>();
   private timeouts = new Map<string, Timer>();
@@ -110,11 +111,15 @@ export class RoomSession implements EngineIO, LanHost {
     return true;
   }
 
-  /** Called by the app when an invite we accepted finished its handshake. */
-  beginJoin(link: PeerLink) {
+  /**
+   * Called when an invite we accepted finished its handshake, or (with [roomId]) to join a room over a
+   * connection we already have to its host, for example as friends.
+   */
+  beginJoin(link: PeerLink, roomId = link.joinRoomId) {
     if (this.st) return;
-    const rid = link.joinRoomId;
+    const rid = roomId;
     if (!rid) return;
+    this.joinOwnsLink = link.purpose === "room";
     this.endedReason.value = null;
     this.joinError.value = null;
     this.st = new RoomState(newMeta({ id: rid, title: "Joining…", ownerUid: "" }));
@@ -132,8 +137,10 @@ export class RoomSession implements EngineIO, LanHost {
     if (this.phase.value !== "joining") return;
     this.joinError.value = msg;
     const t = this.joinTarget;
+    const own = this.joinOwnsLink;
     this.resetLocal();
-    if (t) this.core.mesh.closeLink(t, "join failed");
+    // a connection that only exists for this join goes away with it; a friend's connection stays
+    if (t && own) this.core.mesh.closeLink(t, "join failed");
   }
 
   private becameLive() {
@@ -503,7 +510,9 @@ export class RoomSession implements EngineIO, LanHost {
         const sid = str(d, "sid");
         const sp = new Set(this.speaking.value); sp.delete(sid); this.speaking.value = sp;
         const cu = new Map(this.cursors.value); cu.delete(sid); this.cursors.value = cu;
-        this.core.mesh.closeLink(sid, "left");
+        // a connection that only existed for the room goes with the person; a friend's connection stays
+        const gl = this.core.mesh.link(sid);
+        if (gl && gl.purpose !== "dm" && gl.purpose !== "sync") this.core.mesh.closeLink(sid, "left");
         this.core.sfx.play("leave");
         break;
       }

@@ -66,6 +66,7 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
     var expectJoin: String = ""
 
     private var joinTarget = ""
+    private var joinOwnsLink = true
     private var joinTimeout: Runnable? = null
     private val waiting = HashMap<String, (JSONObject) -> Unit>()
     private val timeouts = HashMap<String, Runnable>()
@@ -111,11 +112,15 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
         return true
     }
 
-    /** Called by the app when an invite we accepted finished its handshake. */
-    fun beginJoin(link: PeerLink) {
+    /**
+     * Called when an invite we accepted finished its handshake, or (with [roomId]) to join a room over a
+     * connection we already have to its host, for example as friends.
+     */
+    fun beginJoin(link: PeerLink, roomId: String = link.joinRoomId) {
         if (st != null) return
-        val rid = link.joinRoomId
+        val rid = roomId
         if (rid.isEmpty()) return
+        joinOwnsLink = link.purpose == "room"
         endedReason.value = null
         joinError.value = null
         st = RoomState(RoomMeta(id = rid, title = "Joining…", ownerUid = ""))
@@ -133,8 +138,10 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
         if (phase.value != "joining") return
         joinError.value = msg
         val t = joinTarget
+        val own = joinOwnsLink
         resetLocal()
-        if (t.isNotEmpty()) core.mesh.closeLink(t, "join failed")
+        // a connection that only exists for this join goes away with it; a friend's connection stays
+        if (t.isNotEmpty() && own) core.mesh.closeLink(t, "join failed")
     }
 
     private fun becameLive() {
@@ -525,7 +532,9 @@ class RoomSession(private val core: AppCore) : EngineIO, LanHost {
                 val sid = d.str("sid")
                 speaking.value = speaking.value - sid
                 cursors.value = cursors.value - sid
-                core.mesh.closeLink(sid, "left")
+                // a connection that only existed for the room goes with the person; a friend's connection stays
+                val gl = core.mesh.link(sid)
+                if (gl != null && gl.purpose != "dm" && gl.purpose != "sync") core.mesh.closeLink(sid, "left")
                 core.sfx.play("leave")
             }
             "room:role" -> {

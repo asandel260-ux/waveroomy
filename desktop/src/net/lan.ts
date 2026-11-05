@@ -70,7 +70,7 @@ export class LanService {
     }
     const r: NearbyRoom = {
       roomId: str(j, "room"), title: str(j, "title"), topic: str(j, "topic"), tags: strings(arr(j, "tags")), hostName: str(j, "host"),
-      count: int(j, "n"), speakers: int(j, "spk"), locked: bool(j, "lock"), ip, port: int(j, "port"), seenAt: nowMs()
+      count: int(j, "n"), speakers: int(j, "spk"), locked: bool(j, "lock"), ip, port: int(j, "port"), seenAt: nowMs(), sid: str(j, "sid")
     };
     this.seen.set(r.roomId + "@" + ip, r);
     this.nearby.value = [...this.seen.values()].sort((a, b) => b.count - a.count);

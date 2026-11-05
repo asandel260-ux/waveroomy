@@ -772,5 +772,7 @@ data class NearbyRoom(
     val locked: Boolean,
     val ip: String,
     val port: Int,
-    val seenAt: Long
+    val seenAt: Long,
+    /** the host's session id: tells us whether we already hold a connection to them */
+    val sid: String = ""
 )

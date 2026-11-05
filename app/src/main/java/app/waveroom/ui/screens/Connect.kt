@@ -204,7 +204,7 @@ fun InviteScreen(nav: Nav, purpose: String) {
             when (res) {
                 is CodeResult.Applied -> applying = true
                 is CodeResult.Error -> error = res.msg
-                is CodeResult.Answer -> error = "That is an invite, not a reply. Ask them to show their reply code."
+                is CodeResult.Answer, is CodeResult.Joined -> error = "That is an invite, not a reply. Ask them to show their reply code."
             }
         }
     }
@@ -308,6 +308,7 @@ fun JoinScreen(nav: Nav, initial: String) {
             when (res) {
                 is CodeResult.Answer -> { answer = res; waiting = true }
                 is CodeResult.Applied -> waiting = true
+                is CodeResult.Joined -> AppCore.toast(if (res.title.isNotEmpty()) "Joining ${res.title}…" else "Joining the room…")  // the room screen takes over
                 is CodeResult.Error -> error = res.msg
             }
         }

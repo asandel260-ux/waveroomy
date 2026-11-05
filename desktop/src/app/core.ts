@@ -148,13 +148,23 @@ export class AppCore implements MeshHandler, LanApp {
         const uid = str(j, "u");
         if (this.social.isBlocked(uid)) return { kind: "error", msg: "You blocked this person." };
         if (uid === this.profile.uid && purpose !== "sync") return { kind: "error", msg: "That's your own code." };
+        const title = str(obj(j, "v") ?? {}, "t") || str(j, "n");
+        if (purpose === "room") {
+          // already connected to the host (friends, or an earlier room): join over that connection, no second one is needed
+          const hostLink = this.mesh.link(str(j, "s"));
+          if (hostLink && hostLink.authed && hostLink.uid === uid) {
+            const rid = str(j, "r");
+            if (!rid) return { kind: "error", msg: "That code doesn't point to a room." };
+            this.session.beginJoin(hostLink, rid);
+            return { kind: "joined", title };
+          }
+        }
         const { answer, remoteSid, why } = await this.mesh.acceptInvite(j);
         if (!answer) {
           if (remoteSid && this.mesh.link(remoteSid)?.authed) return { kind: "error", msg: "You are already connected to this person." };
           return { kind: "error", msg: "Could not prepare a connection" + (why ? ` (${why})` : "") + ". Try again." };
         }
         if (purpose === "room") this.session.expectJoin = remoteSid;
-        const title = str(obj(j, "v") ?? {}, "t") || str(j, "n");
         const addrs = strings(arr(j, "l"));
         let auto = false;
         if (autoDeliver && addrs.length) auto = await this.lan.deliverAnswer(addrs, answer);

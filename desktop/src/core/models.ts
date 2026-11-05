@@ -451,6 +451,8 @@ export const savedRoomFrom = (j: J): SavedRoom => ({
 export interface NearbyRoom {
   roomId: string; title: string; topic: string; tags: string[]; hostName: string; count: number; speakers: number;
   locked: boolean; ip: string; port: number; seenAt: number;
+  /** the host's session id: tells us whether we already hold a connection to them */
+  sid: string;
 }
 export interface NearbyPerson { uid: string; name: string; username: string; avatar: J | null; ip: string; port: number; seenAt: number }
 
