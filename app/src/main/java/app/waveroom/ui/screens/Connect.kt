@@ -51,6 +51,8 @@ import app.waveroom.core.bool
 import app.waveroom.net.Sdp
 import app.waveroom.ui.Nav
 import app.waveroom.ui.Route
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.text.style.TextOverflow
 import app.waveroom.ui.components.AvatarView
 import app.waveroom.ui.components.BtnKind
 import app.waveroom.ui.components.Muted
