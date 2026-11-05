@@ -4,7 +4,7 @@ import type { CodeResult } from "../../app/types";
 import { unpack } from "../../net/sdp";
 import { bool, int, obj, str, type J } from "../../core/util";
 import { useFlow } from "../hooks";
-import { Backdrop, Button, Field, HeroCard, Icon, Muted, ScreenHeader, Spinner, SwitchRow, Tiny } from "../components/kit";
+import { Avatar, Backdrop, Button, Chip, Field, HeroCard, Icon, Muted, ScreenHeader, Spinner, SwitchRow, Tiny } from "../components/kit";
 import { QrDisplay, ScannerOverlay } from "../components/Qr";
 import type { ScreenProps } from "./registry";
 
@@ -82,6 +82,28 @@ export function CreateRoomScreen({ back }: ScreenProps) {
 
 /* ============================== Invite (show my code) ============================== */
 
+/** Connected friends: one click sends them an invitation over the connection you already have. */
+function InviteFriends() {
+  const connected = useFlow(core.connected);
+  const contacts = useFlow(core.social.contacts);
+  const [sent, setSent] = useState<Set<string>>(new Set());
+  const list = [...connected].map((u) => contacts[u]).filter(Boolean);
+  if (list.length === 0) return null;
+  return (
+    <div style={{ width: "100%", marginBottom: 18 }}>
+      <Step n={0} text="Connected friends" />
+      {list.map((c) => (
+        <div key={c.uid} className="listrow" style={{ paddingTop: 6, paddingBottom: 6 }}>
+          <Avatar avatar={c.avatar} size={38} name={c.displayName} />
+          <div className="grow ellipsis" style={{ fontSize: 15, fontWeight: 500 }}>{c.displayName}</div>
+          {sent.has(c.uid) ? <Chip text="Invited" /> : <Button small icon="user-plus" text="Invite" onClick={() => { if (core.inviteFriend(c.uid)) { setSent(new Set([...sent, c.uid])); core.toast(`Invited ${c.displayName}`); } else core.toast("Couldn't reach them."); }} />}
+        </div>
+      ))}
+      <div className="hairline" style={{ marginTop: 10 }} />
+    </div>
+  );
+}
+
 export function InviteScreen({ nav, route, back }: ScreenProps) {
   const purpose = route.t === "invite" ? route.purpose : "dm";
   const [code, setCode] = useState<string | null>(null);
@@ -136,6 +158,7 @@ export function InviteScreen({ nav, route, back }: ScreenProps) {
         {failed ? <Muted>Could not create an invite. Check that the microphone and network are available and try again.</Muted>
           : code == null ? <><div style={{ height: 80 }} /><Spinner size={28} /><div style={{ height: 12 }} /><Muted>Preparing a direct connection…</Muted></>
           : <>
+            {purpose === "room" && <InviteFriends />}
             <Step n={1} text="They scan this code" />
             <div style={{ height: 4 }} />
             <Muted size={12} style={{ textAlign: "center" }}>On the same Wi-Fi that is all it takes. The link comes up by itself.</Muted>

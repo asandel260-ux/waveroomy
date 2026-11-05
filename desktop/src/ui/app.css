@@ -189,6 +189,7 @@ button.row2:hover, .row2.click:hover { background: var(--surface); }
 .menu button.danger svg { color: var(--danger); }
 .toasts { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 90; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
 .toast { padding: 10px 16px; border-radius: var(--r-s); font-size: 13px; font-weight: 500; background: var(--surface3); color: var(--text); box-shadow: 0 0 0 1px var(--border-strong), var(--lift); max-width: 520px; animation: toastin .2s var(--ease); }
+@keyframes noticein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .toast.out { opacity: 0; transform: translateY(6px); transition: all .2s; }
 @keyframes toastin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
@@ -294,7 +295,7 @@ button.listrow:hover, .listrow.click:hover { background: var(--surface); }
 @keyframes floaty { from { transform: translate(-6px, 4px); } to { transform: translate(8px, -9px); } }
 .doodle-art { position: absolute; inset: 0; overflow: hidden; }
 .doodle-art .doodle-svg { inset: -4%; }
-.shell > .titlebar, .shell > .body, .shell > main, .shell > div:not(.doodle-bg) { position: relative; z-index: 1; }
+.shell > .titlebar, .shell > .body, .shell > main, .shell > div:not(.doodle-bg):not(.notices) { position: relative; z-index: 1; }
 .shell main { background: rgb(34 10 70 / .4); }
 .light .shell main { background: rgb(255 255 255 / .42); }
 /* every screen has its own light */
@@ -313,3 +314,8 @@ button.listrow:hover, .listrow.click:hover { background: var(--surface); }
 .light .shell[data-scene] { --atmos: radial-gradient(900px 700px at 50% 42%, rgb(255 255 255 / .65), transparent 70%), radial-gradient(ellipse at 50% 50%, transparent 50%, rgb(150 110 220 / .32) 100%); }
 
 .paused .dl, .paused .turn, .paused .tracer, .paused .firefly { animation-play-state: paused !important; }
+
+/* friend requests and room invitations, bottom right */
+.notices { position: fixed; right: 16px; bottom: 16px; z-index: 91; display: flex; flex-direction: column; gap: 10px; width: 320px; max-width: calc(100vw - 32px); }
+.notice { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: var(--r-m); background: var(--surface3); color: var(--text); box-shadow: 0 0 0 1px var(--border-strong), var(--lift); animation: noticein .2s var(--ease); }
+@keyframes noticein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }

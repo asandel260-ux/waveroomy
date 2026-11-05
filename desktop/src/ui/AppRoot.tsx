@@ -97,6 +97,41 @@ function Globals() {
   );
 }
 
+/** Friend requests and room invitations, bottom right, on any screen (also inside a room). */
+function Notices() {
+  const reqs = useFlow(core.discovery.requests);
+  const invs = useFlow(core.roomInvites);
+  if (reqs.length + invs.length === 0) return null;
+  return (
+    <div className="notices" role="region" aria-label="Notifications">
+      {invs.map((i) => (
+        <div key={i.uid + i.roomId} className="notice">
+          <div className="hstack g12">
+            <Avatar avatar={avatarFrom(core.social.contact(i.uid)?.avatar ?? null)} size={40} name={i.name} />
+            <div className="grow" style={{ minWidth: 0 }}><div className="ellipsis" style={{ fontWeight: 600 }}>{i.name}</div><Muted size={12}>invited you to {i.title ? `“${i.title}”` : "their room"}</Muted></div>
+          </div>
+          <div className="hstack g8" style={{ justifyContent: "flex-end" }}>
+            <Button small kind="ghost" text="Dismiss" onClick={() => core.dismissInvite(i)} />
+            <Button small kind="ok" icon="mic" text="Join" onClick={() => core.joinInvite(i)} />
+          </div>
+        </div>
+      ))}
+      {reqs.map((r) => (
+        <div key={r.card.uid} className="notice">
+          <div className="hstack g12">
+            <Avatar avatar={avatarFrom(r.card.avatar)} size={40} name={r.card.name} />
+            <div className="grow" style={{ minWidth: 0 }}><div className="ellipsis" style={{ fontWeight: 600 }}>{r.card.name}</div><Muted size={12}>@{r.card.username} wants to connect</Muted></div>
+          </div>
+          <div className="hstack g8" style={{ justifyContent: "flex-end" }}>
+            <Button small kind="ghost" text="Decline" onClick={() => core.discovery.decline(r)} />
+            <Button small kind="ok" text="Accept" onClick={() => void core.discovery.accept(r)} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function sceneOf(r: Route, tab: number, signedIn: boolean): SceneId {
   if (!signedIn) return "intro";
   switch (r.t) {
@@ -145,6 +180,7 @@ export function AppRoot() {
       <TitleBar />
       {body}
       {profile && <Globals />}
+      {profile && <Notices />}
       <ToastHost />
     </div>
   );

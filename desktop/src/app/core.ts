@@ -20,6 +20,8 @@ import { DeviceSync } from "./sync";
 
 const DM_TYPES = new Set(["m", "mr", "mq", "mb", "dmack", "fol", "gh", "gr", "gi", "gu", "gl", "call", "callr", "callx"]);
 
+export interface RoomInvite { uid: string; sid: string; name: string; roomId: string; title: string; at: number }
+
 /** The application: owns every store and service and routes network events between them. */
 export class AppCore implements MeshHandler, LanApp {
   readonly profile = new ProfileStore();
@@ -48,6 +50,8 @@ export class AppCore implements MeshHandler, LanApp {
   /** a code that arrived (homit:// link, drag and drop) and should be opened by the UI */
   readonly pendingCode = new Flow<string | null>(null);
   readonly pendingAdd = new Flow<Card | null>(null);
+  /** friends who asked us to join their room, shown as a notice on any screen */
+  readonly roomInvites = new Flow<RoomInvite[]>([]);
   readonly ready = new Flow(false);
   private lanTries = new Map<string, number>();
   private inited = false;
@@ -276,7 +280,39 @@ export class AppCore implements MeshHandler, LanApp {
   onMessage(fromSid: string, msg: J, link: PeerLink | null) {
     const t = str(msg, "t");
     if (link && link.uid === this.profile.uid) { this.sync.onMessage(link, msg); return; }
+    if (t === "rinv") { if (link) this.onRoomInvite(link, msg); return; }
     if (DM_TYPES.has(t)) { if (link) this.dmHub.onMessage(link, msg); }
     else this.session.onMessage(fromSid, msg, link);
+  }
+
+  /* ---------------- room invitations between connected friends ---------------- */
+
+  /** Ask a connected friend to join the room we are in. */
+  inviteFriend(uid: string): boolean {
+    const r = this.session.room;
+    const l = this.mesh.linkForUid(uid);
+    if (!r || !this.session.live || !l) return false;
+    return this.mesh.sendTo(l.remoteSid, { t: "rinv", room: r.meta.id, title: r.meta.title });
+  }
+
+  private onRoomInvite(link: PeerLink, m: J) {
+    const roomId = str(m, "room");
+    if (!roomId || this.social.isBlocked(link.uid) || !this.social.contact(link.uid)) return;
+    const title = str(m, "title").slice(0, 60);
+    const inv: RoomInvite = { uid: link.uid, sid: link.remoteSid, name: this.contactName(link.uid), roomId, title, at: nowMs() };
+    this.roomInvites.value = [...this.roomInvites.value.filter((x) => !(x.uid === inv.uid && x.roomId === roomId)), inv].slice(-5);
+    this.sfx.play("join");
+    later(5 * 60_000, () => this.dismissInvite(inv));
+  }
+
+  dismissInvite(inv: RoomInvite) { this.roomInvites.value = this.roomInvites.value.filter((x) => x !== inv); }
+
+  joinInvite(inv: RoomInvite) {
+    this.dismissInvite(inv);
+    if (this.session.phase.value !== "idle") { this.toast("Leave your current room before joining another."); return; }
+    const l = this.mesh.link(inv.sid);
+    if (!l || !l.authed) { this.toast("You are not connected to them any more."); return; }
+    this.requestMic();
+    this.session.beginJoin(l, inv.roomId);
   }
 }
